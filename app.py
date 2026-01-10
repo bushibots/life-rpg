@@ -49,6 +49,7 @@ with app.app_context():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Daily Reset Logic
     from datetime import date
     if current_user.last_check_date != date.today():
         user_goals = Goal.query.filter_by(user_id=current_user.id).all()
@@ -123,8 +124,6 @@ def stats():
     dates_last_30 = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(29, -1, -1)]
     daily_xp_map = {d: 0 for d in dates_last_30}
     
-    current_xp_total = 0
-    
     for h in history:
         d_str = h.date_completed.strftime('%Y-%m-%d')
         heatmap_data[d_str] = heatmap_data.get(d_str, 0) + h.xp_gained
@@ -159,6 +158,9 @@ def add_habit():
     name = request.form.get('name')
     stat_type = request.form.get('stat_type')
     difficulty = request.form.get('difficulty')
+    duration = request.form.get('duration')
+    
+    # Removed broken date/time/streak logic to fix crashes
     
     xp_map = {'Easy': 10, 'Medium': 30, 'Hard': 50, 'Epic': 100}
     xp = xp_map.get(difficulty, 10)
@@ -170,11 +172,13 @@ def add_habit():
             stat_type=stat_type,
             difficulty=difficulty,
             xp_value=xp,
+            duration=int(duration) if duration else 0,
             completed=False,
             is_daily=True 
         )
         db.session.add(new_habit)
         db.session.commit()
+    
     return redirect(url_for('dashboard'))
 
 @app.route('/toggle_habit/<int:habit_id>')
@@ -313,6 +317,11 @@ def reset_progress():
     current_user.wis_score = 0
     current_user.cha_score = 0
     current_user.con_score = 0
+    
+    habits = Habit.query.join(Goal).filter(Goal.user_id == current_user.id).all()
+    for h in habits:
+        h.completed = False
+    
     db.session.query(QuestHistory).filter(QuestHistory.user_id==current_user.id).delete()
     db.session.commit()
     return redirect(url_for('settings'))
@@ -326,7 +335,21 @@ def mission_print():
     return render_template('print.html', habits=habits, week_labels=week_labels, user=current_user)
 
 @app.route('/get_reminders')
-def get_reminders(): return {"alert": False}
+def get_reminders(): 
+    return {"alert": False}
+
+@app.route('/export')
+@login_required
+def export_data():
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Date', 'Quest', 'Category', 'Stat', 'XP', 'Difficulty'])
+    
+    history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.desc()).all()
+    for h in history:
+        writer.writerow([h.date_completed, h.name, 'N/A', h.stat_type, h.xp_gained, h.difficulty])
+        
+    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=life_rpg_export.csv"})
 
 # --- ADMIN PANEL ROUTES ---
 @app.route('/admin')
@@ -358,13 +381,16 @@ def submit_feedback():
 @app.route('/delete_account')
 @login_required
 def delete_account():
-    # Fix for Integrity Error: Delete feedback explicitly first
     feedbacks = Feedback.query.filter_by(user_id=current_user.id).all()
     for f in feedbacks:
         db.session.delete(f)
+    
+    history = QuestHistory.query.filter_by(user_id=current_user.id).all()
+    for h in history:
+        db.session.delete(h)
+        
     db.session.commit()
     
-    # Now delete the user
     user = db.session.get(User, current_user.id)
     db.session.delete(user)
     db.session.commit()
@@ -389,6 +415,21 @@ def ban_user(user_id):
     if u and not u.is_admin:
         u.is_banned = not u.is_banned
         db.session.commit()
+    return redirect(url_for('admin_panel'))
+
+@app.route('/admin/delete_feedback', methods=['POST'])
+@login_required
+def delete_feedback():
+    if not current_user.is_admin: return redirect(url_for('dashboard'))
+    action = request.form.get('action')
+    if action == 'delete_all':
+        db.session.query(Feedback).delete()
+    elif action == 'delete_selected':
+        ids = request.form.getlist('feedback_ids')
+        for fid in ids:
+            f = db.session.get(Feedback, int(fid))
+            if f: db.session.delete(f)
+    db.session.commit()
     return redirect(url_for('admin_panel'))
 
 if __name__ == '__main__':

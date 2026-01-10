@@ -36,9 +36,20 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h4 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">CURRENT OBJECTIVES</h4>
-    <button class="btn btn-sm btn-info text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#addGoalModal">
-        <i class="bi bi-plus-lg"></i> New Quest
-    </button>
+    
+    <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#feedbackModal">
+            <i class="bi bi-chat-right-text"></i> Idea
+        </button>
+
+        <a href="{{ url_for('mission_print') }}" target="_blank" class="btn btn-sm btn-outline-light">
+            <i class="bi bi-printer"></i> Print
+        </a>
+
+        <button class="btn btn-sm btn-info text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#addGoalModal">
+            <i class="bi bi-plus-lg"></i> New Quest
+        </button>
+    </div>
 </div>
 
 {% for goal in goals %}
@@ -197,4 +208,28 @@
         </div>
     </div>
 </div>
+
+                        <div class="modal fade" id="feedbackModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-white">
+            <form action="{{ url_for('submit_feedback') }}" method="POST">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning"><i class="bi bi-broadcast"></i> Secure Transmission</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">Send feature requests, bug reports, or ideas directly to Command.</p>
+                    <textarea name="message" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="Type your message here..." required></textarea>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning fw-bold text-dark">
+                        <i class="bi bi-send-fill"></i> Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

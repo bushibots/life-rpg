@@ -16,7 +16,7 @@
                 <div class="d-flex align-items-center mt-2">
                     <h2 class="display-4 fw-bold text-white me-4 mb-0">{{ health_score }}%</h2>
                     <div class="progress flex-grow-1" style="height: 10px; background-color: rgba(255,255,255,0.1);">
-                        <div class="progress-bar {% if health_score > 70 %}bg-success{% elif health_score > 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                        <div class="progress-bar {% if health_score > 70 %}bg-success{% elif health_score > 40 %}bg-warning{% else %}bg-danger{% endif %}"
                              role="progressbar" style="width: {{ health_score }}%"></div>
                     </div>
                 </div>
@@ -67,10 +67,16 @@
 </div>
 
 <script>
+    // --- RESPONSIVE CONFIG ---
+    // Check if we are on mobile (screen width less than 768px)
+    const isMobile = window.innerWidth < 768;
+
+    // Set font sizes based on device
+    Chart.defaults.font.size = isMobile ? 14 : 12;
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
 
-    // 1. RADAR CHART
+    // --- 1. RADAR CHART ---
     new Chart(document.getElementById('radarChart'), {
         type: 'radar',
         data: {
@@ -81,23 +87,31 @@
                 backgroundColor: 'rgba(188, 19, 254, 0.2)',
                 borderColor: '#bc13fe',
                 pointBackgroundColor: '#bc13fe',
-                pointBorderColor: '#fff'
+                pointBorderColor: '#fff',
+                pointRadius: isMobile ? 3 : 4 // Smaller points on mobile
             }]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false, // CRITICAL: Allows chart to fill height
             scales: {
                 r: {
                     angleLines: { color: 'rgba(255,255,255,0.1)' },
                     grid: { color: 'rgba(255,255,255,0.1)' },
-                    pointLabels: { color: '#fff', font: {size: 12} },
+                    pointLabels: {
+                        color: '#fff',
+                        font: { size: isMobile ? 10 : 12 } // Adjust label size
+                    },
                     ticks: { display: false, backdropColor: 'transparent' }
                 }
             },
-            plugins: { legend: { display: false } }
+            plugins: {
+                legend: { display: false } // Hide legend to save space
+            }
         }
     });
 
-    // 2. LINE CHART
+    // --- 2. LINE CHART ---
     new Chart(document.getElementById('lineChart'), {
         type: 'line',
         data: {
@@ -108,34 +122,62 @@
                 borderColor: '#00f2ff',
                 backgroundColor: 'rgba(0, 242, 255, 0.1)',
                 tension: 0.4,
-                fill: true
+                fill: true,
+                pointRadius: 0, // Remove dots for cleaner look on mobile
+                pointHitRadius: 20 // Make it easier to tap
             }]
         },
         options: {
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } },
-            maintainAspectRatio: false
+            responsive: true,
+            maintainAspectRatio: false, // CRITICAL
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { display: !isMobile } // Hide grid lines on mobile for cleaner look
+                },
+                x: {
+                    ticks: {
+                        maxTicksLimit: isMobile ? 5 : 10 // Show fewer dates on mobile
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
         }
     });
 
-    // 3. HEATMAP GENERATOR
+    // --- 3. HEATMAP GENERATOR ---
     const heatmapContainer = document.getElementById('cal-heatmap');
     const heatmapData = {{ heatmap_data | tojson }};
     const today = new Date();
 
-    for (let i = 180; i >= 0; i--) {
+    // Show fewer days on mobile (e.g., 90 days instead of 180)
+    const daysToShow = isMobile ? 80 : 180;
+
+    for (let i = daysToShow; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
         const count = heatmapData[dateStr] || 0;
 
         const box = document.createElement('div');
-        box.style.width = '12px';
-        box.style.height = '12px';
+        // Make boxes slightly bigger on mobile for touch
+        const boxSize = isMobile ? '10px' : '12px';
+        box.style.width = boxSize;
+        box.style.height = boxSize;
         box.style.borderRadius = '2px';
         box.title = `${dateStr}: ${count} XP`;
 
-        // Color Logic
         if (count === 0) box.style.backgroundColor = '#212529';
         else if (count < 20) box.style.backgroundColor = 'rgba(13, 202, 240, 0.3)';
         else if (count < 50) box.style.backgroundColor = 'rgba(13, 202, 240, 0.6)';

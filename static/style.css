@@ -16,7 +16,7 @@
 
 body {
     background-color: var(--bg-deep);
-    background-image: 
+    background-image:
         radial-gradient(circle at 15% 50%, rgba(188, 19, 254, 0.1), transparent 25%),
         radial-gradient(circle at 85% 30%, rgba(0, 242, 255, 0.08), transparent 25%);
     color: var(--text-main);
@@ -141,7 +141,7 @@ body {
     h1.display-4, .display-4 {
         font-size: 2.5rem !important;
     }
-    
+
     h1.display-3, .display-3 {
         font-size: 2rem !important;
     }
@@ -164,21 +164,39 @@ body {
         padding-bottom: 10px;
         justify-content: flex-start;
     }
-    
+
     /* 5. List Items */
     .list-group-item {
         flex-direction: column; /* Stack text and buttons */
         align-items: flex-start !important;
         gap: 10px;
     }
-    
+
     .list-group-item .btn {
         width: 100%; /* Full width buttons on mobile */
         margin-top: 5px;
     }
-    
+
     /* 6. Form Inputs */
     .form-control, .form-select {
         font-size: 16px; /* Prevents iOS zooming on input focus */
+    }
+}
+
+/* Mobile Chart Fixes */
+@media (max-width: 768px) {
+    /* Force chart containers to be tall enough on mobile */
+    .card-body canvas {
+        min-height: 250px;
+    }
+
+    /* Specific tweak for Radar charts which need to be square-ish */
+    #radarChart {
+        min-height: 300px;
+    }
+
+    /* Analytics grid fix */
+    .col-md-5, .col-md-7 {
+        width: 100% !important; /* Force full width stacking */
     }
 }

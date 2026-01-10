@@ -32,40 +32,62 @@
 </div>
 
 <div class="card bg-dark border-secondary shadow-sm">
-    <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 text-white">Incoming Transmissions</h5>
-    </div>
-    <div class="list-group list-group-flush">
-        {% for msg in feedbacks %}
-        <div class="list-group-item bg-transparent border-secondary text-white">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <strong class="{{ 'text-muted' if msg.is_read else 'text-white' }}">
-                        {{ msg.user.username }}
-                    </strong>
-                    <span class="text-muted small ms-2">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
-                    
-                    {% if msg.user.is_banned %}
-                    <span class="badge bg-danger ms-2">BANNED</span>
-                    {% endif %}
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('ban_user', user_id=msg.user.id) }}" 
-                       class="btn btn-sm btn-outline-danger"
-                       onclick="return confirm('Toggle Ban status for this user?')">
-                        <i class="bi bi-slash-circle"></i> Ban
-                    </a>
-                    <a href="{{ url_for('mark_read', feedback_id=msg.id) }}" 
-                       class="btn btn-sm {{ 'btn-secondary' if msg.is_read else 'btn-success' }}">
-                        <i class="bi bi-check-lg"></i>
-                    </a>
+    <form action="{{ url_for('delete_feedback') }}" method="POST">
+        <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-white">Incoming Transmissions</h5>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="delete_selected" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+
+                <button type="submit" name="action" value="delete_all" class="btn btn-sm btn-danger fw-bold"
+                        onclick="return confirm('WARNING: This will wipe ALL transmission logs permanently. Confirm nuclear launch?');">
+                    <i class="bi bi-radioactive"></i> NUKE ALL
+                </button>
+            </div>
+        </div>
+
+        <div class="list-group list-group-flush">
+            {% for msg in feedbacks %}
+            <div class="list-group-item bg-transparent border-secondary text-white">
+                <div class="d-flex gap-3">
+                    <div class="pt-1">
+                        <input class="form-check-input bg-dark border-secondary" type="checkbox" name="feedback_ids" value="{{ msg.id }}">
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="{{ 'text-muted' if msg.is_read else 'text-white' }}">
+                                    {{ msg.user.username }}
+                                </strong>
+                                <span class="text-muted small ms-2">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                                
+                                {% if msg.user.is_banned %}
+                                <span class="badge bg-danger ms-2">BANNED</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('ban_user', user_id=msg.user.id) }}" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Toggle Ban status for this user?')">
+                                    <i class="bi bi-slash-circle"></i> Ban
+                                </a>
+                                <a href="{{ url_for('mark_read', feedback_id=msg.id) }}" 
+                                   class="btn btn-sm {{ 'btn-secondary' if msg.is_read else 'btn-success' }}">
+                                    <i class="bi bi-check-lg"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <p class="mt-2 mb-0 {{ 'text-muted' if msg.is_read else '' }}">{{ msg.message }}</p>
+                    </div>
                 </div>
             </div>
-            <p class="mt-2 mb-0 {{ 'text-muted' if msg.is_read else '' }}">{{ msg.message }}</p>
+            {% else %}
+            <div class="p-4 text-center text-muted">No transmissions received.</div>
+            {% endfor %}
         </div>
-        {% else %}
-        <div class="p-4 text-center text-muted">No transmissions received.</div>
-        {% endfor %}
-    </div>
+    </form>
 </div>
 {% endblock %}
