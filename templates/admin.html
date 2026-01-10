@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-danger" style="font-family: 'Orbitron', sans-serif;">
+            <i class="bi bi-shield-lock-fill me-2"></i>COMMAND CENTER
+        </h2>
+        <p class="text-muted">System Administration & User Overwatch.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card bg-dark border-secondary text-center p-3">
+            <h1 class="display-4 text-white fw-bold mb-0">{{ users }}</h1>
+            <span class="text-uppercase text-muted small">Active Agents</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-dark border-secondary text-center p-3">
+            <h1 class="display-4 text-info fw-bold mb-0">{{ quests }}</h1>
+            <span class="text-uppercase text-muted small">Total Missions</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-dark border-secondary text-center p-3">
+            <h1 class="display-4 text-warning fw-bold mb-0">{{ feedbacks|length }}</h1>
+            <span class="text-uppercase text-muted small">Transmissions</span>
+        </div>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-white">Incoming Transmissions</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        {% for msg in feedbacks %}
+        <div class="list-group-item bg-transparent border-secondary text-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <strong class="{{ 'text-muted' if msg.is_read else 'text-white' }}">
+                        {{ msg.user.username }}
+                    </strong>
+                    <span class="text-muted small ms-2">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                    
+                    {% if msg.user.is_banned %}
+                    <span class="badge bg-danger ms-2">BANNED</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('ban_user', user_id=msg.user.id) }}" 
+                       class="btn btn-sm btn-outline-danger"
+                       onclick="return confirm('Toggle Ban status for this user?')">
+                        <i class="bi bi-slash-circle"></i> Ban
+                    </a>
+                    <a href="{{ url_for('mark_read', feedback_id=msg.id) }}" 
+                       class="btn btn-sm {{ 'btn-secondary' if msg.is_read else 'btn-success' }}">
+                        <i class="bi bi-check-lg"></i>
+                    </a>
+                </div>
+            </div>
+            <p class="mt-2 mb-0 {{ 'text-muted' if msg.is_read else '' }}">{{ msg.message }}</p>
+        </div>
+        {% else %}
+        <div class="p-4 text-center text-muted">No transmissions received.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

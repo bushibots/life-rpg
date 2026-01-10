@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-info" style="font-family: 'Orbitron', sans-serif;">
+            <i class="bi bi-archive me-2"></i>MISSION ARCHIVES
+        </h2>
+        <p class="text-muted">A permanent record of completed objectives.</p>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0" style="background: transparent;">
+                <thead>
+                    <tr class="text-muted small text-uppercase">
+                        <th class="ps-4">Date</th>
+                        <th>Quest</th>
+                        <th>Attribute</th>
+                        <th>Difficulty</th>
+                        <th class="text-end pe-4">XP Gained</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quest in history %}
+                    <tr>
+                        <td class="ps-4 align-middle text-secondary" style="font-family: monospace;">
+                            {{ quest.date_completed.strftime('%Y-%m-%d') }}
+                        </td>
+                        <td class="align-middle fw-bold text-white">
+                            {{ quest.name }}
+                        </td>
+                        <td class="align-middle">
+                            <span class="badge bg-dark border border-secondary text-light">
+                                {{ quest.stat_type }}
+                            </span>
+                        </td>
+                        <td class="align-middle">
+                            <span class="badge 
+                                {% if quest.difficulty == 'Easy' %}bg-success bg-opacity-25 text-success
+                                {% elif quest.difficulty == 'Medium' %}bg-warning bg-opacity-25 text-warning
+                                {% elif quest.difficulty == 'Hard' %}bg-danger bg-opacity-25 text-danger
+                                {% else %}bg-info bg-opacity-25 text-info{% endif %}">
+                                {{ quest.difficulty }}
+                            </span>
+                        </td>
+                        <td class="align-middle text-end pe-4 text-info">
+                            +{{ quest.xp_gained }} XP
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            No records found. Complete a mission to initialize the archives.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

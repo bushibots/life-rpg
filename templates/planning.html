@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-info" style="font-family: 'Orbitron', sans-serif;">
+            <i class="bi bi-list-task me-2"></i>MISSION OVERVIEW
+        </h2>
+        <p class="text-muted">A tactical overview of all active protocols.</p>
+    </div>
+</div>
+
+<div class="row">
+    {% for goal in goals %}
+    <div class="col-md-6 mb-4">
+        <div class="card bg-dark border-secondary h-100 shadow">
+            <div class="card-header border-secondary bg-transparent">
+                <h5 class="text-white mb-0">{{ goal.name }}</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for habit in goal.habits %}
+                <div class="list-group-item bg-transparent border-secondary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="{{ 'text-muted text-decoration-line-through' if habit.completed else '' }}">{{ habit.name }}</span>
+                        <div class="small">
+                            <span class="badge bg-secondary border border-secondary">{{ habit.stat_type }}</span>
+                            {% if habit.is_daily %}
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info">Daily</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="badge {{ 'bg-success' if habit.difficulty == 'Easy' else 'bg-warning' if habit.difficulty == 'Medium' else 'bg-danger' }}">
+                        {{ habit.difficulty }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% if not goal.habits %}
+                <div class="p-3 text-muted small text-center">No active quests in this sector.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <h4 class="text-muted">No missions initialized.</h4>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-info">Return to Dashboard</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

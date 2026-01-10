@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <h2 class="text-info" style="font-family: 'Orbitron', sans-serif; letter-spacing: 2px;">
+            <i class="bi bi-crosshair me-2"></i>TACTICAL ANALYTICS
+        </h2>
+        <p class="text-muted small">Real-time performance metrics and attribute distribution.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    
+    <div class="col-md-5 col-12">
+        <div class="card h-100 bg-dark shadow-lg" style="border: 1px solid var(--neon-purple); background: rgba(10, 10, 15, 0.9);">
+            <div class="card-header border-0 bg-transparent text-center">
+                <h5 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">ATTRIBUTE BALANCE</h5>
+            </div>
+            <div class="card-body position-relative">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7 col-12">
+        <div class="card h-100 bg-dark shadow-lg" style="border: 1px solid var(--neon-blue); background: rgba(10, 10, 15, 0.9);">
+            <div class="card-header border-0 bg-transparent">
+                <h5 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">XP VELOCITY (7 DAYS)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    
+    <div class="col-md-4 col-12">
+        <div class="card h-100 bg-dark shadow-lg" style="border: 1px solid var(--neon-green); background: rgba(10, 10, 15, 0.9);">
+            <div class="card-header border-0 bg-transparent text-center">
+                <h5 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">QUEST DIFFICULTY</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="polarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8 col-12">
+        <div class="card h-100 bg-dark shadow-lg" style="border: 1px solid var(--neon-gold); background: rgba(10, 10, 15, 0.9);">
+            <div class="card-header border-0 bg-transparent">
+                <h5 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">SYSTEM LOGS</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+                        <thead>
+                            <tr class="text-muted small text-uppercase">
+                                <th>Metric</th>
+                                <th class="text-end">Value</th>
+                                <th class="text-end">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-info">Total Quests Completed</td>
+                                <td class="text-end fw-bold">{{ user.total_xp // 10 }} (Est)</td> <td class="text-end"><span class="badge bg-info bg-opacity-10 text-info">ACTIVE</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-warning">Current Level</td>
+                                <td class="text-end fw-bold">{{ (user.total_xp // 100) + 1 }}</td>
+                                <td class="text-end"><span class="badge bg-warning bg-opacity-10 text-warning">RISING</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-success">System Health</td>
+                                <td class="text-end fw-bold">100%</td>
+                                <td class="text-end"><span class="badge bg-success bg-opacity-10 text-success">OPTIMAL</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-danger">Highest Stat</td>
+                                <td class="text-end fw-bold">INT (Example)</td> <td class="text-end"><span class="badge bg-danger bg-opacity-10 text-danger">DOMINANT</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // SHARED SETTINGS FOR DARK MODE
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+
+    // 1. RADAR CHART (The RPG Stat Wheel)
+    new Chart(document.getElementById('radarChart'), {
+        type: 'radar',
+        data: {
+            labels: {{ radar_labels | tojson }},
+            datasets: [{
+                label: 'Attribute Level',
+                data: {{ radar_data | tojson }},
+                backgroundColor: 'rgba(188, 19, 254, 0.2)', // Neon Purple
+                borderColor: '#bc13fe',
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#bc13fe'
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    pointLabels: { color: '#fff', font: {size: 14, family: 'Orbitron'} },
+                    ticks: { backdropColor: 'transparent', display: false } // Hide numbers for cleaner look
+                }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // 2. LINE CHART (Velocity)
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels: {{ trend_dates | tojson }},
+            datasets: [{
+                label: 'XP Gained',
+                data: {{ trend_data | tojson }},
+                borderColor: '#00f2ff', // Neon Blue
+                backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                tension: 0.4, // Smooth curves
+                fill: true
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // 3. POLAR AREA CHART (Difficulty)
+    new Chart(document.getElementById('polarChart'), {
+        type: 'polarArea',
+        data: {
+            labels: ['Easy', 'Medium', 'Hard', 'Epic'],
+            datasets: [{
+                data: {{ diff_data | tojson }},
+                backgroundColor: [
+                    'rgba(10, 255, 104, 0.5)', // Green
+                    'rgba(0, 242, 255, 0.5)', // Blue
+                    'rgba(255, 215, 0, 0.5)',  // Gold
+                    'rgba(255, 0, 60, 0.5)'    // Red
+                ],
+                borderWidth: 1,
+                borderColor: '#000'
+            }]
+        },
+        options: {
+            scales: { r: { ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
+            plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+        }
+    });
+</script>
+{% endblock %}

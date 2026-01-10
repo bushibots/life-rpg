@@ -1,0 +1,184 @@
+/* IMPORTS */
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;500;700&family=Inter:wght@300;400;600&display=swap');
+
+:root {
+    --bg-deep: #05070a;
+    --bg-nebula: #0f172a;
+    --glass-bg: rgba(20, 30, 50, 0.6);
+    --glass-border: rgba(100, 200, 255, 0.1);
+    --neon-blue: #00f2ff;
+    --neon-purple: #bc13fe;
+    --neon-green: #0aff68;
+    --neon-gold: #ffd700;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+}
+
+body {
+    background-color: var(--bg-deep);
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(188, 19, 254, 0.1), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(0, 242, 255, 0.08), transparent 25%);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand, .quest-font {
+    font-family: 'Exo 2', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* GLASSMORPHISM CARDS */
+.card, .modal-content {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    color: white;
+}
+
+.list-group-item {
+    background: transparent !important;
+    border-color: var(--glass-border);
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* NEON BUTTONS */
+.btn-primary {
+    background: transparent;
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    box-shadow: 0 0 5px rgba(0, 242, 255, 0.2);
+    transition: 0.3s;
+}
+
+.btn-primary:hover {
+    background: var(--neon-blue);
+    color: #000;
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
+    border-color: var(--neon-blue);
+}
+
+.btn-success {
+    background: transparent;
+    border: 1px solid var(--neon-green);
+    color: var(--neon-green);
+}
+
+.btn-success:hover {
+    background: var(--neon-green);
+    color: #000;
+    box-shadow: 0 0 15px rgba(10, 255, 104, 0.5);
+}
+
+/* CUSTOM PROGRESS BARS */
+.progress {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* NAVBAR */
+.navbar {
+    background: rgba(5, 7, 10, 0.8) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    background: -webkit-linear-gradient(0deg, var(--neon-blue), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* FORM ELEMENTS */
+.form-control, .form-select {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    color: white !important;
+}
+
+.form-control:focus {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 5px rgba(0, 242, 255, 0.3);
+}
+
+/* UTILITIES */
+.text-muted { color: var(--text-muted) !important; }
+.badge { text-shadow: none; font-weight: 600; }
+a { text-decoration: none; }
+
+/* --- MOBILE OPTIMIZATION --- */
+
+/* Fix background on mobile to prevent jitter */
+body {
+    background-attachment: fixed;
+}
+
+/* Scrollable Heatmap for small screens */
+#cal-heatmap {
+    display: flex;
+    flex-wrap: wrap; /* Default for desktop */
+}
+
+@media (max-width: 768px) {
+    /* 1. Shrink Giant Text */
+    h1.display-4, .display-4 {
+        font-size: 2.5rem !important;
+    }
+    
+    h1.display-3, .display-3 {
+        font-size: 2rem !important;
+    }
+
+    /* 2. Compact Cards */
+    .card-body {
+        padding: 1.25rem !important; /* Reduce padding from 3rem */
+    }
+
+    /* 3. Stack Navbar Items */
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    /* 4. Heatmap: Horizontal Scroll on Mobile */
+    /* Instead of wrapping 365 squares, we scroll them */
+    #cal-heatmap {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        justify-content: flex-start;
+    }
+    
+    /* 5. List Items */
+    .list-group-item {
+        flex-direction: column; /* Stack text and buttons */
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+    
+    .list-group-item .btn {
+        width: 100%; /* Full width buttons on mobile */
+        margin-top: 5px;
+    }
+    
+    /* 6. Form Inputs */
+    .form-control, .form-select {
+        font-size: 16px; /* Prevents iOS zooming on input focus */
+    }
+}

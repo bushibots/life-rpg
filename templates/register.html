@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="col-md-6 offset-md-3">
+    <div class="card">
+        <div class="card-body">
+            <h3>Register</h3>
+            <form method="POST">
+                <input type="text" name="username" class="form-control mb-2" placeholder="Username" required>
+                <input type="password" name="password" class="form-control mb-2" placeholder="Password" required>
+                <button class="btn btn-primary w-100">Create Account</button>
+            </form>
+            <a href="{{ url_for('login') }}" class="d-block mt-2 text-center">Already Have Account?</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
