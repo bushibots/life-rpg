@@ -185,15 +185,20 @@ def toggle_habit(habit_id):
     habit = Habit.query.get(habit_id)
     if habit and habit.goal.user_id == current_user.id:
         habit.completed = not habit.completed
+        
+        from datetime import date
+        
         if habit.completed:
+            # --- TASK COMPLETED ---
             current_user.total_xp += habit.xp_value
+            # Add Attribute Score
             if habit.stat_type == 'STR': current_user.str_score += habit.xp_value
             elif habit.stat_type == 'INT': current_user.int_score += habit.xp_value
             elif habit.stat_type == 'WIS': current_user.wis_score += habit.xp_value
             elif habit.stat_type == 'CON': current_user.con_score += habit.xp_value
             elif habit.stat_type == 'CHA': current_user.cha_score += habit.xp_value
             
-            from datetime import date
+            # Create Log
             history_entry = QuestHistory(
                 user_id=current_user.id,
                 name=habit.name,
@@ -204,14 +209,27 @@ def toggle_habit(habit_id):
             )
             db.session.add(history_entry)
             flash(f"Task Complete. +{habit.xp_value} XP", "success")
+            
         else:
+            # --- TASK UN-COMPLETED ---
             current_user.total_xp -= habit.xp_value
+            # Remove Attribute Score
             if habit.stat_type == 'STR': current_user.str_score -= habit.xp_value
             elif habit.stat_type == 'INT': current_user.int_score -= habit.xp_value
             elif habit.stat_type == 'WIS': current_user.wis_score -= habit.xp_value
             elif habit.stat_type == 'CON': current_user.con_score -= habit.xp_value
             elif habit.stat_type == 'CHA': current_user.cha_score -= habit.xp_value
             
+            # FIX: Find and delete the log entry for today
+            log_to_delete = QuestHistory.query.filter_by(
+                user_id=current_user.id, 
+                name=habit.name, 
+                date_completed=date.today()
+            ).order_by(QuestHistory.id.desc()).first()
+            
+            if log_to_delete:
+                db.session.delete(log_to_delete)
+
         db.session.commit()
     return redirect(url_for('dashboard'))
 
