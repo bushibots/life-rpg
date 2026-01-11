@@ -8,10 +8,10 @@ from extensions import db, login_manager
 from flask_migrate import Migrate
 from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory
 
-# --- PRESET QUEST LIBRARY ---
+# --- PRESET LIBRARY ---
 PRESETS = [
-    {"id": 1, "name": "50 Pushups", "category": "Fitness", "attribute": "STR", "difficulty": "Medium", "is_daily": True},
-    {"id": 2, "name": "Morning Run (3km)", "category": "Fitness", "attribute": "STR", "difficulty": "Hard", "is_daily": True},
+    {"id": 1, "name": "50 Pushups", "category": "Physical", "attribute": "STR", "difficulty": "Medium", "is_daily": True},
+    {"id": 2, "name": "Morning Run (3km)", "category": "Physical", "attribute": "STR", "difficulty": "Hard", "is_daily": True},
     {"id": 11, "name": "Read 10 Pages", "category": "Intellect", "attribute": "INT", "difficulty": "Easy", "is_daily": True},
     {"id": 12, "name": "Code for 1 Hour", "category": "Career", "attribute": "INT", "difficulty": "Hard", "is_daily": True},
     {"id": 21, "name": "Meditation (10m)", "category": "Mental Health", "attribute": "WIS", "difficulty": "Easy", "is_daily": True},
@@ -20,7 +20,7 @@ PRESETS = [
 ]
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'super_secret_rpg_key'
+app.config['SECRET_KEY'] = 'xy7#m@9kd!ls002' # Updated secure key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rpg.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -33,7 +33,7 @@ login_manager.login_view = 'login'
 def check_ban():
     if current_user.is_authenticated and hasattr(current_user, 'is_banned') and current_user.is_banned:
         logout_user()
-        flash("Access Denied: Your account has been suspended by Command.", "danger")
+        flash("Access Denied: Account suspended.", "danger")
         return redirect(url_for('login'))
 
 @login_manager.user_loader
@@ -62,7 +62,7 @@ def dashboard():
         current_user.last_check_date = date.today()
         db.session.commit()
         if reset_count > 0:
-            flash(f"System Reset: {reset_count} daily quests refreshed.", "info")
+            flash(f"System refreshed. {reset_count} recurring tasks reset.", "info")
 
     goals = Goal.query.filter_by(user_id=current_user.id).all()
     return render_template('dashboard.html', user=current_user, goals=goals)
@@ -160,8 +160,6 @@ def add_habit():
     difficulty = request.form.get('difficulty')
     duration = request.form.get('duration')
     
-    # Removed broken date/time/streak logic to fix crashes
-    
     xp_map = {'Easy': 10, 'Medium': 30, 'Hard': 50, 'Epic': 100}
     xp = xp_map.get(difficulty, 10)
     
@@ -205,7 +203,7 @@ def toggle_habit(habit_id):
                 date_completed=date.today()
             )
             db.session.add(history_entry)
-            flash(f"Quest Complete! +{habit.xp_value} XP", "success")
+            flash(f"Task Complete. +{habit.xp_value} XP", "success")
         else:
             current_user.total_xp -= habit.xp_value
             if habit.stat_type == 'STR': current_user.str_score -= habit.xp_value
@@ -343,20 +341,20 @@ def get_reminders():
 def export_data():
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Date', 'Quest', 'Category', 'Stat', 'XP', 'Difficulty'])
+    writer.writerow(['Date', 'Task', 'Category', 'Attribute', 'XP', 'Difficulty'])
     
     history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.desc()).all()
     for h in history:
         writer.writerow([h.date_completed, h.name, 'N/A', h.stat_type, h.xp_gained, h.difficulty])
         
-    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=life_rpg_export.csv"})
+    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=cosmo_tracker_export.csv"})
 
 # --- ADMIN PANEL ROUTES ---
 @app.route('/admin')
 @login_required
 def admin_panel():
     if not current_user.is_admin:
-        flash("Access Denied: Clearance Level Too Low.", "danger")
+        flash("Access Denied: Admin privileges required.", "danger")
         return redirect(url_for('dashboard'))
         
     total_users = User.query.count()
@@ -375,7 +373,7 @@ def submit_feedback():
     if msg:
         db.session.add(Feedback(user_id=current_user.id, message=msg))
         db.session.commit()
-        flash("Transmission sent to Command.", "success")
+        flash("System Log updated.", "success")
     return redirect(url_for('dashboard'))
 
 @app.route('/delete_account')
