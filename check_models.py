@@ -6,8 +6,9 @@ os.environ["http_proxy"] = "http://proxy.server:3128"
 os.environ["https_proxy"] = "http://proxy.server:3128"
 
 # 2. Configure API (I am using the key you pasted earlier)
-api_key = "AIzaSyBCCKwpuLG9vRWow3kZoh2oNhgnqRajRhc"
-genai.configure(api_key=api_key)
+from dotenv import load_dotenv
+load_dotenv()
+api_key = os.getenv('GEMINI_API_KEY')
 
 print("--- CONTACTING GOOGLE ---")
 try:
