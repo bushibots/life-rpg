@@ -45,7 +45,7 @@ PRESETS = [
 ]
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-if-missing')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rpg.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
