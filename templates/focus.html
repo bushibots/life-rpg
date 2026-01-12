@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="text-white border-bottom border-secondary pb-2">
+                <i class="fas fa-laptop-code text-info me-2"></i> DEEP WORK STATION
+            </h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card bg-dark border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <h5 class="text-muted text-uppercase mb-4" style="letter-spacing: 2px;">Active Session</h5>
+
+                    <h1 id="timer" class="display-1 fw-bold text-white" style="font-family: monospace;">25:00</h1>
+
+                    <div class="mt-4">
+                        <button onclick="startTimer()" class="btn btn-primary px-5 py-2 fw-bold">
+                            <i class="fas fa-play me-2"></i> INITIATE
+                        </button>
+                        <button onclick="resetTimer()" class="btn btn-outline-secondary px-4 py-2 ms-2">
+                            RESET
+                        </button>
+                    </div>
+                    <p class="mt-4 text-white-50 small">
+                        <i class="fas fa-info-circle"></i>
+                        Timer data is currently local. Completion adds to your daily log.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card bg-dark border-secondary mb-3">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Consistency Streak</h6>
+                    <div class="d-flex align-items-center mt-2">
+                        <h2 class="text-white mb-0 me-3">{{ user.current_streak }} Days</h2>
+                        <span class="badge bg-success">ACTIVE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Daily Target (4 Hrs)</h6>
+
+                    <div class="progress mt-3" style="height: 20px; background-color: #2c3035;">
+                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated"
+                             role="progressbar"
+                             style="width: {{ progress }}%;">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2 text-white-50 small">
+                        <span>{{ user.total_focus_time }} mins</span>
+                        <span>{{ target }} mins</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let time = 25 * 60;
+    let interval;
+    const timerEl = document.getElementById('timer');
+
+    function updateDisplay() {
+        const m = Math.floor(time / 60);
+        const s = time % 60;
+        timerEl.innerHTML = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function startTimer() {
+        if (interval) return;
+
+        // Disable button while running
+        document.querySelector('button[onclick="startTimer()"]').disabled = true;
+
+        interval = setInterval(() => {
+            time--;
+            updateDisplay();
+
+            if (time <= 0) {
+                clearInterval(interval);
+                saveSession(); // <--- THIS IS NEW
+            }
+        }, 1000);
+        // Note: Change 1000 to 10 for testing (fast forward)
+    }
+
+    function saveSession() {
+        fetch("{{ url_for('save_focus_session') }}", {
+            method: "POST",
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ minutes: 25 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`SESSION COMPLETE! \n+${25*2} XP \n+${Math.floor(25/10)} Gold`);
+                location.reload(); // Refresh to show new stats
+            }
+        });
+    }
+
+    function resetTimer() {
+        clearInterval(interval);
+        interval = null;
+        time = 25 * 60;
+        updateDisplay();
+        document.querySelector('button[onclick="startTimer()"]').disabled = false;
+    }
+</script>
+{% endblock %}

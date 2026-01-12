@@ -4,23 +4,23 @@
 
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden" 
+        <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden"
              style="background: linear-gradient(135deg, #0b0f14 0%, #151921 100%); border: 1px solid rgba(0, 243, 255, 0.2) !important;">
-            
+
             <div class="card-body text-center p-4">
                 <p class="text-uppercase text-info mb-1" style="font-size: 0.7rem; letter-spacing: 3px; opacity: 0.7;">System Status</p>
                 <h1 class="display-4 fw-bold text-white mb-2" style="font-family: 'Orbitron', sans-serif;">
                     TIER {{ (user.total_xp // 500) + 1 }}
                 </h1>
-                
+
                 <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
                     <span class="badge bg-transparent border border-secondary text-light rounded-pill px-3">LEVEL {{ user.total_xp // 100 }}</span>
                     <span class="badge bg-transparent border border-info text-info rounded-pill px-3">XP: {{ user.total_xp }}</span>
                 </div>
 
                 <div class="progress bg-secondary bg-opacity-10" style="height: 4px;">
-                    <div class="progress-bar bg-info" role="progressbar" 
-                         style="width: {{ (user.total_xp % 100) }}%; box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);" 
+                    <div class="progress-bar bg-info" role="progressbar"
+                         style="width: {{ (user.total_xp % 100) }}%; box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);"
                          aria-valuenow="{{ (user.total_xp % 100) }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
             </div>
@@ -30,7 +30,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h4 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">ACTIVE PROTOCOLS</h4>
-    
+
     <div class="d-flex gap-2">
         <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#feedbackModal">
             <i class="bi bi-chat-left-text"></i> Log
@@ -38,6 +38,10 @@
 
         <a href="{{ url_for('mission_print') }}" target="_blank" class="btn btn-sm btn-outline-light">
             <i class="bi bi-file-earmark-text"></i> Report
+        </a>
+
+        <a href="{{ url_for('import_tasks') }}" class="btn btn-info btn-sm ms-2 text-white shadow-sm" style="padding-top: 5px; padding-bottom: 5px;">
+         🧠 Brain Dump
         </a>
 
         <button class="btn btn-sm btn-info text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#addGoalModal">
@@ -50,7 +54,7 @@
 <div class="card mb-3 bg-dark border-secondary shadow-sm" style="background: rgba(14, 18, 25, 0.95);">
     <div class="card-header border-bottom border-secondary py-2 d-flex justify-content-between align-items-center bg-transparent">
         <h5 class="mb-0 text-white fw-bold" style="font-family: 'Orbitron', sans-serif; font-size: 1rem;">{{ goal.name }}</h5>
-        <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" 
+        <a href="{{ url_for('delete_goal', goal_id=goal.id) }}"
            class="text-secondary small text-decoration-none hover-danger"
            onclick="return confirm('Terminate this directive?')">
            <i class="bi bi-x-lg"></i>
@@ -84,7 +88,7 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-link text-secondary p-0" 
+                <button class="btn btn-link text-secondary p-0"
                         onclick="populateEditModal('{{ habit.id }}', '{{ habit.name }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}')"
                         data-bs-toggle="modal" data-bs-target="#editHabitModal">
                     <i class="bi bi-gear"></i>
@@ -96,8 +100,8 @@
         </div>
         {% endfor %}
         <div class="card-footer bg-transparent border-0 pt-0 pb-2">
-            <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0" 
-                    data-bs-toggle="modal" data-bs-target="#addHabitModal" 
+            <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0"
+                    data-bs-toggle="modal" data-bs-target="#addHabitModal"
                     onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'">
                 <i class="bi bi-plus"></i> Add Task
             </button>

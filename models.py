@@ -7,11 +7,18 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
 
+    is_pro = db.Column(db.Boolean, default=False)
     # NEW: Admin Privilege Badge
     is_admin = db.Column(db.Boolean, default=False)
 
     is_banned = db.Column(db.Boolean, default=False)
+# ... inside class User ...
+    gold = db.Column(db.Integer, default=0)  # You likely already have this
 
+    # --- ADD THESE 3 NEW LINES ---
+    current_streak = db.Column(db.Integer, default=0)
+    last_active_date = db.Column(db.Date, nullable=True)
+    total_focus_time = db.Column(db.Integer, default=0)
     total_xp = db.Column(db.Integer, default=0)
     last_check_in = db.Column(db.Date, default=date.today)
     str_score = db.Column(db.Integer, default=0)
@@ -19,7 +26,7 @@ class User(UserMixin, db.Model):
     wis_score = db.Column(db.Integer, default=0)
     cha_score = db.Column(db.Integer, default=0)
     con_score = db.Column(db.Integer, default=0)
-    goals = db.relationship('Goal', backref='owner', lazy=True)
+    goals = db.relationship('Goal', backref='user', lazy=True)
     last_check_date = db.Column(db.Date, nullable=True)
 
     # ... (Keep your existing Property methods: level, xp_progress, title_info) ...

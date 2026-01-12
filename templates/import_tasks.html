@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3>🧠 Brain Dump Import</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Paste your messy to-do list, random thoughts, or syllabus topics here. 
+                        We will sort them into Quests for you!
+                    </p>
+
+                    <form method="POST">
+                        <div class="form-group mb-3">
+                            <textarea name="raw_text" class="form-control" rows="8" placeholder="Example: Study Torts for 2 hours, go to the gym, buy milk, and call Mansi..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            🚀 Import to Quest Log
+                        </button>
+                    </form>
+                </div>
+                
+                {% if not current_user.is_pro %}
+                <div class="card-footer bg-warning bg-opacity-25 text-center">
+                    <small>
+                        <strong>Free Tier:</strong> Using Keyword Matcher (Basic). <br>
+                        ✨ <a href="#">Upgrade to PRO</a> to use AI that understands context!
+                    </small>
+                </div>
+                {% else %}
+                <div class="card-footer bg-info bg-opacity-25 text-center">
+                    <small>⚡ PRO Active: AI Analysis Enabled</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -28,19 +28,21 @@
     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
+    <div class="collapse navbar-collapse text-center justify-content-center" id="navbarNav">
         <div class="navbar-nav ms-auto">
             <a class="nav-link py-2" href="{{ url_for('dashboard') }}">
                 <i class="bi bi-grid me-1"></i> Dashboard
             </a>
-            <a class="nav-link py-2" href="{{ url_for('planning') }}">
-                <i class="bi bi-kanban me-1"></i> Overview
-            </a>
             <a class="nav-link py-2" href="{{ url_for('history') }}">
                 <i class="bi bi-clock-history me-1"></i> Logs
             </a>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('focus_hub') }}">
+                  <i class="fas fa-stopwatch"></i> Focus Hub
+              </a>
+            </li>
             <a class="nav-link py-2" href="{{ url_for('analytics') }}">
-                <i class="bi bi-graph-up me-1"></i> Analytics
+                 <i class="bi bi-graph-up me-1"></i> Analytics
             </a>
             <a class="nav-link py-2" href="{{ url_for('stats') }}">
                 <i class="bi bi-person-circle me-1"></i> Profile

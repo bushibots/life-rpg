@@ -1,15 +1,38 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="col-md-6 offset-md-3">
-    <div class="card">
-        <div class="card-body">
-            <h3>Register</h3>
-            <form method="POST">
-                <input type="text" name="username" class="form-control mb-2" placeholder="Username" required>
-                <input type="password" name="password" class="form-control mb-2" placeholder="Password" required>
-                <button class="btn btn-primary w-100">Create Account</button>
-            </form>
-            <a href="{{ url_for('login') }}" class="d-block mt-2 text-center">Already Have Account?</a>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card bg-dark text-white border-info shadow-lg">
+                <div class="card-header text-center border-info">
+                    <h3>🚀 Agent Registration</h3>
+                </div>
+                <div class="card-body">
+                    
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }} 
+
+                        <div class="mb-3">
+                            <label class="form-label text-info">Username</label>
+                            <input type="text" name="username" class="form-control bg-secondary text-white border-0" placeholder="Agent Name">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-info">Password</label>
+                            <input type="password" name="password" class="form-control bg-secondary text-white border-0" placeholder="Secret Code">
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-info fw-bold">Create Account</button>
+                        </div>
+                    </form>
+
+                </div>
+                <div class="card-footer text-center border-info text-muted small">
+                    Already have an account? <a href="{{ url_for('login') }}" class="text-info">Login here</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
