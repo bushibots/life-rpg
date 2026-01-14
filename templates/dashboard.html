@@ -2,6 +2,40 @@
 
 {% block content %}
 
+{% if user.notifications %}
+    {% for notif in user.notifications %}
+        {% if not notif.is_read %}
+
+            {% if notif.type == 'warning' %}
+                <div class="alert alert-danger border-danger shadow-lg mb-4 d-flex justify-content-between align-items-center" role="alert"
+                     style="border-left: 5px solid red; background: linear-gradient(90deg, #2c0b0e 0%, #1a1a1a 100%);">
+                    <div>
+                        <h5 class="alert-heading fw-bold text-danger mb-1" style="font-family: 'Orbitron', sans-serif;">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>SECURITY ALERT
+                        </h5>
+            {% else %}
+                <div class="alert alert-info border-info shadow-lg mb-4 d-flex justify-content-between align-items-center" role="alert"
+                     style="border-left: 5px solid cyan; background: linear-gradient(90deg, #051b2c 0%, #080a10 100%);">
+                    <div>
+                        <h5 class="alert-heading fw-bold text-info mb-1" style="font-family: 'Orbitron', sans-serif;">
+                            <i class="bi bi-broadcast me-2"></i>INCOMING TRANSMISSION
+                        </h5>
+            {% endif %}
+
+                    <p class="mb-0 text-white font-monospace">{{ notif.message }}</p>
+                    <small class="text-muted text-uppercase">{{ notif.timestamp.strftime('%H:%M') }} | PRIORITY: {{ 'HIGH' if notif.type == 'warning' else 'STANDARD' }}</small>
+                </div>
+
+                <a href="{{ url_for('dismiss_notification', notif_id=notif.id) }}"
+                   class="btn btn-sm fw-bold {{ 'btn-outline-danger' if notif.type == 'warning' else 'btn-outline-info' }}">
+                    ACKNOWLEDGE
+                </a>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+<div class="row mb-4">
+
 <div class="row mb-4">
     <div class="col-12">
         <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden"
@@ -28,6 +62,17 @@
     </div>
 </div>
 
+{% if overdue_count > 0 %}
+<div class="alert alert-warning border-warning d-flex align-items-center mb-4 shadow-sm" style="background: rgba(60, 40, 0, 0.4);">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
+    <div>
+        <strong class="text-warning font-monospace">ATTENTION NEEDED:</strong>
+        <span class="text-white">You have {{ overdue_count }} overdue missions.</span>
+        <a href="{{ url_for('audit') }}" class="alert-link text-info ms-2 fw-bold">Initiate Audit Protocol</a>
+    </div>
+</div>
+{% endif %}
+
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h4 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">ACTIVE PROTOCOLS</h4>
 
@@ -40,8 +85,8 @@
             <i class="bi bi-file-earmark-text"></i> Report
         </a>
 
-        <a href="{{ url_for('import_tasks') }}" class="btn btn-info btn-sm ms-2 text-white shadow-sm" style="padding-top: 5px; padding-bottom: 5px;">
-         🧠 Brain Dump
+        <a href="{{ url_for('import_tasks') }}" class="btn btn-info btn-sm ms-2 text-white shadow-sm d-flex align-items-center">
+             <i class="bi bi-cpu me-2"></i> Brain Dump
         </a>
 
         <button class="btn btn-sm btn-info text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#addGoalModal">
@@ -79,6 +124,7 @@
                         <i class="bi bi-square text-secondary fs-4"></i>
                     {% endif %}
                 </a>
+
                 <div class="w-100">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 text-white {{ 'text-decoration-line-through text-muted' if habit.completed }}">
@@ -93,8 +139,8 @@
 
                     {% if habit.description %}
                     <div class="collapse mt-2" id="desc-{{ habit.id }}">
-                        <div class="card card-body bg-dark border-secondary p-2 small text-info bg-opacity-10">
-                            <i class="bi bi-info-circle me-1"></i> {{ habit.description }}
+                        <div class="card card-body bg-dark border-secondary p-2 small text-info bg-opacity-10 font-monospace">
+                             <i class="bi bi-info-circle me-1"></i> {{ habit.description }}
                         </div>
                     </div>
                     {% endif %}
@@ -116,6 +162,7 @@
                     </small>
                 </div>
             </div>
+
             <div class="d-flex gap-2 ms-2 align-self-start">
                 <button class="btn btn-link text-secondary p-0"
                         onclick="populateEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')"

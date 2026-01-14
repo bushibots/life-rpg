@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary shadow-lg text-center p-5">
+                <div class="mb-4">
+                    <div class="rounded-circle bg-dark d-inline-flex align-items-center justify-content-center shadow" 
+                         style="width: 150px; height: 150px; border: 3px solid #0dcaf0; box-shadow: 0 0 20px rgba(13, 202, 240, 0.3);">
+                        <i class="bi bi-person-fill text-white" style="font-size: 80px;"></i>
+                    </div>
+                </div>
+
+                <h2 class="text-white mb-1" style="font-family: 'Orbitron', sans-serif;">{{ user.username }}</h2>
+                <span class="badge bg-secondary border border-secondary mb-4">LEVEL {{ user.total_xp // 100 }}</span>
+                
+                <hr class="border-secondary mb-4 opacity-25">
+
+                <div class="row text-center mb-4">
+                    <div class="col-6 border-end border-secondary">
+                        <h5 class="text-info fw-bold mb-0">{{ user.total_xp }}</h5>
+                        <small class="text-muted text-uppercase">Total XP</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-warning fw-bold mb-0">Tier {{ (user.total_xp // 500) + 1 }}</h5>
+                        <small class="text-muted text-uppercase">Clearance</small>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{{ url_for('settings') }}" class="btn btn-outline-info btn-sm px-4">
+                        <i class="bi bi-gear me-1"></i> Edit Details
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm px-4">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

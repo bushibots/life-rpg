@@ -2,164 +2,200 @@
 
 {% block content %}
 <div class="row g-4 mb-4">
-    <div class="col-12">
-        <h2 class="text-info" style="font-family: 'Orbitron', sans-serif; letter-spacing: 2px;">
-            <i class="bi bi-crosshair me-2"></i>TACTICAL ANALYTICS
-        </h2>
-        <p class="text-muted small">Real-time performance metrics and attribute distribution.</p>
+    <div class="col-md-4">
+        <div class="card bg-dark border-secondary h-100 p-4 text-center position-relative overflow-hidden d-flex flex-column justify-content-center">
+            <h5 class="text-muted text-uppercase small mb-3">System Consistency</h5>
+            <h1 class="display-1 fw-bold text-white mb-0" style="font-family: 'Orbitron', sans-serif;">{{ health_score }}%</h1>
+            <div class="progress bg-secondary bg-opacity-10 mt-3" style="height: 6px;">
+                <div class="progress-bar bg-{{ 'success' if health_score > 70 else 'warning' if health_score > 30 else 'danger' }}" 
+                     style="width: {{ health_score }}%"></div>
+            </div>
+            <p class="small text-muted mt-2">7-Day Activity Rate</p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-dark border-secondary h-100 p-3">
+            <h6 class="text-uppercase text-muted small mb-3 text-center">Attribute Balance</h6>
+            <div style="height: 300px; width: 100%; position: relative;">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-dark border-secondary h-100 p-3">
+            <h6 class="text-uppercase text-muted small mb-3 text-center">Mission Complexity</h6>
+            <div style="height: 300px; width: 100%; position: relative;">
+                <canvas id="donutChart"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="row g-4">
-    
-    <div class="col-md-5 col-12">
-        <div class="card h-100 bg-dark shadow-lg" style="border: 1px solid var(--neon-purple); background: rgba(10, 10, 15, 0.9);">
-            <div class="card-header border-0 bg-transparent text-center">
-                <h5 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">ATTRIBUTE BALANCE</h5>
-            </div>
-            <div class="card-body position-relative">
-                <div style="height: 300px; position: relative;">
-                    <canvas id="radarChart"></canvas>
-                </div>
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card bg-dark border-secondary h-100 p-4">
+            <h5 class="text-uppercase text-white mb-3">Daily Output (7 Days)</h5>
+            <div style="height: 250px; width: 100%; position: relative;">
+                <canvas id="barChart"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="col-md-7 col-12">
-        <div class="card h-100 bg-dark shadow-lg" style="border: 1px solid var(--neon-blue); background: rgba(10, 10, 15, 0.9);">
-            <div class="card-header border-0 bg-transparent text-center">
-                <h5 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">XP VELOCITY (7 DAYS)</h5>
+    <div class="col-md-6">
+        <div class="card bg-dark border-secondary h-100 p-4">
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <h5 class="text-uppercase text-white mb-0">Total XP Velocity</h5>
+                <span class="badge bg-secondary border border-secondary text-light">Lifetime Growth</span>
             </div>
-            <div class="card-body position-relative">
-                <div style="height: 300px; position: relative;">
-                    <canvas id="lineChart"></canvas>
-                </div>
+            <div style="height: 250px; width: 100%; position: relative;">
+                <canvas id="lineChart"></canvas>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="col-12">
-        <div class="card h-100 bg-dark shadow-lg" style="border: 1px solid var(--neon-green); background: rgba(10, 10, 15, 0.9);">
-            <div class="card-header border-0 bg-transparent text-center">
-                <h5 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif;">MISSION DIFFICULTY SPREAD</h5>
-            </div>
-            <div class="card-body position-relative">
-                <div style="height: 300px; position: relative;">
-                    <canvas id="polarChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="card bg-dark border-secondary p-4 mb-5">
+    <h5 class="text-uppercase text-white mb-4">Activity Heatmap</h5>
+    <div class="d-flex flex-wrap gap-1 justify-content-center" id="heatmapContainer"></div>
 </div>
 
 <script>
-    // --- MOBILE DETECTION ---
-    const isMobile = window.innerWidth < 768;
+    // --- 1. CONFIG ---
+    const isLight = document.body.classList.contains('light-mode');
+    const textColor = isLight ? '#212529' : '#94a3b8';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)';
     
-    // --- GLOBAL CHART DEFAULTS ---
-    Chart.defaults.color = '#94a3b8';
-    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
-    Chart.defaults.font.family = "'Segoe UI', sans-serif";
-    Chart.defaults.font.size = isMobile ? 11 : 12; // Smaller font on mobile
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
 
-    // 1. RADAR CHART
+    // --- 2. RADAR CHART (Fixed Scale) ---
     new Chart(document.getElementById('radarChart'), {
         type: 'radar',
         data: {
-            labels: {{ radar_labels | tojson }}, 
+            labels: {{ radar_labels | tojson }},
             datasets: [{
-                label: 'Attribute Balance',
+                label: 'Stats',
                 data: {{ radar_data | tojson }},
-                backgroundColor: 'rgba(188, 19, 254, 0.2)',
-                borderColor: '#bc13fe',
-                pointBackgroundColor: '#fff',
-                pointBorderColor: '#bc13fe',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: '#bc13fe'
+                backgroundColor: 'rgba(13, 202, 240, 0.2)',
+                borderColor: '#0dcaf0',
+                borderWidth: 2,
+                pointBackgroundColor: '#0dcaf0',
+                pointRadius: 4
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false, // Allows chart to fill the 300px container
+            layout: { padding: 10 }, // Give labels room to breathe
             scales: {
                 r: {
-                    angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    angleLines: { color: gridColor },
+                    grid: { color: gridColor },
                     pointLabels: { 
-                        color: '#fff',
-                        font: { size: isMobile ? 10 : 12 }
+                        color: textColor, 
+                        font: { size: 12, weight: 'bold' } // Make labels bigger
                     },
-                    ticks: { display: false, backdropColor: 'transparent' }
+                    ticks: { 
+                        display: false, // Hide the messy numbers inside
+                        backdropColor: 'transparent' 
+                    },
+                    suggestedMin: 0, // Ensure it starts from center
                 }
             },
             plugins: { legend: { display: false } }
         }
     });
 
-    // 2. LINE CHART (Velocity)
-    new Chart(document.getElementById('lineChart'), {
-        type: 'line',
-        data: {
-            labels: {{ trend_dates | tojson }},
-            datasets: [{
-                label: 'XP Gained',
-                data: {{ trend_data | tojson }},
-                borderColor: '#00f2ff', // Neon Blue
-                backgroundColor: 'rgba(0, 242, 255, 0.1)',
-                tension: 0.4, 
-                fill: true,
-                pointRadius: isMobile ? 3 : 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { 
-                    beginAtZero: true,
-                    ticks: { display: !isMobile } // Hide Y-axis numbers on mobile to save space
-                },
-                x: {
-                    ticks: { maxTicksLimit: isMobile ? 4 : 7 } // Fewer dates on mobile
-                }
-            }
-        }
-    });
-
-    // 3. POLAR AREA CHART
-    new Chart(document.getElementById('polarChart'), {
-        type: 'polarArea',
+    // --- 3. DONUT CHART ---
+    new Chart(document.getElementById('donutChart'), {
+        type: 'doughnut',
         data: {
             labels: ['Easy', 'Medium', 'Hard', 'Epic'],
             datasets: [{
                 data: {{ diff_data | tojson }},
-                backgroundColor: [
-                    'rgba(10, 255, 104, 0.6)', // Green
-                    'rgba(0, 242, 255, 0.6)', // Blue
-                    'rgba(255, 215, 0, 0.6)',  // Gold
-                    'rgba(255, 0, 60, 0.6)'    // Red
-                ],
-                borderWidth: 1,
-                borderColor: '#111'
+                backgroundColor: ['#20c997', '#0dcaf0', '#fd7e14', '#dc3545'],
+                borderWidth: 0
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            cutout: '70%', // Thinner ring looks more modern
+            plugins: { legend: { position: 'bottom', labels: { padding: 20, boxWidth: 10 } } }
+        }
+    });
+
+    // --- 4. BAR CHART ---
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ bar_labels | tojson }},
+            datasets: [{
+                label: 'XP Gained',
+                data: {{ bar_data | tojson }},
+                backgroundColor: '#0dcaf0',
+                borderRadius: 4,
+                barPercentage: 0.6
+            }]
+        },
+        options: {
             scales: {
-                r: {
-                    ticks: { display: false, backdropColor: 'transparent' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
-                }
+                y: { beginAtZero: true, grid: { color: gridColor } },
+                x: { grid: { display: false } }
             },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { color: '#fff', boxWidth: 10, padding: 20 }
-                }
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // --- 5. LINE CHART ---
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels: {{ line_labels | tojson }},
+            datasets: [{
+                label: 'Total XP',
+                data: {{ line_data | tojson }},
+                borderColor: '#0dcaf0',
+                backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: gridColor } }
             }
         }
     });
+
+    // --- 6. HEATMAP ---
+    const heatmapData = {{ heatmap_data | tojson }};
+    const container = document.getElementById('heatmapContainer');
+    const today = new Date();
+    
+    for (let i = 59; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const xp = heatmapData[dateStr] || 0;
+        
+        let colorClass = 'bg-secondary bg-opacity-10';
+        if (xp > 0) colorClass = 'bg-info bg-opacity-25';
+        if (xp > 50) colorClass = 'bg-info bg-opacity-50';
+        if (xp > 100) colorClass = 'bg-info';
+
+        const box = document.createElement('div');
+        box.className = `rounded-1 ${colorClass}`;
+        box.style.width = '12px';
+        box.style.height = '12px';
+        box.title = `${dateStr}: ${xp} XP`;
+        box.setAttribute('data-bs-toggle', 'tooltip');
+        container.appendChild(box);
+    }
 </script>
 {% endblock %}

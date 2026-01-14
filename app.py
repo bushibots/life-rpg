@@ -1,10 +1,13 @@
 import csv
 import io
+import time
 import os
 import json
+from datetime import datetime, date, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
-from werkzeug.security import generate_password_hash, check_password_hash
+# REMOVED: werkzeug.security imports (We are standardizing on Bcrypt)
 from flask_login import login_user, logout_user, login_required, current_user
+from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory, Notification
 from datetime import date, timedelta, datetime
 from extensions import db, login_manager
 from flask_migrate import Migrate
@@ -17,6 +20,8 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationE
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
 import google.generativeai as genai
+from flask import session
+
 load_dotenv()
 
 # --- FORM CLASSES ---
@@ -44,7 +49,10 @@ PRESETS = [
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rpg.db'
+
+# --- FIXED: ABSOLUTE DATABASE PATH (Crucial for PythonAnywhere) ---
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'rpg.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 bcrypt = Bcrypt(app)
@@ -98,37 +106,73 @@ def dashboard():
 
     return render_template('dashboard.html', user=current_user, goals=goals, overdue_count=overdue_count)
 
+
 @app.route('/analytics')
 @login_required
 def analytics():
+    # 1. Fetch History
+    history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.asc()).all()
+    today = date.today()
+
+    # 2. RADAR DATA (Attribute Split)
     stats = {'STR': 0, 'INT': 0, 'WIS': 0, 'CON': 0, 'CHA': 0}
-    history = QuestHistory.query.filter_by(user_id=current_user.id).all()
     for h in history:
         if h.stat_type in stats:
             stats[h.stat_type] += h.xp_gained
+    radar_data = list(stats.values())
+    radar_labels = list(stats.keys())
 
-    from datetime import date, timedelta
-    today = date.today()
-    last_7_days = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6, -1, -1)]
-    xp_trend = [0] * 7
+    # 3. ACTIVITY HEATMAP & HEALTH SCORE
+    xp_map = {}
     for h in history:
-        h_date = h.date_completed.strftime('%Y-%m-%d')
-        if h_date in last_7_days:
-            index = last_7_days.index(h_date)
-            xp_trend[index] += h.xp_gained
+        d_str = h.date_completed.strftime('%Y-%m-%d')
+        xp_map[d_str] = xp_map.get(d_str, 0) + h.xp_gained
 
+    # Health Score
+    last_7_days_dates = [today - timedelta(days=i) for i in range(7)]
+    active_days = sum(1 for day in last_7_days_dates if day.strftime('%Y-%m-%d') in xp_map)
+    health_score = int((active_days / 7) * 100)
+    if health_score == 0 and current_user.total_xp > 0: health_score = 10
+
+    # 4. CUMULATIVE GROWTH (Line Chart)
+    line_labels = []
+    line_data = []
+    cumulative_xp = 0
+    sorted_dates = sorted(xp_map.keys())
+    for d in sorted_dates:
+        cumulative_xp += xp_map[d]
+        line_labels.append(d)
+        line_data.append(cumulative_xp)
+    if not line_data:
+        line_labels = [today.strftime('%Y-%m-%d')]
+        line_data = [0]
+
+    # 5. DIFFICULTY SPREAD (Donut Chart)
     difficulty_counts = {'Easy': 0, 'Medium': 0, 'Hard': 0, 'Epic': 0}
     for h in history:
         if h.difficulty in difficulty_counts:
             difficulty_counts[h.difficulty] += 1
 
+    # 6. DAILY OUTPUT (Bar Chart)
+    bar_labels = []
+    bar_data = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        d_str = d.strftime('%Y-%m-%d')
+        bar_labels.append(d.strftime('%a'))
+        bar_data.append(xp_map.get(d_str, 0))
+
     return render_template('analytics.html',
                          user=current_user,
-                         radar_data=list(stats.values()),
-                         radar_labels=list(stats.keys()),
-                         trend_dates=last_7_days,
-                         trend_data=xp_trend,
-                         diff_data=list(difficulty_counts.values()))
+                         radar_data=radar_data,
+                         radar_labels=radar_labels,
+                         heatmap_data=xp_map,
+                         health_score=health_score,
+                         line_labels=line_labels,
+                         line_data=line_data,
+                         diff_data=list(difficulty_counts.values()),
+                         bar_labels=bar_labels,
+                         bar_data=bar_data)
 
 @app.route('/history')
 @login_required
@@ -148,7 +192,6 @@ def planning():
     scheduled.sort(key=lambda x: x.target_date)
 
     date_strings = [h.target_date.strftime('%Y-%m-%d') for h in scheduled]
-    from collections import Counter
     counts = Counter(date_strings)
     sorted_dates = sorted(counts.keys())
     chart_data = [counts[d] for d in sorted_dates]
@@ -263,10 +306,36 @@ def delete_goal(goal_id):
 @login_required
 def delete_habit(habit_id):
     h = db.session.get(Habit, habit_id)
-    if h and h.goal.user_id == current_user.id:
-        db.session.delete(h)
-        db.session.commit()
+    if h:
+        # GRANT ACCESS IF: User owns it OR User is Admin
+        if h.goal.user_id == current_user.id or current_user.is_admin:
+            target_user_id = h.goal.user_id # Remember who we are deleting from
+            db.session.delete(h)
+            db.session.commit()
+
+            # IF ADMIN ACTION: Redirect back to inspection, not dashboard
+            if current_user.is_admin and target_user_id != current_user.id:
+                flash(f"Moderation: Mission '{h.name}' terminated.", "warning")
+                return redirect(url_for('admin_inspect', user_id=target_user_id))
+
     return redirect(url_for('dashboard'))
+
+@app.route('/admin/inspect/<int:user_id>')
+@login_required
+def admin_inspect(user_id):
+    # SECURITY CHECK: Only Admins can enter
+    if not current_user.is_admin:
+        flash("Unauthorized Access.", "danger")
+        return redirect(url_for('dashboard'))
+
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        return redirect(url_for('admin_panel'))
+
+    # Fetch ALL active missions for this user
+    habits = Habit.query.join(Goal).filter(Goal.user_id == user_id).all()
+
+    return render_template('admin_inspect.html', target=target_user, habits=habits)
 
 @app.route('/edit_habit', methods=['POST'])
 @login_required
@@ -302,7 +371,9 @@ def edit_habit():
 def register():
     form = RegisterForm()
     if request.method == 'POST':
+        # FIXED: Use Flask-WTF validation for cleaner handling
         if form.validate_on_submit():
+            # FIXED: Ensure hashing matches Login logic
             hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
             user = User(username=form.username.data, password=hashed_password)
             db.session.add(user)
@@ -323,10 +394,11 @@ def register():
 def login():
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form.get('username')).first()
-        if user and check_password_hash(user.password, request.form.get('password')):
+        # FIXED: Use bcrypt.check_password_hash instead of werkzeug
+        if user and bcrypt.check_password_hash(user.password, request.form.get('password')):
             login_user(user, remember=True if request.form.get('remember') else False)
             return redirect(url_for('dashboard'))
-        flash('Invalid credentials')
+        flash('Invalid credentials. Access Denied.')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -355,7 +427,9 @@ def restore_preset(preset_id):
 @login_required
 def update_profile():
     if request.form.get('username'): current_user.username = request.form.get('username')
-    if request.form.get('password'): current_user.password = generate_password_hash(request.form.get('password'), method='scrypt')
+    # FIXED: Standardize profile update hashing to use Bcrypt as well
+    if request.form.get('password'):
+        current_user.password = bcrypt.generate_password_hash(request.form.get('password')).decode('utf-8')
     db.session.commit()
     return redirect(url_for('settings'))
 
@@ -399,16 +473,41 @@ def export_data():
         writer.writerow([h.date_completed, h.name, 'N/A', h.stat_type, h.xp_gained, h.difficulty])
     return Response(output.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=cosmo_tracker_export.csv"})
 
+# --- ADMIN ROUTES ---
+
 @app.route('/admin')
 @login_required
 def admin_panel():
     if not current_user.is_admin:
         flash("Access Denied: Admin privileges required.", "danger")
         return redirect(url_for('dashboard'))
-    total_users = User.query.count()
+
+    # FETCH ALL USERS FOR THE ROSTER
+    users_list = User.query.all()
     total_quests = Habit.query.count()
     active_feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
-    return render_template('admin.html', users=total_users, quests=total_quests, feedbacks=active_feedbacks)
+
+    return render_template('admin.html',
+                         users_list=users_list,
+                         users=len(users_list),
+                         quests=total_quests,
+                         feedbacks=active_feedbacks)
+
+@app.route('/admin/toggle_pro/<int:user_id>')
+@login_required
+def toggle_pro(user_id):
+    # Only Admin can flip this switch
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+
+    u = db.session.get(User, user_id)
+    if u:
+        u.is_pro = not u.is_pro
+        db.session.commit()
+        status = "ENABLED" if u.is_pro else "DISABLED"
+        flash(f"AI Clearance {status} for Agent {u.username}.", "info")
+
+    return redirect(url_for('admin_panel'))
 
 @app.route('/submit_feedback', methods=['POST'])
 @login_required
@@ -473,30 +572,44 @@ def delete_feedback():
 @login_required
 def import_tasks():
     if request.method == 'POST':
+        # --- 1. COOLDOWN CHECK ---
+        current_time = time.time()
+        last_request_time = session.get('last_ai_usage', 0)
+        cooldown_duration = 30 # Lock for 30 seconds (Increase to 60 if you want)
+
+        if (current_time - last_request_time) < cooldown_duration:
+            wait_seconds = int(cooldown_duration - (current_time - last_request_time))
+            flash(f"⚠️ AI Core Recharging. Stand by for {wait_seconds} seconds.", "warning")
+            return redirect(url_for('import_tasks'))
+
+        # --- 2. STANDARD PROCESSING ---
         raw_text = request.form.get('raw_text')
         if not raw_text:
             flash("Please paste some text first!", "error")
             return redirect(url_for('import_tasks'))
 
         new_tasks_data = []
+        # Mark the timestamp NOW so the lock engages
+        session['last_ai_usage'] = current_time
+
         if current_user.is_pro:
            api_key = os.getenv('GEMINI_API_KEY')
-           genai.configure(api_key=api_key)
+           # Note: Make sure smart_ai_parse is imported from utils
            new_tasks_data = smart_ai_parse(raw_text, api_key)
         else:
+            # Fallback for non-pro users
             lines = raw_text.split('\n')
             for line in lines:
                 if line.strip():
                     new_tasks_data.append(guess_category(line))
 
+        # --- 3. SAVE TO DB (Standard Logic) ---
         count = 0
         diff_map = {1: 'Easy', 2: 'Medium', 3: 'Hard'}
         stat_map = {
-            'Strength': 'STR', 'Physical': 'STR',
-            'Intelligence': 'INT', 'Intellect': 'INT',
-            'Charisma': 'CHA', 'Social': 'CHA',
-            'Creativity': 'WIS', 'Mental Health': 'WIS',
-            'General': 'CON', 'Health': 'CON'
+            'Strength': 'STR', 'Physical': 'STR', 'Intelligence': 'INT',
+            'Intellect': 'INT', 'Charisma': 'CHA', 'Social': 'CHA',
+            'Creativity': 'WIS', 'Mental Health': 'WIS', 'General': 'CON', 'Health': 'CON'
         }
 
         for data in new_tasks_data:
@@ -508,9 +621,8 @@ def import_tasks():
                 db.session.flush()
 
             difficulty_int = data.get('difficulty', 1)
-            difficulty_str = diff_map.get(difficulty_int, 'Easy')
-            stat_type = stat_map.get(cat_name, 'CON')
 
+            # Handle potential AI date errors gracefully
             target_date_obj = None
             date_str = data.get('target_date')
             if date_str:
@@ -522,8 +634,8 @@ def import_tasks():
             new_habit = Habit(
                 name=data['name'],
                 goal_id=goal.id,
-                difficulty=difficulty_str,
-                stat_type=stat_type,
+                difficulty=diff_map.get(difficulty_int, 'Easy'),
+                stat_type=stat_map.get(cat_name, 'CON'),
                 xp_value=10 * difficulty_int,
                 is_daily=False,
                 completed=False,
@@ -568,45 +680,10 @@ def save_focus_session():
     db.session.commit()
     return jsonify({'success': True, 'new_xp': current_user.total_xp, 'new_gold': current_user.gold})
 
-@app.route('/stats')
+@app.route('/profile')
 @login_required
-def stats():
-    radar_labels = ['STR', 'INT', 'WIS', 'CON', 'CHA']
-    radar_data = [
-        current_user.str_score,
-        current_user.int_score,
-        current_user.wis_score,
-        current_user.con_score,
-        current_user.cha_score
-    ]
-    history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.asc()).all()
-    line_labels = []
-    line_data = []
-    xp_map = {}
-    for h in history:
-        d_str = h.date_completed.strftime('%Y-%m-%d')
-        xp_map[d_str] = xp_map.get(d_str, 0) + h.xp_gained
-    sorted_dates = sorted(xp_map.keys())
-    cumulative_xp = 0
-    for d in sorted_dates:
-        cumulative_xp += xp_map[d]
-        line_labels.append(d)
-        line_data.append(cumulative_xp)
-    if not line_data:
-        from datetime import date
-        line_labels = [date.today().strftime('%Y-%m-%d')]
-        line_data = [0]
-    heatmap_data = xp_map
-    from datetime import date, timedelta
-    today = date.today()
-    last_7_days = [today - timedelta(days=i) for i in range(7)]
-    active_days = 0
-    for day in last_7_days:
-        d_str = day.strftime('%Y-%m-%d')
-        if d_str in xp_map: active_days += 1
-    health_score = int((active_days / 7) * 100)
-    if health_score == 0 and current_user.total_xp > 0: health_score = 10
-    return render_template('stats.html', user=current_user, radar_labels=radar_labels, radar_data=radar_data, line_labels=line_labels, line_data=line_data, heatmap_data=heatmap_data, health_score=health_score)
+def profile():
+    return render_template('profile.html', user=current_user)
 
 @app.route('/audit')
 @login_required
@@ -653,6 +730,76 @@ def edit_goal():
         goal.name = new_name
         db.session.commit()
 
+    return redirect(url_for('dashboard'))
+
+@app.route('/admin/bulk_purge', methods=['POST'])
+@login_required
+def bulk_purge():
+    if not current_user.is_admin:
+        flash("Unauthorized Access.", "danger")
+        return redirect(url_for('dashboard'))
+
+    target_user_id = request.form.get('target_user_id')
+    habit_ids = request.form.getlist('habit_ids')
+    system_msg = request.form.get('system_message') # Capture your custom text
+
+    if not habit_ids:
+        flash("No missions selected.", "info")
+        return redirect(url_for('admin_inspect', user_id=target_user_id))
+
+    count = 0
+    for hid in habit_ids:
+        habit = db.session.get(Habit, int(hid))
+        if habit:
+            db.session.delete(habit)
+            count += 1
+
+    # SEND NOTIFICATION IF MESSAGE PROVIDED
+    if system_msg and target_user_id:
+        new_notif = Notification(
+            user_id=target_user_id,
+            message=system_msg,
+            type='warning'
+        )
+        db.session.add(new_notif)
+
+    db.session.commit()
+    flash(f"Purged {count} missions. User notified.", "warning")
+    return redirect(url_for('admin_inspect', user_id=target_user_id))
+
+@app.route('/admin/broadcast', methods=['POST'])
+@login_required
+def admin_broadcast():
+    if not current_user.is_admin:
+        flash("Unauthorized.", "danger")
+        return redirect(url_for('dashboard'))
+
+    msg_text = request.form.get('broadcast_message')
+
+    if msg_text:
+        all_agents = User.query.all()
+        count = 0
+        for agent in all_agents:
+            new_notif = Notification(
+                user_id=agent.id,
+                message=msg_text,
+                type='info'  # <--- CHANGE THIS: Sets the color to Blue
+            )
+            db.session.add(new_notif)
+            count += 1
+
+        db.session.commit()
+        flash(f"📢 Transmission sent to {count} agents.", "info") # Blue flash for you too
+
+    return redirect(url_for('admin_panel'))
+
+@app.route('/dismiss_notification/<int:notif_id>')
+@login_required
+def dismiss_notification(notif_id):
+    n = db.session.get(Notification, notif_id)
+    if n and n.user_id == current_user.id:
+        n.is_read = True
+        db.session.commit()
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':

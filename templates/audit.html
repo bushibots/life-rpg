@@ -17,27 +17,32 @@
 </div>
 
 <form action="{{ url_for('process_audit') }}" method="POST">
-    <div class="card bg-dark border-secondary shadow-lg">
-        <div class="card-header border-secondary bg-transparent py-3">
-            <div class="d-flex gap-2 justify-content-end align-items-center">
-                <span class="text-muted me-auto small">
-                    <i class="bi bi-check-all me-1"></i> Select items to process
-                </span>
-                
-                <button type="submit" name="action" value="move_today" class="btn btn-sm btn-outline-info">
-                    <i class="bi bi-calendar-event"></i> Today
-                </button>
-                <button type="submit" name="action" value="move_tomorrow" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-arrow-right"></i> +1 Day
-                </button>
-                <button type="submit" name="action" value="deprioritize" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-archive"></i> Unschedule
-                </button>
-                <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger" onclick="return confirm('Permanently terminate selected tasks?');">
-                    <i class="bi bi-trash"></i> Delete
-                </button>
-            </div>
+    <div class="card-body bg-dark border-bottom border-secondary p-2">
+     <div class="d-flex justify-content-between align-items-center">
+
+        <span class="text-muted small d-none d-md-block">
+            <i class="bi bi-check2-square me-1"></i>Select items to process
+        </span>
+
+        <div class="btn-group w-100 w-md-auto" role="group">
+            <button type="submit" name="action" value="today" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-calendar-event"></i> <span class="d-none d-sm-inline">Today</span>
+            </button>
+
+            <button type="submit" name="action" value="tomorrow" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-right"></i> <span class="d-none d-sm-inline">+1 Day</span>
+            </button>
+
+            <button type="submit" name="action" value="unschedule" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-inbox"></i> <span class="d-none d-sm-inline">Unschedule</span>
+            </button>
+
+            <button type="submit" name="action" value="delete" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete selected?')">
+                <i class="bi bi-trash"></i> <span class="d-none d-sm-inline">Delete</span>
+            </button>
         </div>
+       </div>
+     </div>
 
         <div class="table-responsive">
             <table class="table table-dark table-hover mb-0" style="vertical-align: middle;">
@@ -70,7 +75,7 @@
                             </span>
                         </td>
                         <td class="text-end pe-4">
-                            <span class="badge 
+                            <span class="badge
                                 {% if task.difficulty == 'Easy' %}text-success border-success
                                 {% elif task.difficulty == 'Medium' %}text-warning border-warning
                                 {% else %}text-danger border-danger{% endif %} bg-transparent border">

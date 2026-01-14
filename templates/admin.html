@@ -30,12 +30,102 @@
         </div>
     </div>
 </div>
+<div class="card bg-dark border-info shadow-sm mb-4">
+    <div class="card-header border-info bg-transparent">
+        <h5 class="mb-0 text-info" style="font-family: 'Orbitron', sans-serif;">
+            <i class="bi bi-broadcast me-2"></i>GLOBAL BROADCAST SYSTEM
+        </h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('admin_broadcast') }}" method="POST">
+            <label class="text-muted small mb-2">Send a system-wide announcement (Blue Banner):</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-info text-info fw-bold">MSG</span>
+                <input type="text" name="broadcast_message" class="form-control bg-dark text-white border-info"
+                       placeholder="e.g., SYSTEM UPGRADE: Daily task limits increased. Hydra Protocol Active." required>
+                <button type="submit" class="btn btn-info fw-bold text-dark"
+                        onclick="return confirm('Send this announcement to ALL users?')">
+                    <i class="bi bi-send-fill me-2"></i>TRANSMIT
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary shadow-sm mb-4">
+    <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-white"><i class="bi bi-people-fill me-2"></i>Agent Roster</h5>
+
+        <div class="input-group input-group-sm" style="max-width: 250px;">
+            <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" id="agentSearch" class="form-control bg-dark border-secondary text-white"
+                   placeholder="Find Agent..." onkeyup="filterAgents()">
+        </div>
+    </div>
+
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-dark table-hover mb-0 align-middle" id="agentTable">
+            <thead class="sticky-top bg-dark">
+                <tr class="text-muted small text-uppercase">
+                    <th>Codename</th>
+                    <th>Clearance Level</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agent in users_list %}
+                <tr>
+                    <td class="fw-bold text-white agent-name">
+                        {{ agent.username }}
+                        {% if agent.is_banned %}
+                        <span class="badge bg-danger ms-2">BANNED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if agent.is_admin %}
+                            <span class="badge border border-danger text-danger me-1">ADMIN</span>
+                        {% endif %}
+
+                        {% if agent.is_pro %}
+                            <span class="badge bg-info text-dark"><i class="bi bi-cpu-fill me-1"></i>AI CLASS</span>
+                        {% else %}
+                            <span class="badge bg-secondary bg-opacity-25 text-muted">STANDARD</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('admin_inspect', user_id=agent.id) }}"
+                               class="btn btn-sm btn-outline-warning"
+                               title="Inspect Missions">
+                                <i class="bi bi-eye"></i>
+                            </a>
+
+                            <a href="{{ url_for('toggle_pro', user_id=agent.id) }}"
+                               class="btn btn-sm {{ 'btn-info' if not agent.is_pro else 'btn-outline-secondary' }}"
+                               title="Toggle AI Features">
+                                <i class="bi bi-cpu"></i>
+                            </a>
+
+                            <a href="{{ url_for('ban_user', user_id=agent.id) }}"
+                               class="btn btn-sm btn-outline-danger"
+                               title="Ban User"
+                               onclick="return confirm('Are you sure you want to ban this user?')">
+                                <i class="bi bi-slash-circle"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <div class="card bg-dark border-secondary shadow-sm">
     <form action="{{ url_for('delete_feedback') }}" method="POST">
         <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
             <h5 class="mb-0 text-white">Incoming Transmissions</h5>
-            
+
             <div class="d-flex gap-2">
                 <button type="submit" name="action" value="delete_selected" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-trash"></i> Delete Selected
@@ -63,18 +153,18 @@
                                     {{ msg.user.username }}
                                 </strong>
                                 <span class="text-muted small ms-2">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
-                                
+
                                 {% if msg.user.is_banned %}
                                 <span class="badge bg-danger ms-2">BANNED</span>
                                 {% endif %}
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="{{ url_for('ban_user', user_id=msg.user.id) }}" 
+                                <a href="{{ url_for('ban_user', user_id=msg.user.id) }}"
                                    class="btn btn-sm btn-outline-danger"
                                    onclick="return confirm('Toggle Ban status for this user?')">
                                     <i class="bi bi-slash-circle"></i> Ban
                                 </a>
-                                <a href="{{ url_for('mark_read', feedback_id=msg.id) }}" 
+                                <a href="{{ url_for('mark_read', feedback_id=msg.id) }}"
                                    class="btn btn-sm {{ 'btn-secondary' if msg.is_read else 'btn-success' }}">
                                     <i class="bi bi-check-lg"></i>
                                 </a>
@@ -90,4 +180,25 @@
         </div>
     </form>
 </div>
+
+<script>
+function filterAgents() {
+    var input = document.getElementById("agentSearch");
+    var filter = input.value.toUpperCase();
+    var table = document.getElementById("agentTable");
+    var tr = table.getElementsByTagName("tr");
+
+    for (var i = 0; i < tr.length; i++) {
+        var td = tr[i].getElementsByClassName("agent-name")[0];
+        if (td) {
+            var txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>
 {% endblock %}

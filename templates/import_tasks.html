@@ -18,7 +18,8 @@
                         <div class="form-group mb-3">
                             <textarea name="raw_text" class="form-control" rows="8" placeholder="Example: Study Torts for 2 hours, go to the gym, buy milk, and call Mansi..."></textarea>
                         </div>
-                        <button type="submit" class="btn btn-success btn-lg w-100">
+                        
+                        <button type="submit" class="btn btn-success btn-lg w-100" id="importBtn" onclick="lockButton()">
                             🚀 Import to Quest Log
                         </button>
                     </form>
@@ -40,4 +41,14 @@
         </div>
     </div>
 </div>
+
+<script>
+function lockButton() {
+    const btn = document.getElementById('importBtn');
+    // Change text to show activity
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> PROCESSING...';
+    // Visually disable it so it looks unclickable
+    btn.classList.add('disabled');
+}
+</script>
 {% endblock %}

@@ -94,3 +94,13 @@ class Feedback(db.Model):
 
     # Link to know WHO sent it
     user = db.relationship('User', backref='feedbacks')
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.String(500), nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    type = db.Column(db.String(20), default='system') # 'system', 'warning', 'info'
+
+    user = db.relationship('User', backref='notifications')
