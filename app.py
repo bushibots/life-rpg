@@ -11,6 +11,7 @@ from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory
 from utils import guess_category, smart_ai_parse
 # --- MISSING IMPORTS FOR FORMS ---
 from flask_wtf import FlaskForm
+from collections import Counter
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from flask_bcrypt import Bcrypt
@@ -136,48 +137,40 @@ def history():
 @app.route('/planning')
 @login_required
 def planning():
+    # 1. Fetch all folders
     goals = Goal.query.filter_by(user_id=current_user.id).all()
-    return render_template('planning.html', user=current_user, goals=goals)
 
-@app.route('/stats')
-@login_required
-def stats():
-    radar_labels = ['STR', 'INT', 'WIS', 'CHA', 'CON']
-    radar_data = [current_user.str_score, current_user.int_score, current_user.wis_score, current_user.cha_score, current_user.con_score]
+    # 2. Gather all tasks to sort them
+    scheduled = []
 
-    history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.asc()).all()
+    for g in goals:
+        for h in g.habits:
+            if h.target_date and not h.completed:
+                scheduled.append(h)
 
-    heatmap_data = {}
-    today = date.today()
-    dates_last_30 = [(today - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(29, -1, -1)]
-    daily_xp_map = {d: 0 for d in dates_last_30}
+    # 3. Sort by Date (Soonest first)
+    scheduled.sort(key=lambda x: x.target_date)
 
-    for h in history:
-        d_str = h.date_completed.strftime('%Y-%m-%d')
-        heatmap_data[d_str] = heatmap_data.get(d_str, 0) + h.xp_gained
-        if d_str in daily_xp_map:
-            daily_xp_map[d_str] += h.xp_gained
+    # 4. Prepare Graph Data (Count tasks per day)
+    # We need a list of dates like ['2023-10-01', '2023-10-01', '2023-10-05']
+    date_strings = [h.target_date.strftime('%Y-%m-%d') for h in scheduled]
 
-    line_data = []
-    running_total = current_user.total_xp - sum(daily_xp_map.values())
+    # Count them: {'2023-10-01': 2, '2023-10-05': 1}
+    from collections import Counter
+    counts = Counter(date_strings)
 
-    for d in dates_last_30:
-        running_total += daily_xp_map[d]
-        line_data.append(running_total)
+    # Sort the dates for the graph X-axis
+    sorted_dates = sorted(counts.keys())
 
-    active_days_last_7 = 0
-    for i in range(7):
-        d_check = (today - timedelta(days=i)).strftime('%Y-%m-%d')
-        if heatmap_data.get(d_check, 0) > 0:
-            active_days_last_7 += 1
-    health_score = int((active_days_last_7 / 7) * 100) if active_days_last_7 > 0 else 0
+    # Extract the numbers for the graph Y-axis
+    chart_data = [counts[d] for d in sorted_dates]
 
-    return render_template('stats.html',
-                           radar_labels=radar_labels, radar_data=radar_data,
-                           line_labels=dates_last_30, line_data=line_data,
-                           heatmap_data=heatmap_data,
-                           health_score=health_score,
-                           user=current_user)
+    return render_template('planning.html',
+                           user=current_user,
+                           goals=goals,
+                           scheduled=scheduled,
+                           chart_labels=sorted_dates,
+                           chart_data=chart_data)
 
 @app.route('/add_habit', methods=['POST'])
 @login_required
@@ -187,9 +180,15 @@ def add_habit():
     stat_type = request.form.get('stat_type')
     difficulty = request.form.get('difficulty')
     duration = request.form.get('duration')
+    date_str = request.form.get('target_date')  # Get the date string
 
     xp_map = {'Easy': 10, 'Medium': 30, 'Hard': 50, 'Epic': 100}
     xp = xp_map.get(difficulty, 10)
+
+    # Convert string to Date object if it exists
+    target_date_obj = None
+    if date_str:
+        target_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
 
     if name and goal_id:
         new_habit = Habit(
@@ -200,7 +199,8 @@ def add_habit():
             xp_value=xp,
             duration=int(duration) if duration else 0,
             completed=False,
-            is_daily=True
+            is_daily=True,
+            target_date=target_date_obj  # 👈 Save the date
         )
         db.session.add(new_habit)
         db.session.commit()
@@ -296,6 +296,14 @@ def edit_habit():
         h.name = request.form.get('name')
         h.difficulty = request.form.get('difficulty')
         h.is_daily = True if request.form.get('is_daily') else False
+
+        # Handle Date Update
+        date_str = request.form.get('target_date')
+        if date_str:
+            h.target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        else:
+            h.target_date = None # Clear date if empty
+
         db.session.commit()
     return redirect(url_for('dashboard'))
 
@@ -303,20 +311,30 @@ def edit_habit():
 def register():
     form = RegisterForm()
 
-    # --- DEBUGGING BLOCK ---
     if request.method == 'POST':
-        print("📝 Form Data Received:", request.form) # See if data is arriving
+        print("📝 Form Data Received:", request.form)
         if form.validate_on_submit():
             print("✅ Validation Success! Creating user...")
             hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
             user = User(username=form.username.data, password=hashed_password)
             db.session.add(user)
 
-            # Add Starter Quests
-            q1 = Goal(name="Create your first real task", difficulty=1, stat_type='INT', user=user)
-            q2 = Goal(name="Drink a glass of water", difficulty=1, stat_type='CON', user=user)
-            q3 = Goal(name="Visit the Focus Hub", difficulty=1, stat_type='WIS', user=user)
-            db.session.add_all([q1, q2, q3])
+            # --- START FIX ---
+            # 1. Create the Folder (Goal) first
+            starter_goal = Goal(name="Starter Quests", user=user)
+            db.session.add(starter_goal)
+
+            # 2. Flush to make sure the Folder gets an ID
+            db.session.flush()
+
+            # 3. Create the Tasks (Habits) inside that Folder
+            # Note: difficulty must be a String ("Easy"), not a number (1)
+            h1 = Habit(name="Create your first real task", difficulty="Easy", stat_type='INT', xp_value=10, goal=starter_goal)
+            h2 = Habit(name="Drink a glass of water", difficulty="Easy", stat_type='CON', xp_value=10, goal=starter_goal)
+            h3 = Habit(name="Visit the Focus Hub", difficulty="Easy", stat_type='WIS', xp_value=10, goal=starter_goal)
+
+            db.session.add_all([h1, h2, h3])
+            # --- END FIX ---
 
             db.session.commit()
             login_user(user)
@@ -324,8 +342,7 @@ def register():
             return redirect(url_for('dashboard'))
         else:
             print("❌ VALIDATION FAILED!")
-            print("⚠️ Errors:", form.errors) # <--- THIS WILL TELL US THE SECRET ERROR
-    # -----------------------
+            print("⚠️ Errors:", form.errors)
 
     return render_template('register.html', form=form)
 
@@ -388,6 +405,7 @@ def reset_progress():
     return redirect(url_for('settings'))
 
 @app.route('/mission_print')
+@login_required
 def mission_print():
     habits = Habit.query.join(Goal).filter(Goal.user_id == current_user.id).all()
     today = date.today()

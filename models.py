@@ -68,6 +68,7 @@ class Habit(db.Model):
     xp_value = db.Column(db.Integer)
     difficulty = db.Column(db.String(50))
     stat_type = db.Column(db.String(10))
+    target_date = db.Column(db.Date, nullable=True)
 
     # These were likely missing or misnamed
     completed = db.Column(db.Boolean, default=False)

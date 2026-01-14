@@ -1,29 +1,32 @@
 from app import app, db
 from sqlalchemy import text
+import os
+
+print("--- DIAGNOSTIC START ---")
+
+# 1. Check where Flask thinks the DB is
+db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+print(f"📍 Flask is looking for DB at: {db_uri}")
 
 with app.app_context():
-    print("--- 🛠️ STARTING DATABASE REPAIR ---")
-    with db.engine.connect() as conn:
-        # A list of every new column we have added recently
-        commands = [
-            ("gold", "ALTER TABLE user ADD COLUMN gold INTEGER DEFAULT 0"),
-            ("current_streak", "ALTER TABLE user ADD COLUMN current_streak INTEGER DEFAULT 0"),
-            ("last_active_date", "ALTER TABLE user ADD COLUMN last_active_date DATE"),
-            ("total_focus_time", "ALTER TABLE user ADD COLUMN total_focus_time INTEGER DEFAULT 0"),
-            ("is_admin", "ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0"),
-            ("is_pro", "ALTER TABLE user ADD COLUMN is_pro BOOLEAN DEFAULT 0")
-        ]
+    # 2. Force Create Tables (Fixes 'no such table' error)
+    try:
+        db.create_all()
+        print("✅ Database Tables Verified/Created.")
+    except Exception as e:
+        print(f"⚠️ Table Check Warning: {e}")
 
-        for col_name, sql in commands:
-            try:
-                conn.execute(text(sql))
-                print(f"✅ Added missing column: {col_name}")
-            except Exception as e:
-                # If error contains "duplicate column", it means we already have it. Good!
-                if "duplicate column" in str(e):
-                    print(f"👍 Column '{col_name}' already exists.")
-                else:
-                    print(f"⚠️ Error adding '{col_name}': {e}")
-        
-        conn.commit()
-    print("--- 🎉 REPAIR COMPLETE ---")
+    # 3. Force Add Column (Fixes 'no such column' error)
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(text("ALTER TABLE habit ADD COLUMN target_date DATE"))
+            conn.commit()
+        print("✅ SUCCESS: 'target_date' column added!")
+    except Exception as e:
+        # If it fails, check if it's because it's already there
+        if "duplicate column" in str(e).lower():
+            print("✅ GOOD NEWS: The column was already there.")
+        else:
+            print(f"ℹ️ Info: {e}")
+
+print("--- DIAGNOSTIC END ---")

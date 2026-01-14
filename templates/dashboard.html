@@ -76,7 +76,14 @@
                     <h6 class="mb-0 text-white {{ 'text-decoration-line-through text-muted' if habit.completed }}">
                         {{ habit.name }}
                     </h6>
-                    <small class="text-muted d-flex gap-2 align-items-center">
+                    
+                    {% if habit.target_date %}
+                    <div class="text-warning small" style="font-size: 0.7em;">
+                        <i class="bi bi-calendar-event me-1"></i> {{ habit.target_date }}
+                    </div>
+                    {% endif %}
+
+                    <small class="text-muted d-flex gap-2 align-items-center mt-1">
                         <span class="badge bg-dark border border-secondary text-secondary" style="font-size: 0.65rem;">
                             {{ habit.stat_type }}
                         </span>
@@ -89,7 +96,7 @@
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-link text-secondary p-0"
-                        onclick="populateEditModal('{{ habit.id }}', '{{ habit.name }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}')"
+                        onclick="populateEditModal('{{ habit.id }}', '{{ habit.name }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}')"
                         data-bs-toggle="modal" data-bs-target="#editHabitModal">
                     <i class="bi bi-gear"></i>
                 </button>
@@ -99,6 +106,7 @@
             </div>
         </div>
         {% endfor %}
+        
         <div class="card-footer bg-transparent border-0 pt-0 pb-2">
             <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0"
                     data-bs-toggle="modal" data-bs-target="#addHabitModal"
@@ -141,6 +149,12 @@
                         <label class="form-label text-muted small">Task Description</label>
                         <input type="text" name="name" class="form-control bg-dark text-white border-secondary" required>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Target Date (Optional)</label>
+                        <input type="date" name="target_date" class="form-control bg-dark text-white border-secondary">
+                    </div>
+
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label text-muted small">Complexity</label>
@@ -183,9 +197,7 @@
                 </div>
                 <div class="modal-footer border-secondary">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info">
-                        Submit Log
-                    </button>
+                    <button type="submit" class="btn btn-info">Submit Log</button>
                 </div>
             </form>
         </div>
@@ -202,10 +214,12 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="habit_id" id="edit_habit_id">
+
                     <div class="mb-3">
                         <label class="small text-muted">Task Name</label>
                         <input type="text" name="name" id="edit_habit_name" class="form-control bg-dark text-white border-secondary" required>
                     </div>
+
                     <div class="mb-4">
                         <label class="small text-muted">Complexity Level</label>
                         <select name="difficulty" id="edit_habit_difficulty" class="form-select bg-dark text-white border-secondary">
@@ -215,6 +229,12 @@
                             <option value="Epic">Critical</option>
                         </select>
                     </div>
+
+                    <div class="mb-4">
+                        <label class="small text-muted">Target Date (Deadline)</label>
+                        <input type="date" name="target_date" id="edit_habit_date" class="form-control bg-dark text-white border-secondary">
+                    </div>
+
                     <div class="d-flex align-items-center justify-content-between p-3 rounded border border-secondary" style="background-color: #151921 !important;">
                         <div>
                             <label class="fw-bold text-white" for="edit_habit_daily">Recurring Protocol</label>
@@ -232,4 +252,36 @@
         </div>
     </div>
 </div>
+
+<script>
+    function populateEditModal(id, name, difficulty, isDaily, dateStr) {
+        // 1. Fill the ID (Hidden)
+        document.getElementById('edit_habit_id').value = id;
+
+        // 2. Fill Text Fields
+        document.getElementById('edit_habit_name').value = name;
+        document.getElementById('edit_habit_difficulty').value = difficulty;
+
+        // 3. Handle Date Field
+        const dateInput = document.getElementById('edit_habit_date');
+        // Python sends 'None' if empty, so we check for that
+        if (dateStr && dateStr !== 'None' && dateStr !== '') {
+            dateInput.value = dateStr;
+        } else {
+            dateInput.value = '';
+        }
+
+        // 4. Handle Checkbox
+        const dailyBox = document.getElementById('edit_habit_daily');
+        dailyBox.checked = (isDaily === 'True' || isDaily === 'true' || isDaily === true);
+
+        // 5. Show the Modal
+        const modalElement = document.getElementById('editHabitModal');
+        let modal = bootstrap.Modal.getInstance(modalElement);
+        if (!modal) {
+            modal = new bootstrap.Modal(modalElement);
+        }
+        modal.show();
+    }
+</script>
 {% endblock %}

@@ -15,12 +15,32 @@
 
                         <div class="mb-3">
                             <label class="form-label text-info">Username</label>
-                            <input type="text" name="username" class="form-control bg-secondary text-white border-0" placeholder="Agent Name">
+                            
+                            {% if form.username.errors %}
+                                {{ form.username(class="form-control bg-secondary text-white border-danger is-invalid", placeholder="Agent Name") }}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.username.errors %}
+                                        <span>⚠️ {{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.username(class="form-control bg-secondary text-white border-0", placeholder="Agent Name") }}
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label text-info">Password</label>
-                            <input type="password" name="password" class="form-control bg-secondary text-white border-0" placeholder="Secret Code">
+                            
+                            {% if form.password.errors %}
+                                {{ form.password(class="form-control bg-secondary text-white border-danger is-invalid", placeholder="Secret Code") }}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password.errors %}
+                                        <span>⚠️ {{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.password(class="form-control bg-secondary text-white border-0", placeholder="Secret Code") }}
+                            {% endif %}
                         </div>
 
                         <div class="d-grid gap-2">
