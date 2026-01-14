@@ -54,31 +54,53 @@
 <div class="card mb-3 bg-dark border-secondary shadow-sm" style="background: rgba(14, 18, 25, 0.95);">
     <div class="card-header border-bottom border-secondary py-2 d-flex justify-content-between align-items-center bg-transparent">
         <h5 class="mb-0 text-white fw-bold" style="font-family: 'Orbitron', sans-serif; font-size: 1rem;">{{ goal.name }}</h5>
-        <a href="{{ url_for('delete_goal', goal_id=goal.id) }}"
-           class="text-secondary small text-decoration-none hover-danger"
-           onclick="return confirm('Terminate this directive?')">
-           <i class="bi bi-x-lg"></i>
-        </a>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-link text-secondary p-0 me-2"
+                    onclick="populateGoalEditModal('{{ goal.id }}', '{{ goal.name|replace("'", "\\'") }}')"
+                    data-bs-toggle="modal" data-bs-target="#editGoalModal">
+                <i class="bi bi-pencil-square"></i>
+            </button>
+            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}"
+               class="text-secondary small text-decoration-none hover-danger"
+               onclick="return confirm('Terminate this directive?')">
+               <i class="bi bi-x-lg"></i>
+            </a>
+        </div>
     </div>
 
     <div class="list-group list-group-flush">
         {% for habit in goal.habits %}
         <div class="list-group-item bg-transparent border-secondary d-flex align-items-center justify-content-between py-3">
-            <div class="d-flex align-items-center gap-3">
-                <a href="{{ url_for('toggle_habit', habit_id=habit.id) }}" class="text-decoration-none">
+            <div class="d-flex align-items-center gap-3 w-100">
+                <a href="{{ url_for('toggle_habit', habit_id=habit.id) }}" class="text-decoration-none align-self-start mt-1">
                     {% if habit.completed %}
                         <i class="bi bi-check-square-fill text-info fs-4" style="text-shadow: 0 0 10px rgba(13, 202, 240, 0.5);"></i>
                     {% else %}
                         <i class="bi bi-square text-secondary fs-4"></i>
                     {% endif %}
                 </a>
-                <div>
-                    <h6 class="mb-0 text-white {{ 'text-decoration-line-through text-muted' if habit.completed }}">
-                        {{ habit.name }}
-                    </h6>
-                    
+                <div class="w-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-white {{ 'text-decoration-line-through text-muted' if habit.completed }}">
+                            {{ habit.name }}
+                        </h6>
+                        {% if habit.description %}
+                        <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#desc-{{ habit.id }}">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    {% if habit.description %}
+                    <div class="collapse mt-2" id="desc-{{ habit.id }}">
+                        <div class="card card-body bg-dark border-secondary p-2 small text-info bg-opacity-10">
+                            <i class="bi bi-info-circle me-1"></i> {{ habit.description }}
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% if habit.target_date %}
-                    <div class="text-warning small" style="font-size: 0.7em;">
+                    <div class="text-warning small mt-1" style="font-size: 0.7em;">
                         <i class="bi bi-calendar-event me-1"></i> {{ habit.target_date }}
                     </div>
                     {% endif %}
@@ -94,9 +116,9 @@
                     </small>
                 </div>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 ms-2 align-self-start">
                 <button class="btn btn-link text-secondary p-0"
-                        onclick="populateEditModal('{{ habit.id }}', '{{ habit.name }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}')"
+                        onclick="populateEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')"
                         data-bs-toggle="modal" data-bs-target="#editHabitModal">
                     <i class="bi bi-gear"></i>
                 </button>
@@ -106,7 +128,7 @@
             </div>
         </div>
         {% endfor %}
-        
+
         <div class="card-footer bg-transparent border-0 pt-0 pb-2">
             <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0"
                     data-bs-toggle="modal" data-bs-target="#addHabitModal"
@@ -138,6 +160,22 @@
     </div>
 </div>
 
+<div class="modal fade" id="editGoalModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <form action="{{ url_for('edit_goal') }}" method="POST">
+                <div class="modal-header border-secondary"><h5 class="modal-title">Rename Directive</h5></div>
+                <div class="modal-body">
+                    <input type="hidden" name="goal_id" id="edit_goal_id">
+                    <label class="form-label text-muted small">New Category Name</label>
+                    <input type="text" name="name" id="edit_goal_name" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-info">Save Name</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="addHabitModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-white border-secondary">
@@ -146,10 +184,10 @@
                 <div class="modal-body">
                     <input type="hidden" name="goal_id" id="goal_id_input">
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Task Description</label>
+                        <label class="form-label text-muted small">Task Name</label>
                         <input type="text" name="name" class="form-control bg-dark text-white border-secondary" required>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label text-muted small">Target Date (Optional)</label>
                         <input type="date" name="target_date" class="form-control bg-dark text-white border-secondary">
@@ -220,19 +258,35 @@
                         <input type="text" name="name" id="edit_habit_name" class="form-control bg-dark text-white border-secondary" required>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="small text-muted">Complexity Level</label>
-                        <select name="difficulty" id="edit_habit_difficulty" class="form-select bg-dark text-white border-secondary">
-                            <option value="Easy">Low</option>
-                            <option value="Medium">Standard</option>
-                            <option value="Hard">High</option>
-                            <option value="Epic">Critical</option>
-                        </select>
+                    <div class="mb-3">
+                        <label class="small text-muted">Category / Folder</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" name="category_name" id="edit_habit_category" list="categoryOptions">
+                        <datalist id="categoryOptions">
+                            {% for goal in goals %}
+                            <option value="{{ goal.name }}">
+                            {% endfor %}
+                        </datalist>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="small text-muted">Target Date (Deadline)</label>
-                        <input type="date" name="target_date" id="edit_habit_date" class="form-control bg-dark text-white border-secondary">
+                    <div class="mb-3">
+                        <label class="small text-muted">Mission Briefing (Description)</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="description" id="edit_habit_description" rows="3" placeholder="Step-by-step guide..."></textarea>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-6">
+                            <label class="small text-muted">Complexity</label>
+                            <select name="difficulty" id="edit_habit_difficulty" class="form-select bg-dark text-white border-secondary">
+                                <option value="Easy">Low</option>
+                                <option value="Medium">Standard</option>
+                                <option value="Hard">High</option>
+                                <option value="Epic">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="small text-muted">Deadline</label>
+                            <input type="date" name="target_date" id="edit_habit_date" class="form-control bg-dark text-white border-secondary">
+                        </div>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between p-3 rounded border border-secondary" style="background-color: #151921 !important;">
@@ -254,28 +308,23 @@
 </div>
 
 <script>
-    function populateEditModal(id, name, difficulty, isDaily, dateStr) {
-        // 1. Fill the ID (Hidden)
+    function populateEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
         document.getElementById('edit_habit_id').value = id;
-
-        // 2. Fill Text Fields
         document.getElementById('edit_habit_name').value = name;
         document.getElementById('edit_habit_difficulty').value = difficulty;
+        document.getElementById('edit_habit_category').value = catName;
+        document.getElementById('edit_habit_description').value = desc;
 
-        // 3. Handle Date Field
         const dateInput = document.getElementById('edit_habit_date');
-        // Python sends 'None' if empty, so we check for that
         if (dateStr && dateStr !== 'None' && dateStr !== '') {
             dateInput.value = dateStr;
         } else {
             dateInput.value = '';
         }
 
-        // 4. Handle Checkbox
         const dailyBox = document.getElementById('edit_habit_daily');
         dailyBox.checked = (isDaily === 'True' || isDaily === 'true' || isDaily === true);
 
-        // 5. Show the Modal
         const modalElement = document.getElementById('editHabitModal');
         let modal = bootstrap.Modal.getInstance(modalElement);
         if (!modal) {
@@ -283,5 +332,12 @@
         }
         modal.show();
     }
+
+    function populateGoalEditModal(id, name) {
+        document.getElementById('edit_goal_id').value = id;
+        document.getElementById('edit_goal_name').value = name;
+    }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="{{ url_for('static', filename='js/effects.js') }}"></script>
 {% endblock %}

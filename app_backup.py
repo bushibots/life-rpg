@@ -1,8 +1,7 @@
 import csv
 import io
 import os
-import json
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import date, timedelta, datetime
@@ -10,6 +9,7 @@ from extensions import db, login_manager
 from flask_migrate import Migrate
 from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory
 from utils import guess_category, smart_ai_parse
+# --- MISSING IMPORTS FOR FORMS ---
 from flask_wtf import FlaskForm
 from collections import Counter
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
@@ -23,8 +23,11 @@ load_dotenv()
 class RegisterForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=20)])
     password = PasswordField('Password', validators=[DataRequired()])
-    submit = SubmitField('Sign Up')
 
+    # DELETE THIS LINE BELOW (or put a # in front of it)
+    # confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+
+    submit = SubmitField('Sign Up')
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -47,6 +50,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rpg.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# 👇 ADD THIS NEW LINE HERE 👇
 bcrypt = Bcrypt(app)
 
 db.init_app(app)
@@ -74,6 +78,7 @@ with app.app_context():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Daily Reset Logic
     from datetime import date
     if current_user.last_check_date != date.today():
         user_goals = Goal.query.filter_by(user_id=current_user.id).all()
@@ -89,14 +94,7 @@ def dashboard():
             flash(f"System refreshed. {reset_count} recurring tasks reset.", "info")
 
     goals = Goal.query.filter_by(user_id=current_user.id).all()
-    today = date.today()
-    overdue_count = Habit.query.join(Goal).filter(
-        Goal.user_id == current_user.id,
-        Habit.target_date < today,
-        Habit.completed == False
-    ).count()
-
-    return render_template('dashboard.html', user=current_user, goals=goals, overdue_count=overdue_count)
+    return render_template('dashboard.html', user=current_user, goals=goals)
 
 @app.route('/analytics')
 @login_required
@@ -139,18 +137,32 @@ def history():
 @app.route('/planning')
 @login_required
 def planning():
+    # 1. Fetch all folders
     goals = Goal.query.filter_by(user_id=current_user.id).all()
+
+    # 2. Gather all tasks to sort them
     scheduled = []
+
     for g in goals:
         for h in g.habits:
             if h.target_date and not h.completed:
                 scheduled.append(h)
+
+    # 3. Sort by Date (Soonest first)
     scheduled.sort(key=lambda x: x.target_date)
 
+    # 4. Prepare Graph Data (Count tasks per day)
+    # We need a list of dates like ['2023-10-01', '2023-10-01', '2023-10-05']
     date_strings = [h.target_date.strftime('%Y-%m-%d') for h in scheduled]
+
+    # Count them: {'2023-10-01': 2, '2023-10-05': 1}
     from collections import Counter
     counts = Counter(date_strings)
+
+    # Sort the dates for the graph X-axis
     sorted_dates = sorted(counts.keys())
+
+    # Extract the numbers for the graph Y-axis
     chart_data = [counts[d] for d in sorted_dates]
 
     return render_template('planning.html',
@@ -168,11 +180,12 @@ def add_habit():
     stat_type = request.form.get('stat_type')
     difficulty = request.form.get('difficulty')
     duration = request.form.get('duration')
-    date_str = request.form.get('target_date')
+    date_str = request.form.get('target_date')  # Get the date string
 
     xp_map = {'Easy': 10, 'Medium': 30, 'Hard': 50, 'Epic': 100}
     xp = xp_map.get(difficulty, 10)
 
+    # Convert string to Date object if it exists
     target_date_obj = None
     if date_str:
         target_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -187,8 +200,7 @@ def add_habit():
             duration=int(duration) if duration else 0,
             completed=False,
             is_daily=True,
-            target_date=target_date_obj,
-            description="" # Default empty description
+            target_date=target_date_obj  # 👈 Save the date
         )
         db.session.add(new_habit)
         db.session.commit()
@@ -201,16 +213,20 @@ def toggle_habit(habit_id):
     habit = Habit.query.get(habit_id)
     if habit and habit.goal.user_id == current_user.id:
         habit.completed = not habit.completed
+
         from datetime import date
 
         if habit.completed:
+            # --- TASK COMPLETED ---
             current_user.total_xp += habit.xp_value
+            # Add Attribute Score
             if habit.stat_type == 'STR': current_user.str_score += habit.xp_value
             elif habit.stat_type == 'INT': current_user.int_score += habit.xp_value
             elif habit.stat_type == 'WIS': current_user.wis_score += habit.xp_value
             elif habit.stat_type == 'CON': current_user.con_score += habit.xp_value
             elif habit.stat_type == 'CHA': current_user.cha_score += habit.xp_value
 
+            # Create Log
             history_entry = QuestHistory(
                 user_id=current_user.id,
                 name=habit.name,
@@ -221,14 +237,18 @@ def toggle_habit(habit_id):
             )
             db.session.add(history_entry)
             flash(f"Task Complete. +{habit.xp_value} XP", "success")
+
         else:
+            # --- TASK UN-COMPLETED ---
             current_user.total_xp -= habit.xp_value
+            # Remove Attribute Score
             if habit.stat_type == 'STR': current_user.str_score -= habit.xp_value
             elif habit.stat_type == 'INT': current_user.int_score -= habit.xp_value
             elif habit.stat_type == 'WIS': current_user.wis_score -= habit.xp_value
             elif habit.stat_type == 'CON': current_user.con_score -= habit.xp_value
             elif habit.stat_type == 'CHA': current_user.cha_score -= habit.xp_value
 
+            # FIX: Find and delete the log entry for today
             log_to_delete = QuestHistory.query.filter_by(
                 user_id=current_user.id,
                 name=habit.name,
@@ -275,25 +295,14 @@ def edit_habit():
     if h and h.goal.user_id == current_user.id:
         h.name = request.form.get('name')
         h.difficulty = request.form.get('difficulty')
-        h.description = request.form.get('description')
         h.is_daily = True if request.form.get('is_daily') else False
 
-        # 1. Handle Date
+        # Handle Date Update
         date_str = request.form.get('target_date')
         if date_str:
             h.target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         else:
-            h.target_date = None
-
-        # 2. Handle Category Change
-        new_cat_name = request.form.get('category_name')
-        if new_cat_name and new_cat_name != h.goal.name:
-            new_goal = Goal.query.filter_by(user_id=current_user.id, name=new_cat_name).first()
-            if not new_goal:
-                new_goal = Goal(name=new_cat_name, user_id=current_user.id)
-                db.session.add(new_goal)
-                db.session.flush()
-            h.goal_id = new_goal.id
+            h.target_date = None # Clear date if empty
 
         db.session.commit()
     return redirect(url_for('dashboard'))
@@ -301,22 +310,40 @@ def edit_habit():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
+
     if request.method == 'POST':
+        print("📝 Form Data Received:", request.form)
         if form.validate_on_submit():
+            print("✅ Validation Success! Creating user...")
             hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
             user = User(username=form.username.data, password=hashed_password)
             db.session.add(user)
+
+            # --- START FIX ---
+            # 1. Create the Folder (Goal) first
             starter_goal = Goal(name="Starter Quests", user=user)
             db.session.add(starter_goal)
+
+            # 2. Flush to make sure the Folder gets an ID
             db.session.flush()
+
+            # 3. Create the Tasks (Habits) inside that Folder
+            # Note: difficulty must be a String ("Easy"), not a number (1)
             h1 = Habit(name="Create your first real task", difficulty="Easy", stat_type='INT', xp_value=10, goal=starter_goal)
             h2 = Habit(name="Drink a glass of water", difficulty="Easy", stat_type='CON', xp_value=10, goal=starter_goal)
             h3 = Habit(name="Visit the Focus Hub", difficulty="Easy", stat_type='WIS', xp_value=10, goal=starter_goal)
+
             db.session.add_all([h1, h2, h3])
+            # --- END FIX ---
+
             db.session.commit()
             login_user(user)
             flash('Welcome, Agent.', 'success')
             return redirect(url_for('dashboard'))
+        else:
+            print("❌ VALIDATION FAILED!")
+            print("⚠️ Errors:", form.errors)
+
     return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -368,9 +395,11 @@ def reset_progress():
     current_user.wis_score = 0
     current_user.cha_score = 0
     current_user.con_score = 0
+
     habits = Habit.query.join(Goal).filter(Goal.user_id == current_user.id).all()
     for h in habits:
         h.completed = False
+
     db.session.query(QuestHistory).filter(QuestHistory.user_id==current_user.id).delete()
     db.session.commit()
     return redirect(url_for('settings'))
@@ -394,21 +423,29 @@ def export_data():
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['Date', 'Task', 'Category', 'Attribute', 'XP', 'Difficulty'])
+
     history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.desc()).all()
     for h in history:
         writer.writerow([h.date_completed, h.name, 'N/A', h.stat_type, h.xp_gained, h.difficulty])
+
     return Response(output.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=cosmo_tracker_export.csv"})
 
+# --- ADMIN PANEL ROUTES ---
 @app.route('/admin')
 @login_required
 def admin_panel():
     if not current_user.is_admin:
         flash("Access Denied: Admin privileges required.", "danger")
         return redirect(url_for('dashboard'))
+
     total_users = User.query.count()
     total_quests = Habit.query.count()
     active_feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
-    return render_template('admin.html', users=total_users, quests=total_quests, feedbacks=active_feedbacks)
+
+    return render_template('admin.html',
+                           users=total_users,
+                           quests=total_quests,
+                           feedbacks=active_feedbacks)
 
 @app.route('/submit_feedback', methods=['POST'])
 @login_required
@@ -424,10 +461,15 @@ def submit_feedback():
 @login_required
 def delete_account():
     feedbacks = Feedback.query.filter_by(user_id=current_user.id).all()
-    for f in feedbacks: db.session.delete(f)
+    for f in feedbacks:
+        db.session.delete(f)
+
     history = QuestHistory.query.filter_by(user_id=current_user.id).all()
-    for h in history: db.session.delete(h)
+    for h in history:
+        db.session.delete(h)
+
     db.session.commit()
+
     user = db.session.get(User, current_user.id)
     db.session.delete(user)
     db.session.commit()
@@ -474,22 +516,30 @@ def delete_feedback():
 def import_tasks():
     if request.method == 'POST':
         raw_text = request.form.get('raw_text')
+
         if not raw_text:
             flash("Please paste some text first!", "error")
             return redirect(url_for('import_tasks'))
 
+        # --- THE DECISION LOGIC ---
         new_tasks_data = []
+
         if current_user.is_pro:
+            # OPTION A: Use AI (Admin/Paid)
            api_key = os.getenv('GEMINI_API_KEY')
            genai.configure(api_key=api_key)
            new_tasks_data = smart_ai_parse(raw_text, api_key)
         else:
+            # OPTION B: Use Keyword Matcher (Free)
             lines = raw_text.split('\n')
             for line in lines:
                 if line.strip():
                     new_tasks_data.append(guess_category(line))
 
+        # --- SAVE TO DATABASE (The Fixed Part) ---
         count = 0
+
+        # Helper maps for converting AI data to your App's format
         diff_map = {1: 'Easy', 2: 'Medium', 3: 'Hard'}
         stat_map = {
             'Strength': 'STR', 'Physical': 'STR',
@@ -500,35 +550,29 @@ def import_tasks():
         }
 
         for data in new_tasks_data:
+            # 1. Find or Create the Goal (Category)
             cat_name = data.get('category', 'General')
             goal = Goal.query.filter_by(user_id=current_user.id, name=cat_name).first()
+
             if not goal:
                 goal = Goal(name=cat_name, user_id=current_user.id)
                 db.session.add(goal)
-                db.session.flush()
+                db.session.flush() # Save it to get the ID immediately
 
+            # 2. Determine Stats
             difficulty_int = data.get('difficulty', 1)
             difficulty_str = diff_map.get(difficulty_int, 'Easy')
             stat_type = stat_map.get(cat_name, 'CON')
 
-            target_date_obj = None
-            date_str = data.get('target_date')
-            if date_str:
-                try:
-                    target_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-                except:
-                    target_date_obj = None
-
+            # 3. Create the Habit (Your actual Task model)
             new_habit = Habit(
                 name=data['name'],
                 goal_id=goal.id,
                 difficulty=difficulty_str,
                 stat_type=stat_type,
-                xp_value=10 * difficulty_int,
+                xp_value=10 * difficulty_int, # 10, 20, or 30 XP
                 is_daily=False,
-                completed=False,
-                target_date=target_date_obj,
-                description=data.get('description', '')
+                completed=False
             )
             db.session.add(new_habit)
             count += 1
@@ -542,35 +586,60 @@ def import_tasks():
 @app.route('/focus_hub')
 @login_required
 def focus_hub():
-    from datetime import date
+    # 1. CONSISTENCY CHECK
+    from datetime import date, timedelta
     today = date.today()
+
     if current_user.last_active_date:
         delta = (today - current_user.last_active_date).days
         if delta > 1:
-            current_user.current_streak = 0
+            current_user.current_streak = 0 # Missed a day, reset metric
             db.session.commit()
+
+    # 2. BENCHMARK LOGIC
+    # Professional Standard: 4 Hours (240 mins) of Deep Work per day
     daily_target = 240
     user_time = current_user.total_focus_time if current_user.total_focus_time else 0
+
     progress_pct = min(100, int((user_time / daily_target) * 100))
-    return render_template('focus.html', user=current_user, target=daily_target, progress=progress_pct)
+
+    return render_template('focus.html',
+                           user=current_user,
+                           target=daily_target,
+                           progress=progress_pct)
 
 @app.route('/save_focus_session', methods=['POST'])
 @login_required
 def save_focus_session():
     data = request.json
     minutes = data.get('minutes', 25)
+
+    # 1. Update Focus Stats
     current_user.total_focus_time += minutes
     current_user.last_active_date = date.today()
-    xp_gained = minutes * 2
+
+    # 2. Update Streak (Simple Logic: If active today, keep streak)
+    # (Complex logic can be added later, let's just mark them active for now)
+
+    # 3. Give Rewards (1 min = 1 XP, 10 mins = 1 Gold)
+    xp_gained = minutes * 2  # 2 XP per minute of deep work
     gold_gained = max(1, int(minutes / 10))
+
     current_user.total_xp += xp_gained
     current_user.gold += gold_gained
+
     db.session.commit()
-    return jsonify({'success': True, 'new_xp': current_user.total_xp, 'new_gold': current_user.gold})
+
+    return jsonify({
+        'success': True,
+        'new_xp': current_user.total_xp,
+        'new_gold': current_user.gold
+    })
 
 @app.route('/stats')
 @login_required
 def stats():
+    # --- 1. RADAR DATA (Attributes) ---
     radar_labels = ['STR', 'INT', 'WIS', 'CON', 'CHA']
     radar_data = [
         current_user.str_score,
@@ -579,81 +648,62 @@ def stats():
         current_user.con_score,
         current_user.cha_score
     ]
+
+    # --- 2. HISTORY DATA FETCHER ---
     history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.asc()).all()
+
+    # --- 3. LINE CHART (XP Growth) ---
     line_labels = []
     line_data = []
+
+    # Group XP by date
     xp_map = {}
     for h in history:
         d_str = h.date_completed.strftime('%Y-%m-%d')
         xp_map[d_str] = xp_map.get(d_str, 0) + h.xp_gained
+
     sorted_dates = sorted(xp_map.keys())
+
     cumulative_xp = 0
     for d in sorted_dates:
         cumulative_xp += xp_map[d]
         line_labels.append(d)
         line_data.append(cumulative_xp)
+
+    # Fallback if empty (New User)
     if not line_data:
         from datetime import date
         line_labels = [date.today().strftime('%Y-%m-%d')]
         line_data = [0]
+
+    # --- 4. HEATMAP DATA (Activity Density) ---
+    # Format: {'2023-01-01': 50, ...} (XP amounts per day)
     heatmap_data = xp_map
+
+    # --- 5. HEALTH SCORE (Consistency) ---
+    # Logic: Based on activity in the last 7 days
     from datetime import date, timedelta
     today = date.today()
     last_7_days = [today - timedelta(days=i) for i in range(7)]
     active_days = 0
     for day in last_7_days:
         d_str = day.strftime('%Y-%m-%d')
-        if d_str in xp_map: active_days += 1
+        if d_str in xp_map:
+            active_days += 1
+
+    # Calculate percentage (0 to 100)
     health_score = int((active_days / 7) * 100)
-    if health_score == 0 and current_user.total_xp > 0: health_score = 10
-    return render_template('stats.html', user=current_user, radar_labels=radar_labels, radar_data=radar_data, line_labels=line_labels, line_data=line_data, heatmap_data=heatmap_data, health_score=health_score)
+    if health_score == 0 and current_user.total_xp > 0:
+        health_score = 10 # Pity points for trying
 
-@app.route('/audit')
-@login_required
-def audit():
-    today = date.today()
-    overdue_tasks = Habit.query.join(Goal).filter(
-        Goal.user_id == current_user.id,
-        Habit.target_date < today,
-        Habit.completed == False
-    ).order_by(Habit.target_date).all()
-    return render_template('audit.html', tasks=overdue_tasks)
-
-@app.route('/process_audit', methods=['POST'])
-@login_required
-def process_audit():
-    action = request.form.get('action')
-    task_ids = request.form.getlist('task_ids')
-    today = date.today()
-    count = 0
-    for tid in task_ids:
-        habit = Habit.query.get(int(tid))
-        if habit and habit.goal.user_id == current_user.id:
-            if action == 'delete':
-                db.session.delete(habit)
-            elif action == 'move_today':
-                habit.target_date = today
-            elif action == 'move_tomorrow':
-                habit.target_date = today + timedelta(days=1)
-            elif action == 'deprioritize':
-                habit.target_date = None
-            count += 1
-    db.session.commit()
-    flash(f"Processed {count} items.", "success")
-    return redirect(url_for('audit'))
-
-@app.route('/edit_goal', methods=['POST'])
-@login_required
-def edit_goal():
-    goal_id = request.form.get('goal_id')
-    new_name = request.form.get('name')
-
-    goal = db.session.get(Goal, goal_id)
-    if goal and goal.user_id == current_user.id and new_name:
-        goal.name = new_name
-        db.session.commit()
-
-    return redirect(url_for('dashboard'))
+    return render_template('stats.html',
+                           user=current_user,
+                           radar_labels=radar_labels,
+                           radar_data=radar_data,
+                           line_labels=line_labels,
+                           line_data=line_data,
+                           heatmap_data=heatmap_data,
+                           health_score=health_score)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,65 @@
+/* modern.css - The Executive Theme Overrides */
+
+/* DEFAULT (Dark Mode) Tweaks for "Adult" feel */
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important; /* Cleaner font */
+    letter-spacing: -0.02em; /* Tighter, more modern spacing */
+}
+
+/* --- LIGHT MODE (The Executive Theme) --- */
+body.light-mode {
+    background-color: #f3f4f6 !important; /* Soft Gray Background */
+    color: #1f2937 !important; /* Dark Slate Text (softer than black) */
+}
+
+/* Override the Dark Cards */
+body.light-mode .card, 
+body.light-mode .modal-content {
+    background: #ffffff !important; /* Clean White */
+    color: #1f2937 !important;
+    border: 1px solid #e5e7eb !important; /* Very subtle border */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; /* Soft shadow */
+}
+
+/* Fix Inputs */
+body.light-mode input, 
+body.light-mode select, 
+body.light-mode textarea {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+/* Fix Headings and Text */
+body.light-mode h1, body.light-mode h2, body.light-mode h3, 
+body.light-mode h4, body.light-mode h5, body.light-mode h6,
+body.light-mode .text-white {
+    color: #111827 !important; /* Dark Slate */
+}
+
+body.light-mode .text-muted {
+    color: #6b7280 !important; /* Medium Gray */
+}
+
+/* Make Buttons Classy */
+body.light-mode .btn-info {
+    background-color: #2563eb !important; /* Professional Blue */
+    border-color: #2563eb !important;
+    color: white !important;
+}
+
+body.light-mode .btn-outline-secondary {
+    color: #4b5563 !important;
+    border-color: #e5e7eb !important;
+}
+
+/* Hide the "Glow" effects in Light Mode */
+body.light-mode .progress-bar {
+    box-shadow: none !important;
+    background-color: #2563eb !important;
+}
+
+body.light-mode .badge {
+    color: #4b5563 !important;
+    border-color: #e5e7eb !important;
+}

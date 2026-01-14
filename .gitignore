@@ -1,6 +1,8 @@
-.env
+my-virtualenv/
+venv/
 __pycache__/
 *.pyc
 instance/
-.virtualenvs/
-*.db
+rpg.db
+*.sqlite3
+.env

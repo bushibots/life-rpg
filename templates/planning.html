@@ -98,10 +98,9 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+   document.addEventListener("DOMContentLoaded", function() {
         const ctx = document.getElementById('planningChart').getContext('2d');
         
-        // Data passed from Python
         const labels = {{ chart_labels | tojson }};
         const data = {{ chart_data | tojson }};
 
@@ -112,9 +111,10 @@
                 datasets: [{
                     label: 'Active Missions',
                     data: data,
-                    backgroundColor: 'rgba(0, 243, 255, 0.2)', // Neon Blue
+                    backgroundColor: 'rgba(0, 243, 255, 0.2)',
                     borderColor: 'rgba(0, 243, 255, 1)',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    maxBarThickness: 50  
                 }]
             },
             options: {
