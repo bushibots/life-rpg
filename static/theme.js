@@ -3,23 +3,30 @@
 document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.getElementById('theme-toggle');
     const icon = toggleBtn.querySelector('i');
-    
+
     // 1. Check LocalStorage for saved preference
     const currentTheme = localStorage.getItem('app-theme');
-    
+
     // 2. Apply saved theme on load
     if (currentTheme === 'light') {
         enableLightMode();
     }
 
     // 3. Listen for clicks
-    toggleBtn.addEventListener('click', () => {
-        if (document.body.classList.contains('light-mode')) {
-            disableLightMode();
-        } else {
-            enableLightMode();
-        }
-    });
+   // static/theme.js
+
+toggleBtn.addEventListener('click', () => {
+    if (document.body.classList.contains('light-mode')) {
+        disableLightMode();
+    } else {
+        enableLightMode();
+    }
+
+    // Force a page reload so charts can "repaint" with correct theme colors
+    setTimeout(() => {
+        window.location.reload();
+    }, 100);
+});
 
     function enableLightMode() {
         document.body.classList.add('light-mode');

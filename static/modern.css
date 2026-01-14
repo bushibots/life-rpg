@@ -1,65 +1,45 @@
-/* modern.css - The Executive Theme Overrides */
+/* static/modern.css */
 
-/* DEFAULT (Dark Mode) Tweaks for "Adult" feel */
-body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif !important; /* Cleaner font */
-    letter-spacing: -0.02em; /* Tighter, more modern spacing */
+body.light-mode .text-white,
+body.light-mode h1, body.light-mode h2, body.light-mode h3,
+body.light-mode h4, body.light-mode h5, body.light-mode h6,
+body.light-mode .navbar-brand {
+    color: #212529 !important; /* Force dark text even if HTML says 'text-white' */
 }
 
-/* --- LIGHT MODE (The Executive Theme) --- */
-body.light-mode {
-    background-color: #f3f4f6 !important; /* Soft Gray Background */
-    color: #1f2937 !important; /* Dark Slate Text (softer than black) */
+body.light-mode canvas {
+    background-color: #ffffff !important; /* Ensure the chart background is clean white */
+    border-radius: 8px;
 }
 
-/* Override the Dark Cards */
-body.light-mode .card, 
-body.light-mode .modal-content {
-    background: #ffffff !important; /* Clean White */
-    color: #1f2937 !important;
-    border: 1px solid #e5e7eb !important; /* Very subtle border */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; /* Soft shadow */
+/* Force Dark Text visibility */
+body.light-mode h1, body.light-mode h2, body.light-mode h3,
+body.light-mode h4, body.light-mode h5, body.light-mode h6,
+body.light-mode .text-white,
+body.light-mode .navbar-brand,
+body.light-mode .list-group-item h6 {
+    color: #212529 !important;
+}
+
+/* Force Cards and Modals to White */
+body.light-mode .card.bg-dark,
+body.light-mode .modal-content,
+body.light-mode .list-group-item.bg-transparent {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid #dee2e6 !important;
+    backdrop-filter: none !important;
 }
 
 /* Fix Inputs */
-body.light-mode input, 
-body.light-mode select, 
-body.light-mode textarea {
+body.light-mode .form-control,
+body.light-mode .form-select {
     background-color: #ffffff !important;
-    color: #111827 !important;
-    border: 1px solid #d1d5db !important;
+    color: #212529 !important;
+    border: 1px solid #ced4da !important;
 }
 
-/* Fix Headings and Text */
-body.light-mode h1, body.light-mode h2, body.light-mode h3, 
-body.light-mode h4, body.light-mode h5, body.light-mode h6,
-body.light-mode .text-white {
-    color: #111827 !important; /* Dark Slate */
-}
-
+/* Muted text visibility */
 body.light-mode .text-muted {
-    color: #6b7280 !important; /* Medium Gray */
-}
-
-/* Make Buttons Classy */
-body.light-mode .btn-info {
-    background-color: #2563eb !important; /* Professional Blue */
-    border-color: #2563eb !important;
-    color: white !important;
-}
-
-body.light-mode .btn-outline-secondary {
-    color: #4b5563 !important;
-    border-color: #e5e7eb !important;
-}
-
-/* Hide the "Glow" effects in Light Mode */
-body.light-mode .progress-bar {
-    box-shadow: none !important;
-    background-color: #2563eb !important;
-}
-
-body.light-mode .badge {
-    color: #4b5563 !important;
-    border-color: #e5e7eb !important;
+    color: #6c757d !important;
 }
