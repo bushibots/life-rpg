@@ -1,43 +1,45 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h3>🧠 Brain Dump Import</h3>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">
-                        Paste your messy to-do list, random thoughts, or syllabus topics here. 
-                        We will sort them into Quests for you!
-                    </p>
-
-                    <form method="POST">
-                        <div class="form-group mb-3">
-                            <textarea name="raw_text" class="form-control" rows="8" placeholder="Example: Study Torts for 2 hours, go to the gym, buy milk, and call Mansi..."></textarea>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-success btn-lg w-100" id="importBtn" onclick="lockButton()">
-                            🚀 Import to Quest Log
-                        </button>
-                    </form>
-                </div>
-                
-                {% if not current_user.is_pro %}
-                <div class="card-footer bg-warning bg-opacity-25 text-center">
-                    <small>
-                        <strong>Free Tier:</strong> Using Keyword Matcher (Basic). <br>
-                        ✨ <a href="#">Upgrade to PRO</a> to use AI that understands context!
-                    </small>
-                </div>
-                {% else %}
-                <div class="card-footer bg-info bg-opacity-25 text-center">
-                    <small>⚡ PRO Active: AI Analysis Enabled</small>
-                </div>
-                {% endif %}
+<div class="d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-lg bg-dark border-secondary">
+            <div class="card-header bg-transparent border-bottom border-secondary text-center py-3">
+                <h3 class="text-info mb-0" style="font-family: 'Orbitron', sans-serif;">
+                    <i class="bi bi-cpu me-2"></i>BRAIN DUMP
+                </h3>
             </div>
+            <div class="card-body p-4">
+                <p class="text-muted text-center small mb-4">
+                    Offload your mental stack. Paste messy notes, todo lists, or random thoughts below.
+                    The system will organize them into executable protocols.
+                </p>
+
+                <form method="POST">
+                    <div class="form-group mb-4">
+                        <textarea name="raw_text" class="form-control bg-dark text-white border-secondary font-monospace" 
+                                  rows="8" placeholder="> Study Torts for 2 hours&#10;> Buy milk and eggs&#10;> Call Mansi regarding the project..."
+                                  style="font-size: 0.9rem;"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-info w-100 fw-bold py-2" id="importBtn" onclick="lockButton()">
+                        <i class="bi bi-box-arrow-in-down me-2"></i> INITIATE IMPORT
+                    </button>
+                </form>
+            </div>
+            
+            {% if not current_user.is_pro %}
+            <div class="card-footer bg-warning bg-opacity-10 border-top border-warning border-opacity-25 text-center py-2">
+                <small class="text-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i> <strong>Free Tier:</strong> Keyword Analysis Only. 
+                    <br>Upgrade for AI-powered context understanding.
+                </small>
+            </div>
+            {% else %}
+            <div class="card-footer bg-info bg-opacity-10 border-top border-info border-opacity-25 text-center py-2">
+                <small class="text-info"><i class="bi bi-stars me-1"></i> AI Neural Core Active</small>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -45,9 +47,7 @@
 <script>
 function lockButton() {
     const btn = document.getElementById('importBtn');
-    // Change text to show activity
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> PROCESSING...';
-    // Visually disable it so it looks unclickable
     btn.classList.add('disabled');
 }
 </script>

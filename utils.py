@@ -32,11 +32,11 @@ def smart_ai_parse(text_input, primary_api_key):
     # --- HYDRA PROTOCOL: LOAD & SHUFFLE KEYS ---
     # Start with the key passed from app.py
     available_keys = [primary_api_key]
-    
+
     # Check environment for reinforcements
     if os.getenv('GEMINI_API_KEY_2'): available_keys.append(os.getenv('GEMINI_API_KEY_2'))
     if os.getenv('GEMINI_API_KEY_3'): available_keys.append(os.getenv('GEMINI_API_KEY_3'))
-    
+
     # Shuffle keys to spread the load (Load Balancing)
     random.shuffle(available_keys)
 
@@ -58,17 +58,19 @@ def smart_ai_parse(text_input, primary_api_key):
     INSTRUCTIONS:
     1. ANALYZE: Is the user giving a list, or asking for a plan?
 
-    2. IF ASKING FOR A PLAN (e.g. "how to get abs"):
+    2. IMPORTANT: Make all task names easy and understandable instead of fancy sci-fi ones until the user's theme is that or instructions by user.
+       - Analyze user promt carefully.
+    3. IF ASKING FOR A PLAN (e.g. "how to get abs"):
        - GENERATE 5-10 specific tasks.
        - INVENT a Category name (e.g. "Abs").
        - DESCRIPTION: Write a short, 1-sentence step-by-step guide (e.g. "Lie on back, lift knees, crunch up.").
        - Assign realistic dates.
 
-    3. IF GIVING A LIST (e.g. "buy milk"):
+    4. IF GIVING A LIST (e.g. "buy milk"):
        - Extract tasks.
        - DESCRIPTION: Leave empty or generic.
 
-    4. OUTPUT: Return ONLY a JSON list.
+    5. OUTPUT: Return ONLY a JSON list.
        - "name": Task name.
        - "category": Short 1-word tag.
        - "difficulty": 1 (Easy), 2 (Medium), 3 (Hard).
@@ -81,7 +83,7 @@ def smart_ai_parse(text_input, primary_api_key):
     for current_key in available_keys:
         try:
             genai.configure(api_key=current_key)
-            
+
             for model_name in model_candidates:
                 try:
                     # print(f"Testing {model_name} with key ending in ...{current_key[-4:]}") # Optional Debug
@@ -99,7 +101,7 @@ def smart_ai_parse(text_input, primary_api_key):
                     if "429" in error_str or "exhausted" in error_str:
                         # print(f"⚠️ Key exhausted. Switching...")
                         break # Breaks inner loop -> goes to next key in outer loop
-                    
+
                     # If it's just a random error, try the next model with SAME key
                     continue
 

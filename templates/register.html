@@ -3,11 +3,11 @@
 {% block content %}
 <div class="d-flex align-items-center justify-content-center" style="min-height: 80vh;">
     <div class="col-md-5 col-lg-4">
-        <div class="card bg-dark border-secondary shadow-lg p-4" style="border-radius: 12px; background: linear-gradient(145deg, #1a1a1a, #0d0d0d);">
+        <div class="card bg-dark border-secondary shadow-lg p-4" style="background: linear-gradient(145deg, #1a1a1a, #0d0d0d);">
             
             <div class="text-center mb-4">
-                <h2 class="text-white fw-bold text-uppercase tracking-widest" style="font-family: 'Orbitron', sans-serif; letter-spacing: 2px;">
-                    <span class="text-info">New</span> Agent
+                <h2 class="text-white fw-bold" style="font-family: 'Orbitron', sans-serif; letter-spacing: 2px;">
+                    <span class="text-info">NEW</span> AGENT
                 </h2>
                 <p class="text-muted small text-uppercase">Initialize your operational profile</p>
             </div>
@@ -16,56 +16,54 @@
                 {{ form.hidden_tag() }}
                 
                 <div class="mb-3">
-                    <label class="form-label text-muted small text-uppercase fw-bold">Codename</label>
-                    {{ form.username(class="form-control bg-black border-secondary text-white p-3", placeholder="Enter unique ID...", style="border-radius: 8px;") }}
+                    <label class="form-label text-muted small text-uppercase fw-bold">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-black border-secondary text-muted"><i class="bi bi-person-badge"></i></span>
+                        {{ form.username(class="form-control bg-black border-secondary text-white", placeholder="Enter unique ID...") }}
+                    </div>
                     {% for error in form.username.errors %}
-                        <span class="text-danger small">{{ error }}</span>
+                        <span class="text-danger small mt-1 d-block">{{ error }}</span>
                     {% endfor %}
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label text-muted small text-uppercase fw-bold">Access Key</label>
-                    {{ form.password(class="form-control bg-black border-secondary text-white p-3", placeholder="••••••••", style="border-radius: 8px;") }}
+                    <label class="form-label text-muted small text-uppercase fw-bold">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-black border-secondary text-muted"><i class="bi bi-shield-lock"></i></span>
+                        {{ form.password(class="form-control bg-black border-secondary text-white", placeholder="••••••••") }}
+                    </div>
                     {% for error in form.password.errors %}
-                        <span class="text-danger small">{{ error }}</span>
+                        <span class="text-danger small mt-1 d-block">{{ error }}</span>
                     {% endfor %}
                 </div>
 
                 <div class="d-grid gap-2">
-                    {{ form.submit(class="btn btn-info btn-lg fw-bold text-uppercase p-3", style="letter-spacing: 1px; border-radius: 8px;") }}
+                    {{ form.submit(class="btn btn-info btn-lg fw-bold p-2", style="letter-spacing: 1px;") }}
                 </div>
             </form>
 
             <div class="mt-4 text-center border-top border-secondary pt-3">
-                <p class="text-muted small mb-0">Already have clearance?</p>
-                <a href="{{ url_for('login') }}" class="text-info text-decoration-none small fw-bold text-uppercase">Return to Login</a>
+                <p class="text-muted small mb-2">Already have clearance?</p>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-sm w-100 text-uppercase">Return to Login</a>
             </div>
         </div>
         
         <div class="text-center mt-3">
-            <span class="text-muted small opacity-50" style="font-family: 'Courier New', monospace;">SECURE_PROTOCOL_V2.0</span>
+            <span class="text-muted small opacity-50 font-monospace">SECURE_PROTOCOL_V2.0</span>
         </div>
     </div>
 </div>
 
 <style>
-    /* Professional input focus effects */
     .form-control:focus {
         background-color: #000 !important;
         border-color: #0dcaf0 !important;
         box-shadow: 0 0 10px rgba(13, 202, 240, 0.2);
         color: white;
     }
-    
-    .btn-info {
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(13, 202, 240, 0.1);
-    }
-
     .btn-info:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(13, 202, 240, 0.3);
         background-color: #31d2f2;
+        box-shadow: 0 0 15px rgba(13, 202, 240, 0.4);
     }
 </style>
 {% endblock %}
