@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
     }
-    
+
     // 3. Start Reminder Loop
     setInterval(checkReminders, 60000);
 
@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleZen() {
     const hiddenElements = document.querySelectorAll('.zen-hidden');
     const isZen = document.body.classList.toggle('zen-mode');
-    
+
     hiddenElements.forEach(el => {
         el.style.display = isZen ? 'none' : '';
     });
-    
+
     localStorage.setItem('zenMode', isZen);
 }
 
@@ -70,7 +70,7 @@ function checkAdLock() {
     if (unlockTime && now < parseInt(unlockTime)) {
         // UNLOCKED: Hide overlay immediately
         overlay.style.display = 'none';
-        
+
         // Execute the function we defined in stats.html to draw the chart
         if (typeof window.renderLockedRadar === 'function') {
             window.renderLockedRadar();
@@ -94,17 +94,17 @@ function playAd() {
     // 2. SIMULATE AD (5 Seconds)
     // Replace this setTimeout with your Google AdSense code later
     setTimeout(() => {
-        
+
         // 3. Ad Finished - Set Expiry (18 Hours)
         const hours18 = 18 * 60 * 60 * 1000;
         const expiryTime = Date.now() + hours18;
-        
+
         localStorage.setItem('pentagonUnlockTime', expiryTime);
 
         // 4. Fade out overlay
         overlay.style.transition = "opacity 0.5s ease";
         overlay.style.opacity = "0";
-        
+
         setTimeout(() => {
             overlay.style.display = 'none';
         }, 500);
@@ -114,18 +114,18 @@ function playAd() {
             window.renderLockedRadar();
         }
 
-    }, 5000); 
+    }, 5000);
 }
 
 // --- EDIT MODAL LOGIC ---
 function populateEditModal(id, name, difficulty, isDaily) {
     // 1. Fill the hidden ID
     document.getElementById('edit_habit_id').value = id;
-    
+
     // 2. Fill Name & Difficulty
     document.getElementById('edit_habit_name').value = name;
     document.getElementById('edit_habit_difficulty').value = difficulty;
-    
+
     // 3. Handle Checkbox (Python sends 'True' or 'False' as text string)
     const dailyBox = document.getElementById('edit_habit_daily');
     if (isDaily === 'True' || isDaily === 'true' || isDaily === true) {
@@ -133,7 +133,34 @@ function populateEditModal(id, name, difficulty, isDaily) {
     } else {
         dailyBox.checked = false;
     }
-    
+
     // 4. Show the Modal
     new bootstrap.Modal(document.getElementById('editHabitModal')).show();
 }
+
+function updateSystemClock() {
+        const now = new Date();
+
+        // Time Options (24-hour format like a system log)
+        const timeString = now.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        // Date Options
+        const dateString = now.toLocaleDateString('en-GB', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        document.getElementById('system-clock').innerText = timeString;
+        document.getElementById('system-date').innerText = dateString.toUpperCase();
+    }
+
+    // Update immediately, then every second
+    updateSystemClock();
+    setInterval(updateSystemClock, 1000);

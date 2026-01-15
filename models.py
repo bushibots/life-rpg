@@ -59,7 +59,7 @@ class QuestHistory(db.Model):
     difficulty = db.Column(db.String(50))
     stat_type = db.Column(db.String(10))
     xp_gained = db.Column(db.Integer)
-    date_completed = db.Column(db.Date, default=datetime.utcnow)
+    date_completed = db.Column(db.Date, default=datetime.now)
 
 class Habit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -89,7 +89,7 @@ class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     is_read = db.Column(db.Boolean, default=False)
 
     # Link to know WHO sent it
@@ -100,7 +100,7 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.String(500), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     type = db.Column(db.String(20), default='system') # 'system', 'warning', 'info'
 
     user = db.relationship('User', backref='notifications')

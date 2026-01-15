@@ -24,6 +24,12 @@ from flask import session
 
 load_dotenv()
 
+os.environ['TZ'] = 'Asia/Kolkata'
+try:
+    time.tzset()
+except AttributeError:
+    pass # Windows (Local PC) skips this, Linux (Server) uses it.
+
 # --- FORM CLASSES ---
 class RegisterForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=20)])
