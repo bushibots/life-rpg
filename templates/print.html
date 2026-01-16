@@ -2,144 +2,217 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mission Manifesto</title>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <title>Tactical Mission Log</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --border-color: #000;
+            --bg-hover: #f0f0f0;
+        }
         body {
-            font-family: 'Courier Prime', monospace;
+            font-family: 'JetBrains Mono', monospace; /* TYPEWRITER FONT RESTORED */
             background: white;
             color: black;
             padding: 40px;
-            max-width: 1000px;
+            max-width: 1050px;
             margin: 0 auto;
+            font-size: 12px;
         }
-        .header {
-            border-bottom: 4px solid black;
-            padding-bottom: 20px;
+        
+        /* --- CONFIG PANEL (Screen Only) --- */
+        .config-panel {
+            background: #eee;
+            border: 1px dashed #555;
+            padding: 15px;
             margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .config-panel h3 { margin: 0; font-size: 14px; text-transform: uppercase; }
+        .btn {
+            background: #000; color: #fff; border: none; padding: 5px 10px;
+            font-family: inherit; cursor: pointer; font-size: 11px;
+            text-transform: uppercase;
+        }
+        .btn:hover { background: #444; }
+        .btn-add { background: white; color: black; border: 1px solid black; }
+        .delete-btn {
+            color: red; font-weight: bold; cursor: pointer; margin-left: 10px;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        tr:hover .delete-btn { opacity: 1; }
+
+        /* --- PRINT LAYOUT --- */
+        .header {
+            border-bottom: 2px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
         }
-        h1 { margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px; }
-        .sub-header { font-size: 14px; }
-        
-        /* The Grid */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-        th { text-align: center; border-bottom: 2px solid black; padding: 10px; font-size: 14px; }
-        td { border-bottom: 1px solid #ccc; padding: 12px 5px; }
-        
-        .habit-col { text-align: left; width: 30%; font-weight: bold; }
-        .box-col { text-align: center; width: 10%; }
-        
-        /* The Checkboxes (Empty Squares) */
-        .checkbox {
-            height: 15px;
-            width: 15px;
-            border: 2px solid black;
-            display: inline-block;
-        }
-        
-        /* Stats Section */
-        .footer-stats {
-            display: flex;
-            gap: 20px;
-            border-top: 2px solid black;
-            padding-top: 20px;
-        }
-        .stat-box {
-            flex: 1;
-            border: 1px dashed black;
-            padding: 15px;
-            text-align: center;
-        }
-        .stat-label { display: block; font-size: 12px; margin-bottom: 10px; text-transform: uppercase; }
-        .stat-line { border-bottom: 1px solid black; height: 20px; margin: 0 20px; }
+        h1 { margin: 0; font-size: 22px; text-transform: uppercase; letter-spacing: -1px; }
+        .meta { text-align: right; line-height: 1.4; font-size: 11px; }
 
-        /* Print Controls (Hidden when printing) */
-        .no-print {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+        /* SECTIONS */
+        .category-section { margin-bottom: 30px; page-break-inside: avoid; }
+        .category-header {
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid black;
+            margin-bottom: 5px;
+            padding-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; }
+        th { 
+            text-align: center; 
+            border-bottom: 1px solid black; 
+            padding: 5px; 
+            font-size: 10px;
+            width: 8%; 
+        }
+        th.task-col { text-align: left; width: 44%; }
+        
+        td { 
+            border-bottom: 1px solid #ccc; 
+            padding: 6px 5px; 
+            vertical-align: middle; 
+        }
+
+        /* RPG ELEMENTS (Just XP) */
+        .xp-badge {
+            font-size: 9px;
             background: #000;
             color: #fff;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-family: sans-serif;
-            cursor: pointer;
+            padding: 1px 4px;
+            border-radius: 2px;
+            margin-left: 8px;
+            display: inline-block;
         }
+
+        /* CHECKBOXES */
+        .check-box {
+            height: 14px;
+            width: 14px;
+            border: 1px solid #000;
+            margin: 0 auto;
+        }
+
+        /* FOOTER */
+        .footer { 
+            margin-top: 50px; 
+            border-top: 2px solid black; 
+            padding-top: 15px;
+            display: flex; 
+            gap: 20px; 
+        }
+        .notes-area { flex: 1; border: 1px dotted #999; height: 100px; padding: 10px; }
+        .notes-title { background: white; font-weight: bold; position: relative; top: -18px; padding: 0 5px; }
+
+        /* HIDE ON PRINT */
         @media print {
-            .no-print { display: none; }
+            .no-print, .delete-btn, .btn-add { display: none !important; }
             body { padding: 0; }
         }
     </style>
 </head>
 <body>
 
-    <a href="javascript:window.print()" class="no-print">🖨️ PRINT MANIFESTO</a>
+    <div class="config-panel no-print">
+        <h3>// PRINT CONFIG //</h3>
+        <button class="btn" onclick="window.print()">[ PRINT NOW ]</button>
+        <div style="font-size: 10px; color: #555;">
+            * HOVER over a task to DELETE it.<br>
+            * Click [ADD ROW] to add blank space.<br>
+            * Click the TITLE to edit it.
+        </div>
+    </div>
 
     <div class="header">
         <div>
-            <h1>Weekly Mission Log</h1>
-            <div style="margin-top: 10px;">OPERATIVE: {{ user.username }}</div>
+            <h1 contenteditable="true" spellcheck="false">Weekly Tactical Log</h1>
+            <div style="margin-top: 5px;">AGENT: <strong>{{ user.username }}</strong></div>
         </div>
-        <div class="sub-header">
-            WEEK: ___________________<br>
-            STATUS: ACTIVE
-        </div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th class="habit-col">OBJECTIVE</th>
-                <th class="box-col">MON</th>
-                <th class="box-col">TUE</th>
-                <th class="box-col">WED</th>
-                <th class="box-col">THU</th>
-                <th class="box-col">FRI</th>
-                <th class="box-col">SAT</th>
-                <th class="box-col">SUN</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for habit in habits %}
-            <tr>
-                <td class="habit-col">
-                    {{ habit.name }}
-                    <div style="font-size: 10px; color: #666;">{{ habit.stat_type }} | {{ habit.goal.name }}</div>
-                </td>
-                <td class="box-col"><div class="checkbox"></div></td>
-                <td class="box-col"><div class="checkbox"></div></td>
-                <td class="box-col"><div class="checkbox"></div></td>
-                <td class="box-col"><div class="checkbox"></div></td>
-                <td class="box-col"><div class="checkbox"></div></td>
-                <td class="box-col"><div class="checkbox"></div></td>
-                <td class="box-col"><div class="checkbox"></div></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="footer-stats">
-        <div class="stat-box">
-            <span class="stat-label">Total XP Earned</span>
-            <div class="stat-line"></div>
-        </div>
-        <div class="stat-box">
-            <span class="stat-label">Completion Rate %</span>
-            <div class="stat-line"></div>
-        </div>
-        <div class="stat-box">
-            <span class="stat-label">Top Skill Improved</span>
-            <div class="stat-line"></div>
+        <div class="meta">
+            <div>CYCLE: {{ week_labels[0] }} - {{ week_labels[-1] }}</div>
+            <div>STATUS: ACTIVE</div>
         </div>
     </div>
 
-    <div style="margin-top: 40px; font-size: 12px; text-align: center; color: #666;">
-        // GENERATED BY LIFE RPG // DIGITAL COMMAND -> ANALOG EXECUTION //
+    {% for goal_name, goal_habits in habits|groupby('goal.name') %}
+    <div class="category-section" id="cat-{{ loop.index }}">
+        <div class="category-header">
+            <span>// {{ goal_name }}</span>
+            <button class="btn btn-add no-print" onclick="addBlankRow('tbody-{{ loop.index }}')">+ ADD ROW</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th class="task-col">OBJECTIVE</th>
+                    {% for day in week_labels %}
+                    <th>{{ day.split(' ')[0] }}<br>{{ day.split(' ')[1] }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody id="tbody-{{ loop.index }}">
+                {% for habit in goal_habits %}
+                <tr id="row-{{ habit.id }}">
+                    <td>
+                        <span style="font-weight: bold;">{{ habit.name }}</span>
+                        <span class="xp-badge">+{{ habit.xp_value }}XP</span>
+                        
+                        <span class="delete-btn no-print" onclick="removeRow('row-{{ habit.id }}')">[X]</span>
+                    </td>
+                    <td><div class="check-box"></div></td>
+                    <td><div class="check-box"></div></td>
+                    <td><div class="check-box"></div></td>
+                    <td><div class="check-box"></div></td>
+                    <td><div class="check-box"></div></td>
+                    <td><div class="check-box"></div></td>
+                    <td><div class="check-box"></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% endfor %}
+
+    <div class="footer">
+        <div class="notes-area">
+            <span class="notes-title">FIELD NOTES</span>
+        </div>
+        <div class="notes-area">
+            <span class="notes-title">DEBRIEF / NEXT STEPS</span>
+        </div>
+    </div>
+
+    <script>
+        // Function to remove a row from the print view
+        function removeRow(rowId) {
+            const row = document.getElementById(rowId);
+            if(row) row.style.display = 'none';
+        }
+
+        // Function to add a blank manual row
+        function addBlankRow(tbodyId) {
+            const tbody = document.getElementById(tbodyId);
+            const newRow = document.createElement('tr');
+            
+            let html = `<td><span style="color:#777; font-style:italic;">[ Manual Entry ]</span> <span class="delete-btn no-print" onclick="this.parentElement.parentElement.remove()">[X]</span></td>`;
+            for(let i=0; i<7; i++) {
+                html += `<td><div class="check-box"></div></td>`;
+            }
+            
+            newRow.innerHTML = html;
+            tbody.appendChild(newRow);
+        }
+    </script>
 
 </body>
 </html>

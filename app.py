@@ -831,5 +831,39 @@ def strategy_brief():
     ai_message = get_backlog_strategy(hours, days, mode)
 
     return jsonify({'message': ai_message})
+
+@app.route('/api/missed_data')
+@login_required
+def missed_data():
+    today = date.today()
+    missed_points = []
+
+    # Categories mapped to numbers for the Y-Axis graph
+    cat_map = {"Strength": 4, "Intelligence": 3, "Charisma": 2, "Creativity": 1, "General": 0}
+
+    # Look back 7 days
+    for i in range(7):
+        check_date = today - timedelta(days=i)
+        date_str = check_date.strftime("%b %d") # e.g. "Jan 16"
+
+        # Get all completed tasks for this specific date
+        completed_ids = [h.habit_id for h in HabitHistory.query.filter_by(user_id=current_user.id, date=check_date).all()]
+
+        # Check all active habits
+        active_habits = Habit.query.filter_by(user_id=current_user.id).all()
+
+        for habit in active_habits:
+            # If habit was NOT in the completed list for that date
+            if habit.id not in completed_ids:
+                # Add a "Missed" data point
+                missed_points.append({
+                    "x": date_str,                 # The Day
+                    "y": cat_map.get(habit.category, 0), # The Category Level
+                    "task": habit.name,            # The Exact Name
+                    "r": 6                         # Dot size
+                })
+
+    # Reverse so today is on the right
+    return jsonify(missed_points)
 if __name__ == '__main__':
     app.run(debug=True)

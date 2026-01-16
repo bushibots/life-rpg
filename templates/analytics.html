@@ -7,7 +7,7 @@
             <h5 class="text-muted text-uppercase small mb-3">System Consistency</h5>
             <h1 class="display-1 fw-bold text-white mb-0" style="font-family: 'Orbitron', sans-serif;">{{ health_score }}%</h1>
             <div class="progress bg-secondary bg-opacity-10 mt-3" style="height: 6px;">
-                <div class="progress-bar bg-{{ 'success' if health_score > 70 else 'warning' if health_score > 30 else 'danger' }}" 
+                <div class="progress-bar bg-{{ 'success' if health_score > 70 else 'warning' if health_score > 30 else 'danger' }}"
                      style="width: {{ health_score }}%"></div>
             </div>
             <p class="small text-muted mt-2">7-Day Activity Rate</p>
@@ -56,6 +56,13 @@
     </div>
 </div>
 
+<div class="glass-panel" style="margin-top: 30px;">
+    <h3>// RECENT NEGLECT MATRIX (7 DAYS)</h3>
+    <div style="height: 300px;">
+        <canvas id="missedChart"></canvas>
+    </div>
+</div>
+
 <div class="card bg-dark border-secondary p-4 mb-5">
     <h5 class="text-uppercase text-white mb-4">Activity Heatmap</h5>
     <div class="d-flex flex-wrap gap-1 justify-content-center" id="heatmapContainer"></div>
@@ -66,7 +73,7 @@
     const isLight = document.body.classList.contains('light-mode');
     const textColor = isLight ? '#212529' : '#94a3b8';
     const gridColor = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)';
-    
+
     Chart.defaults.color = textColor;
     Chart.defaults.borderColor = gridColor;
     Chart.defaults.font.family = "'Inter', sans-serif";
@@ -94,13 +101,13 @@
                 r: {
                     angleLines: { color: gridColor },
                     grid: { color: gridColor },
-                    pointLabels: { 
-                        color: textColor, 
+                    pointLabels: {
+                        color: textColor,
                         font: { size: 12, weight: 'bold' } // Make labels bigger
                     },
-                    ticks: { 
+                    ticks: {
                         display: false, // Hide the messy numbers inside
-                        backdropColor: 'transparent' 
+                        backdropColor: 'transparent'
                     },
                     suggestedMin: 0, // Ensure it starts from center
                 }
@@ -177,13 +184,13 @@
     const heatmapData = {{ heatmap_data | tojson }};
     const container = document.getElementById('heatmapContainer');
     const today = new Date();
-    
+
     for (let i = 59; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
         const xp = heatmapData[dateStr] || 0;
-        
+
         let colorClass = 'bg-secondary bg-opacity-10';
         if (xp > 0) colorClass = 'bg-info bg-opacity-25';
         if (xp > 50) colorClass = 'bg-info bg-opacity-50';
@@ -197,5 +204,67 @@
         box.setAttribute('data-bs-toggle', 'tooltip');
         container.appendChild(box);
     }
+
+// --- LOAD MISSED TASK GRAPH ---
+async function loadMissedGraph() {
+    const response = await fetch('/api/missed_data');
+    const missedData = await response.json();
+
+    const ctx = document.getElementById('missedChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bubble', // Bubble allows us to store custom data like 'task name'
+        data: {
+            datasets: [{
+                label: 'Missed Objectives',
+                data: missedData,
+                backgroundColor: 'rgba(255, 99, 132, 0.7)', // Red for danger/missed
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'category', // Shows Dates
+                    grid: { color: '#333' },
+                    ticks: { color: '#fff' }
+                },
+                y: {
+                    min: -0.5,
+                    max: 4.5,
+                    grid: { color: '#333' },
+                    ticks: {
+                        color: '#aaa',
+                        callback: function(value) {
+                            // Convert numbers back to Category Names
+                            const labels = ["General", "Creativity", "Charisma", "Intelligence", "Strength"];
+                            return labels[value] || "";
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            // SHOW THE EXACT TASK NAME ON HOVER
+                            return ' MISSED: ' + context.raw.task;
+                        }
+                    },
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#ff4444',
+                    bodyFont: { family: 'Courier New', size: 14 }
+                },
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+// Call it on page load
+loadMissedGraph();
 </script>
 {% endblock %}
