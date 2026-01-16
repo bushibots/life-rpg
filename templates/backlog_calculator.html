@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        <div class="text-center mb-4">
+            <h2 class="text-info fw-bold" style="font-family: 'Orbitron', sans-serif; letter-spacing: 2px;">
+                <i class="bi bi-radioactive me-2"></i>BACKLOG NEUTRALIZER
+            </h2>
+            <p class="text-muted">Select your backlog type to calculate the "Time Debt", then build a recovery plan.</p>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-6">
+                <div class="card bg-dark border-secondary shadow-lg h-100">
+                    <div class="card-header bg-transparent border-bottom border-secondary pt-3 pb-0">
+                        <ul class="nav nav-tabs card-header-tabs border-0" id="calcTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active text-info fw-bold" id="online-tab" data-bs-toggle="tab" data-bs-target="#online" type="button">
+                                    <i class="bi bi-wifi me-2"></i>ONLINE (Video)
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link text-warning fw-bold" id="offline-tab" data-bs-toggle="tab" data-bs-target="#offline" type="button">
+                                    <i class="bi bi-book me-2"></i>OFFLINE (Reading)
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="tab-content" id="calcTabContent">
+
+                            <div class="tab-pane fade show active" id="online" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="text-muted small">Total Content Duration</label>
+                                    <div class="input-group">
+                                        <input type="number" id="vidHours" class="form-control bg-dark text-white border-secondary text-center" placeholder="Hr">
+                                        <span class="input-group-text bg-dark border-secondary text-muted">:</span>
+                                        <input type="number" id="vidMins" class="form-control bg-dark text-white border-secondary text-center" placeholder="Min">
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="text-muted small">Playback Speed: <span id="speedDisplay" class="text-info fw-bold">1.5x</span></label>
+                                    <input type="range" class="form-range" min="1" max="3" step="0.25" id="speedRange" value="1.5" oninput="updateSpeedLabel(this.value)">
+                                    <div class="d-flex justify-content-between text-muted" style="font-size: 0.7rem;">
+                                        <span>Normal</span>
+                                        <span>2x (God Mode)</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-4">
+                                    <input class="form-check-input" type="checkbox" id="skipIntro">
+                                    <label class="form-check-label text-muted small" for="skipIntro">
+                                        Aggressive Skipping (Skip Intro/Outro/Chit-chat ~10%)
+                                    </label>
+                                </div>
+
+                                <button class="btn btn-info w-100 fw-bold" onclick="calculateOnline()">
+                                    CALCULATE VIDEO LOAD
+                                </button>
+                            </div>
+
+                            <div class="tab-pane fade" id="offline" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="text-muted small">Backlog Volume</label>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text bg-dark border-secondary text-muted">Chapters</span>
+                                        <input type="number" id="chapters" class="form-control bg-dark text-white border-secondary" placeholder="e.g. 5">
+                                    </div>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-dark border-secondary text-muted">Avg Pages/Chapter</span>
+                                        <input type="number" id="pagesPerChap" class="form-control bg-dark text-white border-secondary" placeholder="e.g. 10">
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="text-muted small">Your Reading Speed</label>
+                                    <select id="readingSpeed" class="form-select bg-dark text-white border-secondary">
+                                        <option value="2">Skimming (2 min/page)</option>
+                                        <option value="5" selected>Normal Study (5 min/page)</option>
+                                        <option value="10">Deep Understanding (10 min/page)</option>
+                                        <option value="15">Note Making (15 min/page)</option>
+                                    </select>
+                                </div>
+
+                                <button class="btn btn-warning w-100 fw-bold" onclick="calculateOffline()">
+                                    CALCULATE READING LOAD
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card bg-dark border-success shadow-lg h-100" style="border: 1px solid rgba(25, 135, 84, 0.3);">
+                    <div class="card-header bg-transparent border-bottom border-secondary py-3">
+                        <h5 class="text-white mb-0"><i class="bi bi-calendar-check-fill me-2 text-success"></i>Recovery Plan</h5>
+                    </div>
+                    <div class="card-body d-flex flex-column justify-content-between">
+
+                        <div class="alert alert-dark border-secondary text-center mb-4">
+                            <small class="text-muted text-uppercase">Total Time Debt</small>
+                            <h1 class="fw-bold text-white mb-0" id="totalHoursDisplay">0.0</h1>
+                            <small class="text-muted">Hours needed to catch up</small>
+                        </div>
+
+                        <div>
+                            <label class="text-muted small">Extra Study Hours Available (Daily)</label>
+                            <input type="number" id="dailyEffort" class="form-control bg-dark text-white border-secondary mb-3" placeholder="e.g. 2 hours" oninput="updateDate()">
+
+                            <div class="d-grid">
+                                <button class="btn btn-outline-success fw-bold disabled" id="planBtn">
+                                    <span id="dateOutput">ENTER DAILY HOURS</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <p class="small text-muted fst-italic" id="motivationText">
+                                "The best time to plant a tree was 20 years ago. The second best time is now."
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentDebtHours = 0;
+
+    // --- UI UPDATES ---
+    function updateSpeedLabel(val) {
+        document.getElementById('speedDisplay').innerText = val + 'x';
+    }
+
+    // --- ONLINE CALCULATOR ---
+    function calculateOnline() {
+        let h = parseFloat(document.getElementById('vidHours').value) || 0;
+        let m = parseFloat(document.getElementById('vidMins').value) || 0;
+        let speed = parseFloat(document.getElementById('speedRange').value);
+        let skip = document.getElementById('skipIntro').checked;
+
+        if (h === 0 && m === 0) return;
+
+        let totalRawMinutes = (h * 60) + m;
+
+        // Apply Skipping Strategy (10% reduction)
+        if (skip) totalRawMinutes = totalRawMinutes * 0.9;
+
+        let finalMinutes = totalRawMinutes / speed;
+        currentDebtHours = finalMinutes / 60;
+
+        updateDebtDisplay("ONLINE");
+    }
+
+    // --- OFFLINE CALCULATOR ---
+    function calculateOffline() {
+        let chapters = parseFloat(document.getElementById('chapters').value) || 0;
+        let pages = parseFloat(document.getElementById('pagesPerChap').value) || 0;
+        let minsPerPage = parseFloat(document.getElementById('readingSpeed').value) || 0;
+
+        if (chapters === 0 || pages === 0) return;
+
+        let totalPages = chapters * pages;
+        let totalMinutes = totalPages * minsPerPage;
+        currentDebtHours = totalMinutes / 60;
+
+        updateDebtDisplay("OFFLINE");
+    }
+
+    // --- SHARED: UPDATE DISPLAY ---
+    function updateDebtDisplay(mode) {
+        document.getElementById('totalHoursDisplay').innerText = currentDebtHours.toFixed(1) + " hrs";
+        if(document.getElementById('dailyEffort').value) {
+            updateDate();
+        }
+        if(window.innerWidth < 768) {
+            document.getElementById('totalHoursDisplay').scrollIntoView({behavior: "smooth"});
+        }
+    }
+
+    // --- TYPEWRITER EFFECT FUNCTION (Makes it look cool) ---
+    function typeWriter(text, elementId) {
+        let i = 0;
+        let elem = document.getElementById(elementId);
+
+        // Clear old text and set style
+        elem.classList.remove('text-info');
+        elem.classList.add('text-white');
+        elem.innerHTML = '<span class="text-info fw-bold font-monospace">COMMANDER:</span> "';
+
+        function type() {
+            if (i < text.length) {
+                elem.innerHTML += text.charAt(i);
+                i++;
+                setTimeout(type, 30); // Typing speed
+            } else {
+                elem.innerHTML += '"'; // Closing quote
+            }
+        }
+        type();
+    }
+
+    // --- THE DATE PREDICTOR (WITH SYSTEM UPLINK) ---
+    async function updateDate() {
+        let daily = parseFloat(document.getElementById('dailyEffort').value) || 0;
+        let btn = document.getElementById('planBtn');
+        let out = document.getElementById('dateOutput');
+        let motivation = document.getElementById('motivationText');
+
+        if (daily <= 0 || currentDebtHours <= 0) {
+            btn.classList.add('disabled');
+            out.innerText = "ENTER DAILY HOURS";
+            return;
+        }
+
+        let daysNeeded = Math.ceil(currentDebtHours / daily);
+        let targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + daysNeeded);
+        let options = { weekday: 'short', month: 'short', day: 'numeric' };
+        let dateStr = targetDate.toLocaleDateString('en-US', options).toUpperCase();
+
+        btn.classList.remove('disabled');
+        out.innerHTML = `FREEDOM DATE: <span class="text-white">${dateStr}</span> (${daysNeeded} Days)`;
+
+        // 1. IMMERSIVE LOADING STATE (System Status)
+        motivation.innerHTML = `<span class="spinner-grow spinner-grow-sm text-info me-2"></span><span class="font-monospace text-info">COMPUTING STRATEGIC ADVISORY...</span>`;
+
+        try {
+            // 2. Call the Python Backend
+            const response = await fetch('/api/strategy_brief', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    hours: currentDebtHours.toFixed(1),
+                    days: daysNeeded,
+                    mode: document.getElementById('online-tab').classList.contains('active') ? 'Video' : 'Reading'
+                })
+            });
+
+            const data = await response.json();
+
+            // 3. TRIGGER TYPEWRITER EFFECT (No "AI" mention)
+            typeWriter(data.message, 'motivationText');
+
+        } catch (error) {
+            console.error('Uplink Failed', error);
+            motivation.innerText = "Connection unstable. Maintain course.";
+        }
+    }
+</script>
+{% endblock %}

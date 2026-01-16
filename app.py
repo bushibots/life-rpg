@@ -9,10 +9,10 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import login_user, logout_user, login_required, current_user
 from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory, Notification
 from datetime import date, timedelta, datetime
-from extensions import db, login_manager
+from extensions import db, login_manager, migrate, csrf
 from flask_migrate import Migrate
 from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory
-from utils import guess_category, smart_ai_parse
+from utils import guess_category, smart_ai_parse, get_ai_feedback, get_backlog_strategy
 from flask_wtf import FlaskForm
 from collections import Counter
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
@@ -243,6 +243,11 @@ def add_habit():
         db.session.commit()
 
     return redirect(url_for('dashboard'))
+
+@app.route('/operations/backlog')
+@login_required
+def backlog_calculator():
+    return render_template('backlog_calculator.html')
 
 @app.route('/toggle_habit/<int:habit_id>')
 @login_required
@@ -714,11 +719,14 @@ def process_audit():
         if habit and habit.goal.user_id == current_user.id:
             if action == 'delete':
                 db.session.delete(habit)
-            elif action == 'move_today':
+            # FIXED: Matches value="today" from HTML
+            elif action == 'today':
                 habit.target_date = today
-            elif action == 'move_tomorrow':
+            # FIXED: Matches value="tomorrow" from HTML
+            elif action == 'tomorrow':
                 habit.target_date = today + timedelta(days=1)
-            elif action == 'deprioritize':
+            # FIXED: Matches value="unschedule" from HTML
+            elif action == 'unschedule':
                 habit.target_date = None
             count += 1
     db.session.commit()
@@ -808,5 +816,20 @@ def dismiss_notification(notif_id):
         db.session.commit()
     return redirect(url_for('dashboard'))
 
+# Inside app.py
+
+@app.route('/api/strategy_brief', methods=['POST'])
+@login_required
+@csrf.exempt
+def strategy_brief():
+    data = request.json
+    hours = data.get('hours', 0)
+    days = data.get('days', 0)
+    mode = data.get('mode', 'General')
+
+    # Call the AI function we just wrote
+    ai_message = get_backlog_strategy(hours, days, mode)
+
+    return jsonify({'message': ai_message})
 if __name__ == '__main__':
     app.run(debug=True)
