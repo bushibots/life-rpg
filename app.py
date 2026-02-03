@@ -102,7 +102,7 @@ with app.app_context():
 def dashboard():
     today = date.today()
 
-    # 1. DAILY RESET CHECK (For recurring habits)
+    # 1. DAILY RESET CHECK
     if current_user.last_check_date != today:
         user_goals = Goal.query.filter_by(user_id=current_user.id).all()
         for goal in user_goals:
@@ -113,17 +113,26 @@ def dashboard():
         db.session.commit()
 
     goals = Goal.query.filter_by(user_id=current_user.id).all()
-    
-    # 2. GET COMPLETED TASKS FROM TODAY (To keep them visible)
-    # We look at QuestHistory to see what was ticked TODAY.
-    todays_quest_names = [
-        q.name for q in QuestHistory.query.filter_by(
-            user_id=current_user.id, 
-            date_completed=today
-        ).all()
+
+    # 2. GET COMPLETED TASKS (For Vanishing Logic)
+    todays_completed = [
+        q.name for q in QuestHistory.query.filter_by(user_id=current_user.id, date_completed=today).all()
     ]
 
-    # 3. CALCULATE STATS
+    # 3. SMART COLLAPSE LOGIC (The New Part)
+    # We want a list of Goal IDs that have tasks due TODAY
+    active_goal_ids = []
+    for goal in goals:
+        has_today_task = False
+        for habit in goal.habits:
+            # Check if task is due today and NOT completed
+            if habit.target_date == today and not habit.completed:
+                has_today_task = True
+                break
+        if has_today_task:
+            active_goal_ids.append(goal.id)
+
+    # 4. STATS & REPORT
     monthly_xp = get_monthly_xp(current_user.id)
     overdue_count = Habit.query.join(Goal).filter(
         Goal.user_id == current_user.id,
@@ -131,7 +140,6 @@ def dashboard():
         Habit.completed == False
     ).count()
 
-    # 4. REPORT CHECK
     show_report = False
     prev_month_date = today.replace(day=1) - timedelta(days=1)
     if today.day <= 7:
@@ -141,14 +149,15 @@ def dashboard():
         ).first()
         if has_data: show_report = True
 
-    return render_template('dashboard.html', 
-                           user=current_user, 
-                           goals=goals, 
+    return render_template('dashboard.html',
+                           user=current_user,
+                           goals=goals,
                            overdue_count=overdue_count,
                            monthly_xp=monthly_xp,
                            show_report=show_report,
                            prev_month=prev_month_date,
-                           todays_completed=todays_quest_names) # <--- PASS THIS NEW LIST
+                           todays_completed=todays_completed,
+                           active_goal_ids=active_goal_ids) # <--- PASS THIS LIST
 
 
 
@@ -158,7 +167,7 @@ def dashboard():
 def analytics():
     # --- 1. HANDLE DATE SELECTION ---
     today = date.today()
-    
+
     # Get params from URL (e.g., ?month=1&year=2025)
     try:
         selected_month = int(request.args.get('month', today.month))
@@ -182,7 +191,7 @@ def analytics():
         # If looking at past month, set reference to the last day of that month
         last_day = calendar.monthrange(selected_year, selected_month)[1]
         reference_date = date(selected_year, selected_month, last_day)
-        
+
         # If selected month is current month, clamp reference to today (don't show future)
         if selected_year == today.year and selected_month == today.month:
             reference_date = today
@@ -192,7 +201,7 @@ def analytics():
     history = query.order_by(QuestHistory.date_completed.asc()).all()
 
     # --- 3. PROCESS GRAPHS ---
-    
+
     # A. RADAR & ATTRIBUTES
     stats = {'STR': 0, 'INT': 0, 'WIS': 0, 'CON': 0, 'CHA': 0}
     for h in history:
@@ -212,12 +221,12 @@ def analytics():
     last_7_days_dates = [reference_date - timedelta(days=i) for i in range(7)]
     active_days = sum(1 for day in last_7_days_dates if day.strftime('%Y-%m-%d') in xp_map)
     health_score = int((active_days / 7) * 100)
-    
+
     # D. LINE CHART (Cumulative for the period)
     line_labels = []
     line_data = []
     cumulative_xp = 0
-    
+
     # If filtering by month, we fill in missing days to make the chart smooth
     if not show_all:
         # Create a list of ALL days in that month (up to reference date)
@@ -234,7 +243,7 @@ def analytics():
         cumulative_xp += gain
         line_labels.append(d_str)
         line_data.append(cumulative_xp)
-        
+
     if not line_data:
         line_labels = [today.strftime('%Y-%m-%d')]
         line_data = [0]
@@ -302,13 +311,17 @@ def add_habit():
     difficulty = request.form.get('difficulty')
     duration = request.form.get('duration')
     date_str = request.form.get('target_date')
+    description = request.form.get('description') # <--- NEW: Get the description
 
     xp_map = {'Easy': 10, 'Medium': 30, 'Hard': 50, 'Epic': 100}
     xp = xp_map.get(difficulty, 10)
 
     target_date_obj = None
     if date_str:
-        target_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+        try:
+            target_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except:
+            target_date_obj = None
 
     if name and goal_id:
         new_habit = Habit(
@@ -319,9 +332,9 @@ def add_habit():
             xp_value=xp,
             duration=int(duration) if duration else 0,
             completed=False,
-            is_daily=True,
+            is_daily=False,
             target_date=target_date_obj,
-            description="" # Default empty description
+            description=description if description else "" # <--- NEW: Save it!
         )
         db.session.add(new_habit)
         db.session.commit()
@@ -383,18 +396,18 @@ def toggle_habit(habit_id):
             action = "uncompleted"
 
         db.session.commit()
-        
+
         # Calculate new Monthly XP to update the UI instantly
         new_monthly_xp = get_monthly_xp(current_user.id)
-        
+
         return jsonify({
-            'success': True, 
-            'action': action, 
+            'success': True,
+            'action': action,
             'new_total_xp': current_user.total_xp,
             'new_monthly_xp': new_monthly_xp,
             'habit_id': habit.id
         })
-    
+
     return jsonify({'success': False}), 400
 
 @app.route('/add_goal', methods=['POST'])
@@ -956,7 +969,7 @@ def missed_data():
             if habit.name not in completed_names:
                 missed_points.append({
                     "x": date_str,
-                    "y": cat_map.get(habit.stat_type, 0), 
+                    "y": cat_map.get(habit.stat_type, 0),
                     "task": habit.name,
                     "r": 6
                 })
@@ -975,7 +988,7 @@ def history():
     for d in dates:
         if d.date_completed:
             months.add((d.date_completed.year, d.date_completed.month))
-    
+
     sorted_months = sorted(list(months), reverse=True)
     archives = []
     for y, m in sorted_months:
@@ -985,7 +998,7 @@ def history():
             extract('year', QuestHistory.date_completed) == y,
             extract('month', QuestHistory.date_completed) == m
         ).scalar() or 0
-        
+
         archives.append({'year': y, 'month': m, 'name': month_name, 'xp': xp})
 
     return render_template('history.html', archives=archives)
@@ -998,10 +1011,10 @@ def history_details(year, month):
         extract('year', QuestHistory.date_completed) == year,
         extract('month', QuestHistory.date_completed) == month
     ).order_by(QuestHistory.date_completed.desc()).all()
-    
+
     month_name = calendar.month_name[month]
     total_xp = sum(l.xp_gained for l in logs)
-    
+
     return render_template('history_details.html', logs=logs, month=month_name, year=year, total_xp=total_xp)
 
 @app.route('/download_report/<int:year>/<int:month>')
@@ -1022,11 +1035,11 @@ def download_report(year, month):
     output.seek(0)
     month_name = calendar.month_name[month]
     return Response(
-        output, 
-        mimetype="text/csv", 
+        output,
+        mimetype="text/csv",
         headers={"Content-Disposition": f"attachment;filename=Mission_Report_{month_name}_{year}.csv"}
     )
-    
+
 # --- NEW PDF ROUTE ---
 @app.route('/download_report_pdf/<int:year>/<int:month>')
 @login_required
@@ -1037,27 +1050,27 @@ def download_report_pdf(year, month):
         extract('year', QuestHistory.date_completed) == year,
         extract('month', QuestHistory.date_completed) == month
     ).order_by(QuestHistory.date_completed).all()
-    
+
     total_xp = sum(l.xp_gained for l in logs)
     month_name = calendar.month_name[month]
-    
+
     # 2. Render HTML Template
-    html = render_template('report_pdf.html', 
-                           user=current_user, 
-                           logs=logs, 
+    html = render_template('report_pdf.html',
+                           user=current_user,
+                           logs=logs,
                            total_xp=total_xp,
                            mission_count=len(logs),
                            month_name=month_name,
                            year=year,
                            now=datetime.now().strftime("%Y-%m-%d %H:%M"))
-    
+
     # 3. Convert to PDF using WeasyPrint
     pdf = HTML(string=html).write_pdf()
-    
+
     # 4. Return as Download
     return Response(
-        pdf, 
-        mimetype='application/pdf', 
+        pdf,
+        mimetype='application/pdf',
         headers={"Content-Disposition": f"attachment;filename=Mission_Dossier_{month_name}_{year}.pdf"}
     )
 

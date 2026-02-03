@@ -239,3 +239,68 @@ body {
         max-height: 400px !important;
     }
 }
+
+/* --- 1. FILTER BAR (Horizontal Shifter) --- */
+    .filter-scroll-container {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+        scrollbar-width: none; /* Firefox */
+        margin-bottom: 1rem;
+    }
+    .filter-scroll-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+    .filter-pill {
+        display: inline-block;
+        padding: 6px 16px;
+        margin-right: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        color: #94a3b8;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-pill:hover {
+        background: rgba(0, 242, 255, 0.1);
+        color: #fff;
+        border-color: rgba(0, 242, 255, 0.1);
+    }
+
+    .filter-pill.active {
+        background: #0dcaf0;
+        color: #000;
+        border-color: #0dcaf0;
+        font-weight: bold;
+        box-shadow: 0 0 09px rgba(13, 202, 240, 0.1);
+    }
+
+    /* --- 2. MOBILE LAYOUT FIXES (Critical) --- */
+    @media (max-width: 768px) {
+        /* Force tasks to stay in a row (Checkbox - Text - Actions) */
+        .task-item.list-group-item {
+            flex-direction: row !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+        }
+
+        /* Prevent checkbox form becoming huge */
+        .task-item .btn-link {
+            width: auto !important;
+            margin-top: 0 !important;
+        }
+
+        /* Adjust action buttons spacing */
+        .task-item .d-flex.gap-2.ms-2 {
+            flex-direction: column;
+            gap: 5px !important;
+        }
+    }
+
+    /* Animation Classes */
+    .task-item.hidden-task { display: none !important; }
+    .goal-card.hidden-card { display: none !important; }

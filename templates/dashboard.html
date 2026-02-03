@@ -2,29 +2,18 @@
 
 {% block content %}
 
+
 {% if user.notifications %}
     {% for notif in user.notifications %}
         {% if not notif.is_read %}
-            {% if notif.type == 'warning' %}
-                <div class="alert alert-danger border-danger shadow-lg mb-4 d-flex justify-content-between align-items-center" role="alert" style="border-left: 5px solid red; background: linear-gradient(90deg, #2c0b0e 0%, #1a1a1a 100%);">
-                    <div>
-                        <h5 class="alert-heading fw-bold text-danger mb-1" style="font-family: 'Orbitron', sans-serif;">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>SECURITY ALERT
-                        </h5>
-            {% else %}
-                <div class="alert alert-info border-info shadow-lg mb-4 d-flex justify-content-between align-items-center" role="alert" style="border-left: 5px solid cyan; background: linear-gradient(90deg, #051b2c 0%, #080a10 100%);">
-                    <div>
-                        <h5 class="alert-heading fw-bold text-info mb-1" style="font-family: 'Orbitron', sans-serif;">
-                            <i class="bi bi-broadcast me-2"></i>INCOMING TRANSMISSION
-                        </h5>
-            {% endif %}
+            <div class="alert {{ 'alert-danger border-danger' if notif.type == 'warning' else 'alert-info border-info' }} shadow-lg mb-4 d-flex justify-content-between align-items-center" role="alert" style="background: #0b0f14;">
+                <div>
+                    <h5 class="alert-heading fw-bold {{ 'text-danger' if notif.type == 'warning' else 'text-info' }} mb-1" style="font-family: 'Orbitron', sans-serif;">
+                        <i class="bi {{ 'bi-exclamation-triangle-fill' if notif.type == 'warning' else 'bi-broadcast' }} me-2"></i>SYSTEM ALERT
+                    </h5>
                     <p class="mb-0 text-white font-monospace">{{ notif.message }}</p>
-                    <small class="text-muted text-uppercase">{{ notif.timestamp.strftime('%H:%M') }} | PRIORITY: {{ 'HIGH' if notif.type == 'warning' else 'STANDARD' }}</small>
                 </div>
-                <a href="{{ url_for('dismiss_notification', notif_id=notif.id) }}" class="btn btn-sm fw-bold {{ 'btn-outline-danger' if notif.type == 'warning' else 'btn-outline-info' }}">
-                    ACKNOWLEDGE
-                </a>
-            </div>
+                <a href="{{ url_for('dismiss_notification', notif_id=notif.id) }}" class="btn btn-sm btn-outline-secondary">ACKNOWLEDGE</a>
             </div>
         {% endif %}
     {% endfor %}
@@ -32,18 +21,10 @@
 
 {% if show_report %}
 <div class="alert alert-info border-info d-flex justify-content-between align-items-center mb-4 shadow-lg">
-    <div>
-        <i class="bi bi-file-earmark-spreadsheet-fill fs-4 me-2"></i>
-        <strong>MISSION REPORT READY:</strong> 
-        <span>Data for {{ prev_month.strftime('%B') }} is available.</span>
-    </div>
+    <div><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i><strong>REPORT READY</strong></div>
     <div class="d-flex gap-2">
-        <a href="{{ url_for('download_report', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-outline-info fw-bold text-dark">
-            <i class="bi bi-table me-1"></i> CSV
-        </a>
-        <a href="{{ url_for('download_report_pdf', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-danger fw-bold shadow-sm">
-            <i class="bi bi-file-pdf-fill me-1"></i> PDF DOSSIER
-        </a>
+        <a href="{{ url_for('download_report', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-outline-info">CSV</a>
+        <a href="{{ url_for('download_report_pdf', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-danger">PDF</a>
     </div>
 </div>
 {% endif %}
@@ -53,21 +34,14 @@
         <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden" style="background: linear-gradient(135deg, #0b0f14 0%, #151921 100%); border: 1px solid rgba(0, 243, 255, 0.2) !important;">
             <div class="card-body text-center p-4">
                 <div class="d-flex justify-content-between align-items-start">
-                    <span class="badge bg-secondary border border-secondary text-light">LIFETIME XP: {{ user.total_xp }}</span>
-                    <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline-secondary" style="font-size: 0.7rem;">
-                        <i class="bi bi-clock-history me-1"></i> ARCHIVES
-                    </a>
+                    <span class="badge bg-secondary border border-secondary text-light">LIFETIME: {{ user.total_xp }}</span>
+                    <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline-secondary" style="font-size: 0.7rem;">ARCHIVES</a>
                 </div>
-                
-                <p class="text-uppercase text-info mb-1 mt-2" style="font-size: 0.7rem; letter-spacing: 3px; opacity: 0.7;">CURRENT SEASON (MONTHLY)</p>
-                <h1 class="display-4 fw-bold text-white mb-2" id="monthlyXpDisplay" style="font-family: 'Orbitron', sans-serif;">
-                    {{ monthly_xp }} XP
-                </h1>
-                
+                <p class="text-uppercase text-info mb-1 mt-2" style="font-size: 0.7rem; letter-spacing: 3px; opacity: 0.7;">SEASON PROGRESS</p>
+                <h1 class="display-4 fw-bold text-white mb-2" id="monthlyXpDisplay" style="font-family: 'Orbitron', sans-serif;">{{ monthly_xp }} XP</h1>
                 <div class="progress bg-secondary bg-opacity-10 mt-3" style="height: 6px;">
                     <div class="progress-bar bg-info" id="monthlyProgressBar" role="progressbar" style="width: {{ (monthly_xp / 2000) * 100 }}%; box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);"></div>
                 </div>
-                <small class="text-muted">Monthly Target: 2000 XP</small>
             </div>
         </div>
     </div>
@@ -76,11 +50,8 @@
 {% if overdue_count > 0 %}
 <div class="alert alert-warning border-warning d-flex align-items-center mb-4 shadow-sm" style="background: rgba(60, 40, 0, 0.4);">
     <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
-    <div>
-        <strong class="text-warning font-monospace">ATTENTION NEEDED:</strong>
-        <span class="text-white">You have {{ overdue_count }} overdue missions.</span>
-        <a href="{{ url_for('audit') }}" class="alert-link text-info ms-2 fw-bold">Initiate Audit Protocol</a>
-    </div>
+    <div><strong class="text-warning font-monospace">ATTENTION:</strong> <span class="text-white">{{ overdue_count }} overdue missions.</span></div>
+    <a href="{{ url_for('audit') }}" class="alert-link text-info ms-2 fw-bold">Audit Protocol</a>
 </div>
 {% endif %}
 
@@ -89,32 +60,42 @@
         <h4 class="text-white mb-3" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">ACTIVE PROTOCOLS</h4>
         <div class="d-flex flex-wrap gap-2">
             <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#feedbackModal">
-                <i class="bi bi-chat-left-text me-1"></i>Message Admin
+                <i class="bi bi-chat-left-text me-1"></i> Log
             </button>
             <a href="{{ url_for('mission_print') }}" target="_blank" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-file-earmark-text me-1"></i>Print
+                <i class="bi bi-file-earmark-text me-1"></i> Print
             </a>
-            <a href="{{ url_for('import_tasks') }}" class="btn btn-info btn-sm text-white shadow-sm d-flex align-items-center">
-                 <i class="bi bi-cpu me-1"></i>Brain Dump
+            <a href="{{ url_for('import_tasks') }}" class="btn btn-info btn-sm text-white shadow-sm">
+                <i class="bi bi-cpu me-1"></i> Brain Dump
             </a>
             <button class="btn btn-sm btn-info text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#addGoalModal">
-                <i class="bi bi-plus-lg me-1"></i>New Directive
+                <i class="bi bi-plus-lg me-1"></i> New Directive
             </button>
         </div>
     </div>
+    
     <div class="col-md-6">
         <div class="input-group shadow-sm">
             <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
-            <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Filter protocols..." onkeyup="filterTasks()">
+            <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Search directives..." onkeyup="filterTasks()">
             <select class="form-select bg-dark text-white border-secondary font-monospace" id="sortSelect" onchange="sortTasks()" style="max-width: 140px;">
-                <option value="default">Sort: Def</option>
-                <option value="diff_high">Diff: High</option>
-                <option value="diff_low">Diff: Low</option>
+                <option value="default">Def</option>
+                <option value="diff_high">Hardest</option>
+                <option value="diff_low">Easiest</option>
                 <option value="date">Date</option>
-                <option value="name">Name</option>
+                <option value="name">A-Z</option>
             </select>
         </div>
     </div>
+</div>
+
+<div class="filter-scroll-container">
+    <button class="filter-pill active" onclick="applyFilter('all', this)">ALL SYSTEMS</button>
+    <button class="filter-pill" onclick="applyFilter('today', this)">DUE TODAY</button>
+    <button class="filter-pill" onclick="applyFilter('recurring', this)">RECURRING</button>
+    <button class="filter-pill" onclick="applyFilter('overdue', this)" style="border-color: #ff4444; color: #ff4444;">DELAYED</button>
+    <button class="filter-pill" onclick="applyFilter('completed', this)">DONE TODAY</button>
+    <button class="filter-pill" onclick="applyFilter('unscheduled', this)">BACKLOG</button>
 </div>
 
 <div id="missionControl">
@@ -127,47 +108,46 @@
             <span class="badge bg-secondary bg-opacity-25 ms-2 rounded-pill" style="font-size: 0.7em">{{ goal.habits|length }}</span>
         </button>
         <div class="d-flex gap-2 align-items-center">
-            <button class="btn btn-link text-secondary p-0 me-2" onclick="populateGoalEditModal('{{ goal.id }}', '{{ goal.name|replace("'", "\\'") }}')" data-bs-toggle="modal" data-bs-target="#editGoalModal">
-                <i class="bi bi-pencil-square"></i>
-            </button>
-            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="text-secondary small text-decoration-none hover-danger" onclick="return confirm('Terminate this directive?')">
-               <i class="bi bi-x-lg"></i>
-            </a>
+            <button class="btn btn-link text-secondary p-0 me-2" onclick="populateGoalEditModal('{{ goal.id }}', '{{ goal.name|replace("'", "\\'") }}')" data-bs-toggle="modal" data-bs-target="#editGoalModal"><i class="bi bi-pencil-square"></i></button>
+            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="text-secondary small text-decoration-none hover-danger" onclick="return confirm('Terminate directive?')"><i class="bi bi-x-lg"></i></a>
         </div>
     </div>
 
-    <div id="collapse-{{ goal.id }}" class="collapse show">
+    <div id="collapse-{{ goal.id }}" class="collapse">
         <div class="list-group list-group-flush task-container">
             {% for habit in goal.habits %}
             
-            {% if not habit.completed or habit.is_daily or habit.name in todays_completed|default([]) %}
+            {% set is_today = habit.target_date == user.last_check_date %}
+            {% set is_overdue = habit.target_date and habit.target_date < user.last_check_date and not habit.completed %}
+            {% set is_completed_today = habit.name in todays_completed|default([]) %}
+            {% set is_backlog = habit.target_date is none %}
+            
+            {% if not habit.completed or habit.is_daily or is_completed_today %}
             
             <div class="list-group-item bg-transparent border-secondary d-flex align-items-center justify-content-between py-3 task-item"
                  data-name="{{ habit.name|lower }}"
                  data-difficulty="{{ 1 if habit.difficulty == 'Easy' else 2 if habit.difficulty == 'Medium' else 3 if habit.difficulty == 'Hard' else 4 }}"
-                 data-date="{{ habit.target_date if habit.target_date else '9999-12-31' }}">
+                 data-date="{{ habit.target_date if habit.target_date else '9999-12-31' }}"
+                 data-recurring="{{ 'true' if habit.is_daily else 'false' }}"
+                 data-today="{{ 'true' if is_today else 'false' }}"
+                 data-overdue="{{ 'true' if is_overdue else 'false' }}"
+                 data-completed="{{ 'true' if habit.completed else 'false' }}"
+                 data-backlog="{{ 'true' if is_backlog else 'false' }}">
+                 
                 <div class="d-flex align-items-center gap-3 w-100">
-                    
-                    <button onclick="toggleTask(this, '{{ habit.id }}')" 
-                            class="btn btn-link text-decoration-none align-self-start mt-1 p-0 border-0" 
-                            style="background: none; cursor: pointer;">
-                        
-                        <i class="bi bi-check-square-fill text-info fs-4 completed-icon" 
-                           style="text-shadow: 0 0 10px rgba(13, 202, 240, 0.5); {{ 'display:block;' if habit.completed else 'display:none;' }}"></i>
-                        
-                        <i class="bi bi-square text-secondary fs-4 pending-icon" 
-                           style="{{ 'display:none;' if habit.completed else 'display:block;' }}"></i>
+                    <button onclick="toggleTask(this, '{{ habit.id }}')" class="btn btn-link text-decoration-none align-self-start mt-1 p-0 border-0" style="background: none; cursor: pointer;">
+                        <i class="bi bi-check-square-fill text-info fs-4 completed-icon" style="text-shadow: 0 0 10px rgba(13, 202, 240, 0.5); {{ 'display:block;' if habit.completed else 'display:none;' }}"></i>
+                        <i class="bi bi-square text-secondary fs-4 pending-icon" style="{{ 'display:none;' if habit.completed else 'display:block;' }}"></i>
                     </button>
 
                     <div class="w-100">
                         <div class="d-flex justify-content-between align-items-center">
                             <h6 class="mb-0 text-white task-title {{ 'text-decoration-line-through text-muted' if habit.completed }}">{{ habit.name }}</h6>
                             {% if habit.description %}
-                            <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#desc-{{ habit.id }}">
-                                <i class="bi bi-chevron-down"></i>
-                            </button>
+                            <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#desc-{{ habit.id }}"><i class="bi bi-chevron-down"></i></button>
                             {% endif %}
                         </div>
+                        
                         {% if habit.description %}
                         <div class="collapse mt-2" id="desc-{{ habit.id }}">
                             <div class="card card-body bg-dark border-secondary p-2 small text-info bg-opacity-10 font-monospace">
@@ -175,36 +155,30 @@
                             </div>
                         </div>
                         {% endif %}
-                        {% if habit.target_date %}
-                        <div class="text-warning small mt-1" style="font-size: 0.7em;">
-                            <i class="bi bi-calendar-event me-1"></i> {{ habit.target_date }}
-                        </div>
-                        {% endif %}
-                        <small class="text-muted d-flex gap-2 align-items-center mt-1">
+                        
+                        <div class="d-flex gap-2 align-items-center mt-1 flex-wrap">
+                            {% if habit.target_date %}
+                                <span class="badge bg-transparent border {{ 'border-danger text-danger' if is_overdue else 'border-warning text-warning' }} small" style="font-size: 0.65rem;">
+                                    <i class="bi bi-calendar-event me-1"></i> {{ habit.target_date.strftime('%b %d') }}
+                                </span>
+                            {% endif %}
                             <span class="badge bg-dark border border-secondary text-secondary" style="font-size: 0.65rem;">{{ habit.stat_type }}</span>
                             <span class="text-info" style="font-size: 0.75rem;">+{{ habit.xp_value }} XP</span>
                             {% if habit.is_daily %}
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" style="font-size: 0.65rem;">Recurring</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" style="font-size: 0.65rem;">Recurring</span>
                             {% endif %}
-                        </small>
+                        </div>
                     </div>
                 </div>
                 <div class="d-flex gap-2 ms-2 align-self-start">
-                    <button class="btn btn-link text-secondary p-0" onclick="populateEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')" data-bs-toggle="modal" data-bs-target="#editHabitModal">
-                        <i class="bi bi-gear"></i>
-                    </button>
-                    <a href="{{ url_for('delete_habit', habit_id=habit.id) }}" class="btn btn-link text-secondary p-0 hover-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
+                    <button class="btn btn-link text-secondary p-0" onclick="populateEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')" data-bs-toggle="modal" data-bs-target="#editHabitModal"><i class="bi bi-gear"></i></button>
+                    <a href="{{ url_for('delete_habit', habit_id=habit.id) }}" class="btn btn-link text-secondary p-0 hover-danger"><i class="bi bi-trash"></i></a>
                 </div>
             </div>
-            
-            {% endif %} {% endfor %}
-            
+            {% endif %} 
+            {% endfor %}
             <div class="card-footer bg-transparent border-0 pt-0 pb-2">
-                <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0" data-bs-toggle="modal" data-bs-target="#addHabitModal" onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'">
-                    <i class="bi bi-plus"></i> Add Task
-                </button>
+                <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0" data-bs-toggle="modal" data-bs-target="#addHabitModal" onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'"><i class="bi bi-plus"></i> Add Task</button>
             </div>
         </div>
     </div>
@@ -212,10 +186,7 @@
 {% else %}
 <div class="text-center py-5">
     <h4 class="text-muted" style="font-family: 'Orbitron', sans-serif;">SYSTEM IDLE</h4>
-    <p class="small text-secondary">No active directives found.</p>
-    <button class="btn btn-outline-info mt-2" data-bs-toggle="modal" data-bs-target="#addGoalModal">
-        <i class="bi bi-plus-lg me-2"></i>Initialize New Sector
-    </button>
+    <button class="btn btn-outline-info mt-2" data-bs-toggle="modal" data-bs-target="#addGoalModal">Initialize New Sector</button>
 </div>
 {% endfor %}
 </div>
@@ -263,6 +234,10 @@
                         <input type="text" name="name" class="form-control bg-dark text-white border-secondary" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label text-muted small">Mission Briefing (Optional)</label>
+                        <textarea name="description" class="form-control bg-dark text-white border-secondary" rows="2" placeholder="Add details or sub-steps..."></textarea>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label text-muted small">Target Date (Optional)</label>
                         <input type="date" name="target_date" class="form-control bg-dark text-white border-secondary">
                     </div>
@@ -298,18 +273,9 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark border-secondary text-white">
             <form action="{{ url_for('submit_feedback') }}" method="POST">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title">System Log</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="small text-muted">Submit a report or feature request to the administrator.</p>
-                    <textarea name="message" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="Enter log entry..." required></textarea>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info">Submit Log</button>
-                </div>
+                <div class="modal-header border-secondary"><h5 class="modal-title">System Log</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><textarea name="message" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="Enter log entry..." required></textarea></div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-info">Submit Log</button></div>
             </form>
         </div>
     </div>
@@ -319,175 +285,44 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content text-white" style="background-color: #0b0f14; border: 1px solid rgba(0, 243, 255, 0.3);">
             <form action="{{ url_for('edit_habit') }}" method="POST">
-                <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title text-info"><i class="bi bi-sliders"></i> CONFIGURE</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
+                <div class="modal-header border-bottom border-secondary"><h5 class="modal-title text-info"><i class="bi bi-sliders"></i> CONFIGURE</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <input type="hidden" name="habit_id" id="edit_habit_id">
-                    <div class="mb-3">
-                        <label class="small text-muted">Task Name</label>
-                        <input type="text" name="name" id="edit_habit_name" class="form-control bg-dark text-white border-secondary" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="small text-muted">Category / Folder</label>
-                        <input type="text" class="form-control bg-dark text-white border-secondary" name="category_name" id="edit_habit_category" list="categoryOptions">
-                        <datalist id="categoryOptions">
-                            {% for goal in goals %}
-                            <option value="{{ goal.name }}">
-                            {% endfor %}
-                        </datalist>
-                    </div>
-                    <div class="mb-3">
-                        <label class="small text-muted">Mission Briefing (Description)</label>
-                        <textarea class="form-control bg-dark text-white border-secondary" name="description" id="edit_habit_description" rows="3" placeholder="Step-by-step guide..."></textarea>
-                    </div>
+                    <div class="mb-3"><label class="small text-muted">Task Name</label><input type="text" name="name" id="edit_habit_name" class="form-control bg-dark text-white border-secondary" required></div>
+                    <div class="mb-3"><label class="small text-muted">Category</label><input type="text" class="form-control bg-dark text-white border-secondary" name="category_name" id="edit_habit_category" list="categoryOptions"><datalist id="categoryOptions">{% for goal in goals %}<option value="{{ goal.name }}">{% endfor %}</datalist></div>
+                    <div class="mb-3"><label class="small text-muted">Mission Briefing</label><textarea class="form-control bg-dark text-white border-secondary" name="description" id="edit_habit_description" rows="3"></textarea></div>
                     <div class="row mb-4">
-                        <div class="col-6">
-                            <label class="small text-muted">Complexity</label>
-                            <select name="difficulty" id="edit_habit_difficulty" class="form-select bg-dark text-white border-secondary">
-                                <option value="Easy">Low</option>
-                                <option value="Medium">Standard</option>
-                                <option value="Hard">High</option>
-                                <option value="Epic">Critical</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="small text-muted">Deadline</label>
-                            <input type="date" name="target_date" id="edit_habit_date" class="form-control bg-dark text-white border-secondary">
-                        </div>
+                        <div class="col-6"><label class="small text-muted">Complexity</label><select name="difficulty" id="edit_habit_difficulty" class="form-select bg-dark text-white border-secondary"><option value="Easy">Low</option><option value="Medium">Standard</option><option value="Hard">High</option><option value="Epic">Critical</option></select></div>
+                        <div class="col-6"><label class="small text-muted">Deadline</label><input type="date" name="target_date" id="edit_habit_date" class="form-control bg-dark text-white border-secondary"></div>
                     </div>
                     <div class="d-flex align-items-center justify-content-between p-3 rounded border border-secondary" style="background-color: #151921 !important;">
-                        <div>
-                            <label class="fw-bold text-white" for="edit_habit_daily">Recurring Protocol</label>
-                            <div class="small text-muted">Resets automatically at 00:00</div>
-                        </div>
-                        <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" name="is_daily" id="edit_habit_daily" style="width: 3em; height: 1.5em;">
-                        </div>
+                        <div><label class="fw-bold text-white">Recurring Protocol</label><div class="small text-muted">Resets automatically</div></div>
+                        <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" name="is_daily" id="edit_habit_daily" style="width: 3em; height: 1.5em;"></div>
                     </div>
                 </div>
-                <div class="modal-footer border-top border-secondary">
-                    <button type="submit" class="btn btn-sm btn-info fw-bold text-dark">Save Configuration</button>
-                </div>
+                <div class="modal-footer border-top border-secondary"><button type="submit" class="btn btn-sm btn-info fw-bold text-dark">Save Configuration</button></div>
             </form>
         </div>
     </div>
 </div>
 
 <script>
-    // --- NEW: AJAX TASK TOGGLE (NO REFRESH) ---
-    async function toggleTask(btn, habitId) {
-        const filledIcon = btn.querySelector('.completed-icon');
-        const emptyIcon = btn.querySelector('.pending-icon');
-        const taskTitle = btn.closest('.task-item').querySelector('.task-title');
+    // --- 1. FILTER BAR LOGIC ---
+    let currentFilter = 'all';
 
-        // 1. Optimistic UI (Instant Feedback)
-        let action = '';
-        if (emptyIcon.style.display !== 'none') {
-            // We are checking it
-            emptyIcon.style.display = 'none';
-            filledIcon.style.display = 'block';
-            taskTitle.classList.add('text-decoration-line-through', 'text-muted');
-            
-            // Confetti
-            if (typeof confetti === 'function') {
-                confetti({
-                    particleCount: 40,
-                    spread: 50,
-                    origin: { y: 0.7, x: 0.5 }
-                });
-            }
-            // Sound
-            try { new Audio("{{ url_for('static', filename='sounds/complete.mp3') }}").play(); } catch(e){}
-            action = 'complete';
-        } else {
-            // We are unchecking it
-            emptyIcon.style.display = 'block';
-            filledIcon.style.display = 'none';
-            taskTitle.classList.remove('text-decoration-line-through', 'text-muted');
-            action = 'uncomplete';
-        }
-
-        // 2. Send to Server
-        try {
-            const response = await fetch(`/toggle_habit/${habitId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                // 3. Update Monthly XP instantly
-                const xpDisplay = document.getElementById('monthlyXpDisplay');
-                const progBar = document.getElementById('monthlyProgressBar');
-                
-                if (xpDisplay) xpDisplay.innerText = data.new_monthly_xp + ' XP';
-                if (progBar) {
-                    const pct = (data.new_monthly_xp / 2000) * 100;
-                    progBar.style.width = pct + '%';
-                }
-            }
-        } catch (error) {
-            console.error('Task sync failed', error);
-            // Optional: Revert UI if needed
-        }
+    function applyFilter(filterType, btnElement) {
+        currentFilter = filterType;
+        // Update Pills
+        document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+        refreshView();
     }
 
-    // --- EXISTING MODAL & FILTER SCRIPTS ---
-    function populateEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
-        document.getElementById('edit_habit_id').value = id;
-        document.getElementById('edit_habit_name').value = name;
-        document.getElementById('edit_habit_difficulty').value = difficulty;
-        document.getElementById('edit_habit_category').value = catName;
-        document.getElementById('edit_habit_description').value = desc;
-        const dateInput = document.getElementById('edit_habit_date');
-        if (dateStr && dateStr !== 'None' && dateStr !== '') {
-            dateInput.value = dateStr;
-        } else {
-            dateInput.value = '';
-        }
-        const dailyBox = document.getElementById('edit_habit_daily');
-        dailyBox.checked = (isDaily === 'True' || isDaily === 'true' || isDaily === true);
-        const modalElement = document.getElementById('editHabitModal');
-        let modal = bootstrap.Modal.getInstance(modalElement);
-        if (!modal) {
-            modal = new bootstrap.Modal(modalElement);
-        }
-        modal.show();
-    }
-    function populateGoalEditModal(id, name) {
-        document.getElementById('edit_goal_id').value = id;
-        document.getElementById('edit_goal_name').value = name;
-    }
+    // --- 2. SEARCH & SORT LOGIC ---
     function filterTasks() {
-        let input = document.getElementById('taskSearch').value.toLowerCase();
-        let goalCards = document.getElementsByClassName('goal-card');
-        for (let card of goalCards) {
-            let tasks = card.getElementsByClassName('task-item');
-            let hasVisibleTasks = false;
-            for (let task of tasks) {
-                let name = task.getAttribute('data-name');
-                if (name.includes(input)) {
-                    task.classList.remove('d-none');
-                    hasVisibleTasks = true;
-                } else {
-                    task.classList.add('d-none');
-                }
-            }
-            if (input.length > 0 && hasVisibleTasks) {
-                let collapseDiv = card.querySelector('.collapse');
-                if (!collapseDiv.classList.contains('show')) {
-                    new bootstrap.Collapse(collapseDiv, { toggle: false }).show();
-                }
-                card.style.display = "";
-            } else if (input.length > 0 && !hasVisibleTasks) {
-                card.style.display = "none";
-            } else {
-                card.style.display = "";
-            }
-        }
+        refreshView(); 
     }
+
     function sortTasks() {
         let criteria = document.getElementById('sortSelect').value;
         let containers = document.querySelectorAll('.task-container');
@@ -502,6 +337,104 @@
             });
             items.forEach(item => container.appendChild(item));
         });
+    }
+
+    // --- 3. UNIFIED VIEW REFRESHER ---
+    function refreshView() {
+        const searchTerm = document.getElementById('taskSearch').value.toLowerCase();
+        const goalCards = document.querySelectorAll('.goal-card');
+
+        goalCards.forEach(card => {
+            const tasks = card.querySelectorAll('.task-item');
+            let hasVisibleTasks = false;
+
+            tasks.forEach(task => {
+                let matchesSearch = task.dataset.name.includes(searchTerm);
+                let matchesFilter = false;
+
+                if (currentFilter === 'all') matchesFilter = true;
+                else if (currentFilter === 'today') matchesFilter = (task.dataset.today === 'true' || task.dataset.recurring === 'true') && task.dataset.completed === 'false';
+                else if (currentFilter === 'recurring') matchesFilter = task.dataset.recurring === 'true';
+                else if (currentFilter === 'overdue') matchesFilter = task.dataset.overdue === 'true';
+                else if (currentFilter === 'completed') matchesFilter = task.dataset.completed === 'true';
+                else if (currentFilter === 'unscheduled') matchesFilter = task.dataset.backlog === 'true' && task.dataset.completed === 'false';
+
+                if (matchesSearch && matchesFilter) {
+                    task.classList.remove('hidden-task');
+                    hasVisibleTasks = true;
+                } else {
+                    task.classList.add('hidden-task');
+                }
+            });
+
+            // Card Visibility & Auto-Expansion
+            const collapseDiv = card.querySelector('.collapse');
+            if (hasVisibleTasks) {
+                card.classList.remove('hidden-card');
+                // Auto-expand if filtering (but not for 'All' to keep it clean)
+                if (searchTerm.length > 0 || currentFilter !== 'all') {
+                    if (!collapseDiv.classList.contains('show')) {
+                        new bootstrap.Collapse(collapseDiv, { toggle: false }).show();
+                    }
+                }
+            } else {
+                card.classList.add('hidden-card');
+            }
+        });
+    }
+
+    // --- 4. AJAX TASK TOGGLE ---
+    async function toggleTask(btn, habitId) {
+        const filledIcon = btn.querySelector('.completed-icon');
+        const emptyIcon = btn.querySelector('.pending-icon');
+        const taskTitle = btn.closest('.task-item').querySelector('.task-title');
+
+        if (emptyIcon.style.display !== 'none') {
+            emptyIcon.style.display = 'none';
+            filledIcon.style.display = 'block';
+            taskTitle.classList.add('text-decoration-line-through', 'text-muted');
+            if (typeof confetti === 'function') confetti({ particleCount: 40, spread: 50, origin: { y: 0.7, x: 0.5 } });
+            try { new Audio("{{ url_for('static', filename='sounds/complete.mp3') }}").play(); } catch(e){}
+        } else {
+            emptyIcon.style.display = 'block';
+            filledIcon.style.display = 'none';
+            taskTitle.classList.remove('text-decoration-line-through', 'text-muted');
+        }
+
+        try {
+            const response = await fetch(`/toggle_habit/${habitId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                const xpDisplay = document.getElementById('monthlyXpDisplay');
+                const progBar = document.getElementById('monthlyProgressBar');
+                if (xpDisplay) xpDisplay.innerText = data.new_monthly_xp + ' XP';
+                if (progBar) {
+                    const pct = (data.new_monthly_xp / 2000) * 100;
+                    progBar.style.width = pct + '%';
+                }
+            }
+        } catch (error) { console.error('Sync failed', error); }
+    }
+
+    // --- 5. MODAL HELPERS ---
+    function populateEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
+        document.getElementById('edit_habit_id').value = id;
+        document.getElementById('edit_habit_name').value = name;
+        document.getElementById('edit_habit_difficulty').value = difficulty;
+        document.getElementById('edit_habit_category').value = catName;
+        document.getElementById('edit_habit_description').value = desc;
+        const dateInput = document.getElementById('edit_habit_date');
+        if (dateStr && dateStr !== 'None') dateInput.value = dateStr; else dateInput.value = '';
+        document.getElementById('edit_habit_daily').checked = (isDaily === 'True' || isDaily === 'true');
+        const modal = new bootstrap.Modal(document.getElementById('editHabitModal'));
+        modal.show();
+    }
+    function populateGoalEditModal(id, name) {
+        document.getElementById('edit_goal_id').value = id;
+        document.getElementById('edit_goal_name').value = name;
     }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>

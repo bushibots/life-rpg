@@ -3,53 +3,54 @@
 {% block content %}
 
 <div class="card bg-dark border-secondary mb-4 shadow-lg">
-    <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
+    <div class="card-body py-3 d-flex justify-content-between align-items-center control-bar">
+        
+        <div class="mb-2 mb-md-0">
             <h4 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">
                 <i class="bi bi-activity me-2 text-info"></i>
                 {% if show_all %}
-                    LIFETIME PERFORMANCE
+                    LIFETIME
                 {% else %}
-                    SECTOR REPORT: <span class="text-info">{{ selected_year }}-{{ '%02d'|format(selected_month) }}</span>
+                    SECTOR: <span class="text-info">{{ selected_year }}-{{ '%02d'|format(selected_month) }}</span>
                 {% endif %}
             </h4>
-            <p class="text-muted small mb-0 mt-1">Operational Efficiency Analysis</p>
         </div>
         
-        <form action="{{ url_for('analytics') }}" method="GET" class="d-flex gap-2 align-items-center bg-black p-2 rounded border border-secondary">
-            <select name="year" class="form-select form-select-sm bg-dark text-white border-secondary font-monospace" style="width: auto;">
-                {% for y in range(2025, 2031) %}
-                <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
-                {% endfor %}
-            </select>
+        <form action="{{ url_for('analytics') }}" method="GET" class="d-flex gap-2 align-items-center control-bar" style="flex-wrap: wrap;">
             
-            <select name="month" class="form-select form-select-sm bg-dark text-white border-secondary font-monospace" style="width: auto;">
-                {% for m in range(1, 13) %}
-                <option value="{{ m }}" {{ 'selected' if selected_month == m }}>
-                    {{ ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][m-1] }}
-                </option>
-                {% endfor %}
-            </select>
+            <div class="input-group input-group-sm">
+                <select name="year" class="form-select bg-dark text-white border-secondary font-monospace">
+                    {% for y in range(2025, 2031) %}
+                    <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                <select name="month" class="form-select bg-dark text-white border-secondary font-monospace">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {{ 'selected' if selected_month == m }}>
+                        {{ ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][m-1] }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-info fw-bold text-dark">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
             
-            <button type="submit" class="btn btn-sm btn-info fw-bold text-dark">
-                <i class="bi bi-search"></i>
-            </button>
-            
-            <div class="vr bg-secondary mx-2"></div>
-            
-            <a href="{{ url_for('analytics', all='true') }}" class="btn btn-sm {{ 'btn-light fw-bold' if show_all else 'btn-outline-secondary text-muted' }}" style="font-size: 0.75rem;">
-                ALL TIME
-            </a>
-            <a href="{{ url_for('analytics') }}" class="btn btn-sm {{ 'btn-light fw-bold' if not show_all else 'btn-outline-secondary text-muted' }}" style="font-size: 0.75rem;">
-                CURRENT
-            </a>
+            <div class="d-flex gap-2 control-actions">
+                <a href="{{ url_for('analytics', all='true') }}" class="btn btn-sm w-100 {{ 'btn-light fw-bold' if show_all else 'btn-outline-secondary text-muted' }}">
+                    ALL TIME
+                </a>
+                <a href="{{ url_for('analytics') }}" class="btn btn-sm w-100 {{ 'btn-light fw-bold' if not show_all else 'btn-outline-secondary text-muted' }}">
+                    CURRENT
+                </a>
+            </div>
         </form>
     </div>
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="card bg-dark border-secondary h-100 p-4 position-relative overflow-hidden">
+    <div class="col-12 col-md-4">
+        <div class="card bg-dark border-secondary h-100 p-4 position-relative overflow-hidden stat-card">
             <div class="position-absolute top-0 end-0 p-3 opacity-25">
                 <i class="bi bi-cpu fs-1 text-light"></i>
             </div>
@@ -68,25 +69,25 @@
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card bg-dark border-secondary h-100 p-3">
+    <div class="col-12 col-md-4">
+        <div class="card bg-dark border-secondary h-100 p-3 stat-card">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="text-uppercase text-muted small mb-0">Attribute Balance</h6>
                 <i class="bi bi-person-bounding-box text-secondary"></i>
             </div>
-            <div style="height: 200px; width: 100%; position: relative;">
+            <div class="chart-container" style="height: 250px; width: 100%;">
                 <canvas id="radarChart"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card bg-dark border-secondary h-100 p-3">
+    <div class="col-12 col-md-4">
+        <div class="card bg-dark border-secondary h-100 p-3 stat-card">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="text-uppercase text-muted small mb-0">Mission Complexity</h6>
                 <i class="bi bi-pie-chart text-secondary"></i>
             </div>
-            <div style="height: 200px; width: 100%; position: relative;">
+            <div class="chart-container" style="height: 250px; width: 100%;">
                 <canvas id="donutChart"></canvas>
             </div>
         </div>
@@ -94,8 +95,8 @@
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="card bg-dark border-secondary h-100 p-4">
+    <div class="col-12 col-lg-8">
+        <div class="card bg-dark border-secondary h-100 p-4 stat-card">
             <div class="d-flex justify-content-between align-items-end mb-4">
                 <div>
                     <h5 class="text-uppercase text-white mb-0" style="font-family: 'Orbitron', sans-serif;">XP Velocity</h5>
@@ -105,17 +106,17 @@
                     <i class="bi bi-arrow-up-right me-1"></i> TRENDING
                 </span>
             </div>
-            <div style="height: 300px; width: 100%;">
+            <div class="chart-container" style="height: 300px; width: 100%;">
                 <canvas id="lineChart"></canvas>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card bg-dark border-secondary h-100 p-4">
+    <div class="col-12 col-lg-4">
+        <div class="card bg-dark border-secondary h-100 p-4 stat-card">
             <h5 class="text-uppercase text-white mb-3" style="font-family: 'Orbitron', sans-serif;">Daily Output</h5>
             <p class="text-muted small mb-3">Last 7 Active Days</p>
-            <div style="height: 300px; width: 100%;">
+            <div class="chart-container" style="height: 300px; width: 100%;">
                 <canvas id="barChart"></canvas>
             </div>
         </div>
@@ -145,11 +146,12 @@
     const textColor = '#94a3b8';
     const accentColor = '#0dcaf0'; // Cyan/Info
     
+    // Ensure charts scale properly
     Chart.defaults.color = textColor;
     Chart.defaults.borderColor = gridColor;
     Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
     Chart.defaults.responsive = true;
-    Chart.defaults.maintainAspectRatio = false;
+    Chart.defaults.maintainAspectRatio = false; // CRITICAL FOR MOBILE
 
     // --- 2. RADAR CHART ---
     new Chart(document.getElementById('radarChart'), {
@@ -226,7 +228,6 @@
     });
 
     // --- 5. LINE CHART ---
-    // Gradient Setup for Line Chart
     const lineCtx = document.getElementById('lineChart').getContext('2d');
     const gradient = lineCtx.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(13, 202, 240, 0.3)');
@@ -279,7 +280,7 @@
         box.style.height = '14px';
         box.style.cursor = 'pointer';
         box.title = `${dateStr}: ${xp} XP`;
-        box.setAttribute('data-bs-toggle', 'tooltip'); // Bootstrap Tooltip
+        box.setAttribute('data-bs-toggle', 'tooltip');
         container.appendChild(box);
     }
 </script>
