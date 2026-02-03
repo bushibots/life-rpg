@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card bg-dark border-secondary shadow-lg">
+            <div class="card-header border-secondary text-center">
+                <h4 class="text-info" style="font-family: 'Orbitron', sans-serif;">RECOVERY MODE</h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-3">Enter your registered comms frequency (email).</p>
+                <form method="POST">
+                    <div class="mb-3">
+                        <input type="email" name="email" class="form-control bg-dark text-white border-secondary" placeholder="operator@example.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-info w-100 fw-bold">SEND LINK</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

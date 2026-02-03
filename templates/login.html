@@ -18,7 +18,7 @@
                             <input type="text" name="username" class="form-control bg-dark text-white border-secondary py-2" required>
                         </div>
                     </div>
-                    
+
                     <div class="mb-4">
                         <label class="form-label text-muted small text-uppercase fw-bold">Password</label>
                         <div class="input-group">
@@ -36,6 +36,11 @@
                         <button type="submit" class="btn btn-info fw-bold py-2 text-dark shadow-sm">
                             ESTABLISH UPLINK
                         </button>
+                        <div class="text-center mt-3">
+                         <a href="{{ url_for('reset_request') }}" class="small text-muted text-decoration-none">
+                           Forgot Password? <span class="text-info">Initiate Recovery</span>
+                         </a>
+                    </div>
                         <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-sm">
                             Not Registered? Initialize Profile
                         </a>

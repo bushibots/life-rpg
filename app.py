@@ -1,37 +1,106 @@
-import csv
-import io
-import time
 import os
-import json
+import time
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
-# REMOVED: werkzeug.security imports (We are standardizing on Bcrypt)
-from flask_login import login_user, logout_user, login_required, current_user
-from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory, Notification
-from datetime import date, timedelta, datetime
-from extensions import db, login_manager, migrate, csrf
-from sqlalchemy import func, extract
-import calendar
+from dotenv import load_dotenv
+
+# --- FLASK & EXTENSIONS ---
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
-from weasyprint import HTML
-from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory
-from utils import guess_category, smart_ai_parse, get_ai_feedback, get_backlog_strategy
+from flask_mail import Mail, Message
 from flask_wtf import FlaskForm
-from collections import Counter
+from flask_bcrypt import Bcrypt
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
-from flask_bcrypt import Bcrypt
-from dotenv import load_dotenv
+from itsdangerous import URLSafeTimedSerializer
+from sqlalchemy import func, extract
 import google.generativeai as genai
-from flask import session
 
+# --- LOCAL IMPORTS ---
+# We import 'db' from extensions to avoid the Circular Import Loop
+from extensions import db
+
+# Load Environment Variables
 load_dotenv()
 
+# Setup Timezone
 os.environ['TZ'] = 'Asia/Kolkata'
 try:
     time.tzset()
 except AttributeError:
-    pass # Windows (Local PC) skips this, Linux (Server) uses it.
+    pass
+
+app = Flask(__name__)
+
+# ========================================================
+# 1. CONFIGURATION (MUST COME FIRST)
+# ========================================================
+
+# A. Database Config
+# We define WHERE the database is before we turn it on
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'rpg.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# B. Security Config
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key-change-this')
+
+# C. Email Config
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = ('LifeRPG Command', os.getenv('MAIL_USERNAME'))
+
+# ========================================================
+# 2. INITIALIZATION (MUST COME SECOND)
+# ========================================================
+
+# Initialize Database (Now it knows where the DB is)
+db.init_app(app)
+
+# Initialize Other Tools
+bcrypt = Bcrypt(app)
+mail = Mail(app)
+migrate = Migrate(app, db)
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+# Initialize Login Manager
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# ========================================================
+# 3. LOAD MODELS (MUST COME THIRD)
+# ========================================================
+# We import models HERE so the DB is ready for them.
+# This prevents the "ImportError: cannot import name db" crash.
+from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory, Notification, Task
+
+# ========================================================
+# 4. HELPERS & GLOBAL CHECKS
+# ========================================================
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+@app.before_request
+def check_ban():
+    if current_user.is_authenticated and hasattr(current_user, 'is_banned') and current_user.is_banned:
+        logout_user()
+        flash("Access Denied: Account suspended.", "danger")
+        return redirect(url_for('login'))
+
+def get_monthly_xp(user_id):
+    today = date.today()
+    total = db.session.query(func.sum(QuestHistory.xp_gained)).filter(
+        QuestHistory.user_id == user_id,
+        extract('year', QuestHistory.date_completed) == today.year,
+        extract('month', QuestHistory.date_completed) == today.month
+    ).scalar()
+    return total if total else 0
 
 # --- FORM CLASSES ---
 class RegisterForm(FlaskForm):
@@ -45,56 +114,7 @@ class LoginForm(FlaskForm):
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
-# --- PRESET LIBRARY ---
-PRESETS = [
-    {"id": 1, "name": "50 Pushups", "category": "Physical", "attribute": "STR", "difficulty": "Medium", "is_daily": True},
-    {"id": 2, "name": "Morning Run (3km)", "category": "Physical", "attribute": "STR", "difficulty": "Hard", "is_daily": True},
-    {"id": 11, "name": "Read 10 Pages", "category": "Intellect", "attribute": "INT", "difficulty": "Easy", "is_daily": True},
-    {"id": 12, "name": "Code for 1 Hour", "category": "Career", "attribute": "INT", "difficulty": "Hard", "is_daily": True},
-    {"id": 21, "name": "Meditation (10m)", "category": "Mental Health", "attribute": "WIS", "difficulty": "Easy", "is_daily": True},
-    {"id": 31, "name": "Drink 3L Water", "category": "Health", "attribute": "CON", "difficulty": "Medium", "is_daily": True},
-    {"id": 41, "name": "Call Family", "category": "Social", "attribute": "CHA", "difficulty": "Medium", "is_daily": False},
-]
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key')
-
-# --- FIXED: ABSOLUTE DATABASE PATH (Crucial for PythonAnywhere) ---
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'rpg.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-bcrypt = Bcrypt(app)
-
-db.init_app(app)
-migrate = Migrate(app, db)
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-
-@app.before_request
-def check_ban():
-    if current_user.is_authenticated and hasattr(current_user, 'is_banned') and current_user.is_banned:
-        logout_user()
-        flash("Access Denied: Account suspended.", "danger")
-        return redirect(url_for('login'))
-
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
-# --- HELPER FUNCTION: Get Monthly XP ---
-def get_monthly_xp(user_id):
-    today = date.today()
-    # Calculates total XP earned only in the current month
-    total = db.session.query(func.sum(QuestHistory.xp_gained)).filter(
-        QuestHistory.user_id == user_id,
-        extract('year', QuestHistory.date_completed) == today.year,
-        extract('month', QuestHistory.date_completed) == today.month
-    ).scalar()
-    return total if total else 0
-
-with app.app_context():
-    db.create_all()
-
+# --- (YOUR PRESETS AND ROUTES CONTINUE BELOW) ---
 # --- ROUTES ---
 @app.route('/')
 @app.route('/dashboard')
@@ -520,8 +540,8 @@ def register():
 def login():
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form.get('username')).first()
-        # FIXED: Use bcrypt.check_password_hash instead of werkzeug
-        if user and bcrypt.check_password_hash(user.password, request.form.get('password')):
+        # FIXED:
+        if user and check_password_hash(user.password, request.form.get('password')):
             login_user(user, remember=True if request.form.get('remember') else False)
             return redirect(url_for('dashboard'))
         flash('Invalid credentials. Access Denied.')
@@ -532,9 +552,27 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/settings')
+@app.route('/settings', methods=['GET', 'POST'])  # <--- CHANGED: Added POST support
 @login_required
-def settings(): return render_template('settings.html', user=current_user, presets=PRESETS)
+def settings():
+    if request.method == 'POST':
+        # --- EMAIL SAVING LOGIC ---
+        new_email = request.form.get('email')
+
+        if new_email:
+            # Check if email is already taken by another user
+            existing_user = User.query.filter_by(email=new_email).first()
+
+            if existing_user and existing_user.id != current_user.id:
+                flash('Frequency (Email) already occupied by another operator.', 'danger')
+            else:
+                current_user.email = new_email
+                db.session.commit()
+                flash('Comms uplink established. Account secured.', 'success')
+        # --------------------------
+
+    return render_template('settings.html', user=current_user, presets=PRESETS)
+
 
 @app.route('/restore_preset/<int:preset_id>')
 @login_required
@@ -608,16 +646,16 @@ def admin_panel():
         flash("Access Denied: Admin privileges required.", "danger")
         return redirect(url_for('dashboard'))
 
-    # FETCH ALL USERS FOR THE ROSTER
+    # FETCH ALL USERS
     users_list = User.query.all()
     total_quests = Habit.query.count()
     active_feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
 
     return render_template('admin.html',
-                         users_list=users_list,
-                         users=len(users_list),
-                         quests=total_quests,
-                         feedbacks=active_feedbacks)
+                           users=users_list,        # <--- CHANGE THIS: Pass the LIST, not the length
+                           user_count=len(users_list), # Pass the count as a new variable
+                           quests=total_quests,
+                           feedbacks=active_feedbacks)
 
 @app.route('/admin/toggle_pro/<int:user_id>')
 @login_required
@@ -645,19 +683,45 @@ def submit_feedback():
         flash("System Log updated.", "success")
     return redirect(url_for('dashboard'))
 
-@app.route('/delete_account')
+@app.route('/delete_account', methods=['POST'])
 @login_required
 def delete_account():
-    feedbacks = Feedback.query.filter_by(user_id=current_user.id).all()
-    for f in feedbacks: db.session.delete(f)
-    history = QuestHistory.query.filter_by(user_id=current_user.id).all()
-    for h in history: db.session.delete(h)
-    db.session.commit()
-    user = db.session.get(User, current_user.id)
-    db.session.delete(user)
-    db.session.commit()
-    logout_user()
-    return redirect(url_for('register'))
+    try:
+        # Delete the user. SQLAlchemy usually handles cascading deletes
+        # (deleting their tasks/inventory) if models are set up right.
+        db.session.delete(current_user)
+        db.session.commit()
+        logout_user()
+        flash('Account terminated. Data purged.', 'info')
+        return redirect(url_for('login'))
+    except Exception as e:
+        db.session.rollback() # Undo if it fails
+        flash(f'Self-destruct failed: {e}', 'danger')
+        return redirect(url_for('settings'))
+
+# 2. ADMIN FORCE DELETE (Delete anyone)
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+
+    user_to_delete = User.query.get_or_404(user_id)
+
+    # Prevent Admin from deleting themselves here (safety)
+    if user_to_delete.id == current_user.id:
+        flash('Cannot delete yourself from Admin panel. Use Settings.', 'warning')
+        return redirect(url_for('admin'))
+
+    try:
+        db.session.delete(user_to_delete)
+        db.session.commit()
+        flash(f'User {user_to_delete.username} has been eradicated.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user: {e}', 'danger')
+
+    return redirect(url_for('admin'))
 
 @app.route('/admin/mark_read/<int:feedback_id>')
 @login_required
@@ -806,7 +870,7 @@ def save_focus_session():
     db.session.commit()
     return jsonify({'success': True, 'new_xp': current_user.total_xp, 'new_gold': current_user.gold})
 
-@app.route('/profile')
+@app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     return render_template('profile.html', user=current_user)
@@ -1074,5 +1138,50 @@ def download_report_pdf(year, month):
         headers={"Content-Disposition": f"attachment;filename=Mission_Dossier_{month_name}_{year}.pdf"}
     )
 
+# --- PASSWORD RESET ROUTES ---
+
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            token = s.dumps(user.email, salt='recover-key')
+            msg = Message('Password Reset Request', recipients=[email])
+            link = url_for('reset_token', token=token, _external=True)
+            msg.body = f'Click to reset your password: {link}'
+            try:
+                mail.send(msg)
+                flash('Recovery email sent. Check your inbox.', 'info')
+            except Exception as e:
+                flash(f'Error sending email: {e}', 'danger')
+            return redirect(url_for('login'))
+        else:
+            flash('Email not found.', 'warning')
+    return render_template('reset_request.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_token(token):
+    try:
+        email = s.loads(token, salt='recover-key', max_age=1800) # 30 mins
+    except:
+        flash('Link is invalid or expired.', 'danger')
+        return redirect(url_for('reset_request'))
+
+    if request.method == 'POST':
+        user = User.query.filter_by(email=email).first()
+        password = request.form.get('password')
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        user.password = hashed_password
+        db.session.commit()
+        flash('Password updated! Please login.', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_token.html')
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

@@ -2,6 +2,27 @@
 
 {% block content %}
 
+{% if not user.email %}
+<div class="alert alert-dark border-secondary fade show d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 shadow-lg" role="alert" style="border-left: 4px solid #ffc107; background: linear-gradient(90deg, #1a1a1a 0%, #0b0f14 100%);">
+    <div class="d-flex align-items-center mb-3 mb-md-0">
+        <div class="p-2 bg-warning bg-opacity-10 rounded-circle me-3">
+            <i class="bi bi-shield-exclamation text-warning fs-4"></i>
+        </div>
+        <div>
+            <h6 class="alert-heading text-warning mb-1" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">
+                UPLINK UNSECURED
+            </h6>
+            <p class="mb-0 text-muted small" style="max-width: 500px;">
+                No recovery frequency (Email) detected. If you lose your access key,
+                <span class="text-white">account recovery will be impossible.</span>
+            </p>
+        </div>
+    </div>
+    <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-warning fw-bold px-3">
+        <i class="bi bi-link-45deg me-1"></i> ESTABLISH UPLINK
+    </a>
+</div>
+{% endif %}
 
 {% if user.notifications %}
     {% for notif in user.notifications %}
@@ -73,7 +94,7 @@
             </button>
         </div>
     </div>
-    
+
     <div class="col-md-6">
         <div class="input-group shadow-sm">
             <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
@@ -116,14 +137,14 @@
     <div id="collapse-{{ goal.id }}" class="collapse">
         <div class="list-group list-group-flush task-container">
             {% for habit in goal.habits %}
-            
+
             {% set is_today = habit.target_date == user.last_check_date %}
             {% set is_overdue = habit.target_date and habit.target_date < user.last_check_date and not habit.completed %}
             {% set is_completed_today = habit.name in todays_completed|default([]) %}
             {% set is_backlog = habit.target_date is none %}
-            
+
             {% if not habit.completed or habit.is_daily or is_completed_today %}
-            
+
             <div class="list-group-item bg-transparent border-secondary d-flex align-items-center justify-content-between py-3 task-item"
                  data-name="{{ habit.name|lower }}"
                  data-difficulty="{{ 1 if habit.difficulty == 'Easy' else 2 if habit.difficulty == 'Medium' else 3 if habit.difficulty == 'Hard' else 4 }}"
@@ -133,7 +154,7 @@
                  data-overdue="{{ 'true' if is_overdue else 'false' }}"
                  data-completed="{{ 'true' if habit.completed else 'false' }}"
                  data-backlog="{{ 'true' if is_backlog else 'false' }}">
-                 
+
                 <div class="d-flex align-items-center gap-3 w-100">
                     <button onclick="toggleTask(this, '{{ habit.id }}')" class="btn btn-link text-decoration-none align-self-start mt-1 p-0 border-0" style="background: none; cursor: pointer;">
                         <i class="bi bi-check-square-fill text-info fs-4 completed-icon" style="text-shadow: 0 0 10px rgba(13, 202, 240, 0.5); {{ 'display:block;' if habit.completed else 'display:none;' }}"></i>
@@ -147,7 +168,7 @@
                             <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#desc-{{ habit.id }}"><i class="bi bi-chevron-down"></i></button>
                             {% endif %}
                         </div>
-                        
+
                         {% if habit.description %}
                         <div class="collapse mt-2" id="desc-{{ habit.id }}">
                             <div class="card card-body bg-dark border-secondary p-2 small text-info bg-opacity-10 font-monospace">
@@ -155,7 +176,7 @@
                             </div>
                         </div>
                         {% endif %}
-                        
+
                         <div class="d-flex gap-2 align-items-center mt-1 flex-wrap">
                             {% if habit.target_date %}
                                 <span class="badge bg-transparent border {{ 'border-danger text-danger' if is_overdue else 'border-warning text-warning' }} small" style="font-size: 0.65rem;">
@@ -175,7 +196,7 @@
                     <a href="{{ url_for('delete_habit', habit_id=habit.id) }}" class="btn btn-link text-secondary p-0 hover-danger"><i class="bi bi-trash"></i></a>
                 </div>
             </div>
-            {% endif %} 
+            {% endif %}
             {% endfor %}
             <div class="card-footer bg-transparent border-0 pt-0 pb-2">
                 <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0" data-bs-toggle="modal" data-bs-target="#addHabitModal" onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'"><i class="bi bi-plus"></i> Add Task</button>
@@ -320,7 +341,7 @@
 
     // --- 2. SEARCH & SORT LOGIC ---
     function filterTasks() {
-        refreshView(); 
+        refreshView();
     }
 
     function sortTasks() {
