@@ -25,25 +25,49 @@
                     ACKNOWLEDGE
                 </a>
             </div>
+            </div>
         {% endif %}
     {% endfor %}
+{% endif %}
+
+{% if show_report %}
+<div class="alert alert-info border-info d-flex justify-content-between align-items-center mb-4 shadow-lg">
+    <div>
+        <i class="bi bi-file-earmark-spreadsheet-fill fs-4 me-2"></i>
+        <strong>MISSION REPORT READY:</strong> 
+        <span>Data for {{ prev_month.strftime('%B') }} is available.</span>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('download_report', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-outline-info fw-bold text-dark">
+            <i class="bi bi-table me-1"></i> CSV
+        </a>
+        <a href="{{ url_for('download_report_pdf', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-danger fw-bold shadow-sm">
+            <i class="bi bi-file-pdf-fill me-1"></i> PDF DOSSIER
+        </a>
+    </div>
+</div>
 {% endif %}
 
 <div class="row mb-4">
     <div class="col-12">
         <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden" style="background: linear-gradient(135deg, #0b0f14 0%, #151921 100%); border: 1px solid rgba(0, 243, 255, 0.2) !important;">
             <div class="card-body text-center p-4">
-                <p class="text-uppercase text-info mb-1" style="font-size: 0.7rem; letter-spacing: 3px; opacity: 0.7;">System Status</p>
-                <h1 class="display-4 fw-bold text-white mb-2" style="font-family: 'Orbitron', sans-serif;">
-                    TIER {{ (user.total_xp // 500) + 1 }}
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="badge bg-secondary border border-secondary text-light">LIFETIME XP: {{ user.total_xp }}</span>
+                    <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline-secondary" style="font-size: 0.7rem;">
+                        <i class="bi bi-clock-history me-1"></i> ARCHIVES
+                    </a>
+                </div>
+                
+                <p class="text-uppercase text-info mb-1 mt-2" style="font-size: 0.7rem; letter-spacing: 3px; opacity: 0.7;">CURRENT SEASON (MONTHLY)</p>
+                <h1 class="display-4 fw-bold text-white mb-2" id="monthlyXpDisplay" style="font-family: 'Orbitron', sans-serif;">
+                    {{ monthly_xp }} XP
                 </h1>
-                <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
-                    <span class="badge bg-transparent border border-secondary text-light rounded-pill px-3">LEVEL {{ user.total_xp // 100 }}</span>
-                    <span class="badge bg-transparent border border-info text-info rounded-pill px-3">XP: {{ user.total_xp }}</span>
+                
+                <div class="progress bg-secondary bg-opacity-10 mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-info" id="monthlyProgressBar" role="progressbar" style="width: {{ (monthly_xp / 2000) * 100 }}%; box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);"></div>
                 </div>
-                <div class="progress bg-secondary bg-opacity-10" style="height: 4px;">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ (user.total_xp % 100) }}%; box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);" aria-valuenow="{{ (user.total_xp % 100) }}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
+                <small class="text-muted">Monthly Target: 2000 XP</small>
             </div>
         </div>
     </div>
@@ -112,24 +136,32 @@
         </div>
     </div>
 
-    <div id="collapse-{{ goal.id }}" class="collapse">
+    <div id="collapse-{{ goal.id }}" class="collapse show">
         <div class="list-group list-group-flush task-container">
             {% for habit in goal.habits %}
-            <div class="list-group-item bg-transparent border-secondary d-flex align-items-center justify-content-between py-3 task-item" 
-                 data-name="{{ habit.name|lower }}" 
-                 data-difficulty="{{ 1 if habit.difficulty == 'Easy' else 2 if habit.difficulty == 'Medium' else 3 if habit.difficulty == 'Hard' else 4 }}" 
+            
+            {% if not habit.completed or habit.is_daily or habit.name in todays_completed|default([]) %}
+            
+            <div class="list-group-item bg-transparent border-secondary d-flex align-items-center justify-content-between py-3 task-item"
+                 data-name="{{ habit.name|lower }}"
+                 data-difficulty="{{ 1 if habit.difficulty == 'Easy' else 2 if habit.difficulty == 'Medium' else 3 if habit.difficulty == 'Hard' else 4 }}"
                  data-date="{{ habit.target_date if habit.target_date else '9999-12-31' }}">
                 <div class="d-flex align-items-center gap-3 w-100">
-                    <a href="{{ url_for('toggle_habit', habit_id=habit.id) }}" class="text-decoration-none align-self-start mt-1">
-                        {% if habit.completed %}
-                            <i class="bi bi-check-square-fill text-info fs-4" style="text-shadow: 0 0 10px rgba(13, 202, 240, 0.5);"></i>
-                        {% else %}
-                            <i class="bi bi-square text-secondary fs-4"></i>
-                        {% endif %}
-                    </a>
+                    
+                    <button onclick="toggleTask(this, '{{ habit.id }}')" 
+                            class="btn btn-link text-decoration-none align-self-start mt-1 p-0 border-0" 
+                            style="background: none; cursor: pointer;">
+                        
+                        <i class="bi bi-check-square-fill text-info fs-4 completed-icon" 
+                           style="text-shadow: 0 0 10px rgba(13, 202, 240, 0.5); {{ 'display:block;' if habit.completed else 'display:none;' }}"></i>
+                        
+                        <i class="bi bi-square text-secondary fs-4 pending-icon" 
+                           style="{{ 'display:none;' if habit.completed else 'display:block;' }}"></i>
+                    </button>
+
                     <div class="w-100">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0 text-white {{ 'text-decoration-line-through text-muted' if habit.completed }}">{{ habit.name }}</h6>
+                            <h6 class="mb-0 text-white task-title {{ 'text-decoration-line-through text-muted' if habit.completed }}">{{ habit.name }}</h6>
                             {% if habit.description %}
                             <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#desc-{{ habit.id }}">
                                 <i class="bi bi-chevron-down"></i>
@@ -166,7 +198,9 @@
                     </a>
                 </div>
             </div>
-            {% endfor %}
+            
+            {% endif %} {% endfor %}
+            
             <div class="card-footer bg-transparent border-0 pt-0 pb-2">
                 <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0" data-bs-toggle="modal" data-bs-target="#addHabitModal" onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'">
                     <i class="bi bi-plus"></i> Add Task
@@ -179,6 +213,9 @@
 <div class="text-center py-5">
     <h4 class="text-muted" style="font-family: 'Orbitron', sans-serif;">SYSTEM IDLE</h4>
     <p class="small text-secondary">No active directives found.</p>
+    <button class="btn btn-outline-info mt-2" data-bs-toggle="modal" data-bs-target="#addGoalModal">
+        <i class="bi bi-plus-lg me-2"></i>Initialize New Sector
+    </button>
 </div>
 {% endfor %}
 </div>
@@ -339,6 +376,65 @@
 </div>
 
 <script>
+    // --- NEW: AJAX TASK TOGGLE (NO REFRESH) ---
+    async function toggleTask(btn, habitId) {
+        const filledIcon = btn.querySelector('.completed-icon');
+        const emptyIcon = btn.querySelector('.pending-icon');
+        const taskTitle = btn.closest('.task-item').querySelector('.task-title');
+
+        // 1. Optimistic UI (Instant Feedback)
+        let action = '';
+        if (emptyIcon.style.display !== 'none') {
+            // We are checking it
+            emptyIcon.style.display = 'none';
+            filledIcon.style.display = 'block';
+            taskTitle.classList.add('text-decoration-line-through', 'text-muted');
+            
+            // Confetti
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 40,
+                    spread: 50,
+                    origin: { y: 0.7, x: 0.5 }
+                });
+            }
+            // Sound
+            try { new Audio("{{ url_for('static', filename='sounds/complete.mp3') }}").play(); } catch(e){}
+            action = 'complete';
+        } else {
+            // We are unchecking it
+            emptyIcon.style.display = 'block';
+            filledIcon.style.display = 'none';
+            taskTitle.classList.remove('text-decoration-line-through', 'text-muted');
+            action = 'uncomplete';
+        }
+
+        // 2. Send to Server
+        try {
+            const response = await fetch(`/toggle_habit/${habitId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                // 3. Update Monthly XP instantly
+                const xpDisplay = document.getElementById('monthlyXpDisplay');
+                const progBar = document.getElementById('monthlyProgressBar');
+                
+                if (xpDisplay) xpDisplay.innerText = data.new_monthly_xp + ' XP';
+                if (progBar) {
+                    const pct = (data.new_monthly_xp / 2000) * 100;
+                    progBar.style.width = pct + '%';
+                }
+            }
+        } catch (error) {
+            console.error('Task sync failed', error);
+            // Optional: Revert UI if needed
+        }
+    }
+
+    // --- EXISTING MODAL & FILTER SCRIPTS ---
     function populateEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
         document.getElementById('edit_habit_id').value = id;
         document.getElementById('edit_habit_name').value = name;
@@ -409,5 +505,5 @@
     }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="{{ url_for('static', filename='js/effects.js') }}"></script>
+<script src="{{ url_for('static', filename='effects.js') }}"></script>
 {% endblock %}

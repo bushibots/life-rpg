@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="text-white text-uppercase mb-0">LOG: {{ month }} {{ year }}</h4>
+            <span class="badge bg-success border border-success">TOTAL YIELD: {{ total_xp }} XP</span>
+        </div>
+        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> BACK TO ARCHIVES
+        </a>
+    </div>
+
+    <div class="card bg-dark border-secondary">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="text-muted small text-uppercase">
+                        <th class="ps-4">Date</th>
+                        <th>Mission</th>
+                        <th>Sector</th>
+                        <th class="text-end pe-4">XP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="ps-4 text-info font-monospace">{{ log.date_completed.strftime('%d %b') }}</td>
+                        <td class="fw-bold">{{ log.name }}</td>
+                        <td><span class="badge bg-secondary bg-opacity-25">{{ log.stat_type }}</span></td>
+                        <td class="text-end pe-4 text-success">+{{ log.xp_gained }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,23 +1,80 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<div class="card bg-dark border-secondary mb-4 shadow-lg">
+    <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h4 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">
+                <i class="bi bi-activity me-2 text-info"></i>
+                {% if show_all %}
+                    LIFETIME PERFORMANCE
+                {% else %}
+                    SECTOR REPORT: <span class="text-info">{{ selected_year }}-{{ '%02d'|format(selected_month) }}</span>
+                {% endif %}
+            </h4>
+            <p class="text-muted small mb-0 mt-1">Operational Efficiency Analysis</p>
+        </div>
+        
+        <form action="{{ url_for('analytics') }}" method="GET" class="d-flex gap-2 align-items-center bg-black p-2 rounded border border-secondary">
+            <select name="year" class="form-select form-select-sm bg-dark text-white border-secondary font-monospace" style="width: auto;">
+                {% for y in range(2025, 2031) %}
+                <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="month" class="form-select form-select-sm bg-dark text-white border-secondary font-monospace" style="width: auto;">
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}" {{ 'selected' if selected_month == m }}>
+                    {{ ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][m-1] }}
+                </option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit" class="btn btn-sm btn-info fw-bold text-dark">
+                <i class="bi bi-search"></i>
+            </button>
+            
+            <div class="vr bg-secondary mx-2"></div>
+            
+            <a href="{{ url_for('analytics', all='true') }}" class="btn btn-sm {{ 'btn-light fw-bold' if show_all else 'btn-outline-secondary text-muted' }}" style="font-size: 0.75rem;">
+                ALL TIME
+            </a>
+            <a href="{{ url_for('analytics') }}" class="btn btn-sm {{ 'btn-light fw-bold' if not show_all else 'btn-outline-secondary text-muted' }}" style="font-size: 0.75rem;">
+                CURRENT
+            </a>
+        </form>
+    </div>
+</div>
+
 <div class="row g-4 mb-4">
     <div class="col-md-4">
-        <div class="card bg-dark border-secondary h-100 p-4 text-center position-relative overflow-hidden d-flex flex-column justify-content-center">
-            <h5 class="text-muted text-uppercase small mb-3">System Consistency</h5>
-            <h1 class="display-1 fw-bold text-white mb-0" style="font-family: 'Orbitron', sans-serif;">{{ health_score }}%</h1>
-            <div class="progress bg-secondary bg-opacity-10 mt-3" style="height: 6px;">
-                <div class="progress-bar bg-{{ 'success' if health_score > 70 else 'warning' if health_score > 30 else 'danger' }}"
-                     style="width: {{ health_score }}%"></div>
+        <div class="card bg-dark border-secondary h-100 p-4 position-relative overflow-hidden">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25">
+                <i class="bi bi-cpu fs-1 text-light"></i>
             </div>
-            <p class="small text-muted mt-2">7-Day Activity Rate</p>
+            <h6 class="text-secondary text-uppercase small mb-3">System Consistency</h6>
+            <div class="d-flex align-items-end gap-2 mb-2">
+                <h1 class="display-3 fw-bold text-white mb-0" style="font-family: 'Orbitron', sans-serif;">{{ health_score }}%</h1>
+                <span class="mb-2 badge {{ 'bg-success' if health_score >= 80 else 'bg-warning' if health_score >= 50 else 'bg-danger' }}">
+                    {{ 'OPTIMAL' if health_score >= 80 else 'UNSTABLE' if health_score >= 50 else 'CRITICAL' }}
+                </span>
+            </div>
+            <div class="progress bg-black mt-2" style="height: 6px;">
+                <div class="progress-bar bg-{{ 'success' if health_score > 70 else 'info' if health_score > 30 else 'danger' }}"
+                     style="width: {{ health_score }}%; box-shadow: 0 0 10px currentColor;"></div>
+            </div>
+            <p class="small text-muted mt-2 mb-0">Based on activity in selected period</p>
         </div>
     </div>
 
     <div class="col-md-4">
         <div class="card bg-dark border-secondary h-100 p-3">
-            <h6 class="text-uppercase text-muted small mb-3 text-center">Attribute Balance</h6>
-            <div style="height: 300px; width: 100%; position: relative;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="text-uppercase text-muted small mb-0">Attribute Balance</h6>
+                <i class="bi bi-person-bounding-box text-secondary"></i>
+            </div>
+            <div style="height: 200px; width: 100%; position: relative;">
                 <canvas id="radarChart"></canvas>
             </div>
         </div>
@@ -25,8 +82,11 @@
 
     <div class="col-md-4">
         <div class="card bg-dark border-secondary h-100 p-3">
-            <h6 class="text-uppercase text-muted small mb-3 text-center">Mission Complexity</h6>
-            <div style="height: 300px; width: 100%; position: relative;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="text-uppercase text-muted small mb-0">Mission Complexity</h6>
+                <i class="bi bi-pie-chart text-secondary"></i>
+            </div>
+            <div style="height: 200px; width: 100%; position: relative;">
                 <canvas id="donutChart"></canvas>
             </div>
         </div>
@@ -34,82 +94,86 @@
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-md-6">
+    <div class="col-lg-8">
         <div class="card bg-dark border-secondary h-100 p-4">
-            <h5 class="text-uppercase text-white mb-3">Daily Output (7 Days)</h5>
-            <div style="height: 250px; width: 100%; position: relative;">
-                <canvas id="barChart"></canvas>
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <h5 class="text-uppercase text-white mb-0" style="font-family: 'Orbitron', sans-serif;">XP Velocity</h5>
+                    <p class="text-muted small mb-0">Cumulative Growth Over Time</p>
+                </div>
+                <span class="badge bg-dark border border-info text-info">
+                    <i class="bi bi-arrow-up-right me-1"></i> TRENDING
+                </span>
             </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card bg-dark border-secondary h-100 p-4">
-            <div class="d-flex justify-content-between align-items-end mb-3">
-                <h5 class="text-uppercase text-white mb-0">Total XP Velocity</h5>
-                <span class="badge bg-secondary border border-secondary text-light">Lifetime Growth</span>
-            </div>
-            <div style="height: 250px; width: 100%; position: relative;">
+            <div style="height: 300px; width: 100%;">
                 <canvas id="lineChart"></canvas>
             </div>
         </div>
     </div>
-</div>
 
-<div class="glass-panel" style="margin-top: 30px;">
-    <h3>// RECENT NEGLECT MATRIX (7 DAYS)</h3>
-    <div style="height: 300px;">
-        <canvas id="missedChart"></canvas>
+    <div class="col-lg-4">
+        <div class="card bg-dark border-secondary h-100 p-4">
+            <h5 class="text-uppercase text-white mb-3" style="font-family: 'Orbitron', sans-serif;">Daily Output</h5>
+            <p class="text-muted small mb-3">Last 7 Active Days</p>
+            <div style="height: 300px; width: 100%;">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="card bg-dark border-secondary p-4 mb-5">
-    <h5 class="text-uppercase text-white mb-4">Activity Heatmap</h5>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="text-uppercase text-white mb-0" style="font-family: 'Orbitron', sans-serif;">
+            <i class="bi bi-grid-3x3 me-2 text-secondary"></i>Activity Heatmap
+        </h5>
+        <div class="d-flex gap-2 small">
+            <span class="text-muted">Less</span>
+            <div style="width: 12px; height: 12px;" class="bg-secondary bg-opacity-10 rounded-1"></div>
+            <div style="width: 12px; height: 12px;" class="bg-info bg-opacity-25 rounded-1"></div>
+            <div style="width: 12px; height: 12px;" class="bg-info bg-opacity-75 rounded-1"></div>
+            <div style="width: 12px; height: 12px;" class="bg-info rounded-1"></div>
+            <span class="text-muted">More</span>
+        </div>
+    </div>
     <div class="d-flex flex-wrap gap-1 justify-content-center" id="heatmapContainer"></div>
 </div>
 
 <script>
-    // --- 1. CONFIG ---
-    const isLight = document.body.classList.contains('light-mode');
-    const textColor = isLight ? '#212529' : '#94a3b8';
-    const gridColor = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)';
-
+    // --- 1. GLOBAL STYLE CONFIG ---
+    const gridColor = 'rgba(255, 255, 255, 0.05)';
+    const textColor = '#94a3b8';
+    const accentColor = '#0dcaf0'; // Cyan/Info
+    
     Chart.defaults.color = textColor;
     Chart.defaults.borderColor = gridColor;
-    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
     Chart.defaults.responsive = true;
     Chart.defaults.maintainAspectRatio = false;
 
-    // --- 2. RADAR CHART (Fixed Scale) ---
+    // --- 2. RADAR CHART ---
     new Chart(document.getElementById('radarChart'), {
         type: 'radar',
         data: {
             labels: {{ radar_labels | tojson }},
             datasets: [{
-                label: 'Stats',
+                label: 'Attribute Level',
                 data: {{ radar_data | tojson }},
                 backgroundColor: 'rgba(13, 202, 240, 0.2)',
-                borderColor: '#0dcaf0',
+                borderColor: accentColor,
                 borderWidth: 2,
-                pointBackgroundColor: '#0dcaf0',
-                pointRadius: 4
+                pointBackgroundColor: accentColor,
+                pointBorderColor: '#fff',
+                pointRadius: 3
             }]
         },
         options: {
-            layout: { padding: 10 }, // Give labels room to breathe
             scales: {
                 r: {
                     angleLines: { color: gridColor },
                     grid: { color: gridColor },
-                    pointLabels: {
-                        color: textColor,
-                        font: { size: 12, weight: 'bold' } // Make labels bigger
-                    },
-                    ticks: {
-                        display: false, // Hide the messy numbers inside
-                        backdropColor: 'transparent'
-                    },
-                    suggestedMin: 0, // Ensure it starts from center
+                    pointLabels: { color: '#fff', font: { size: 11, weight: '600' } },
+                    ticks: { display: false, backdropColor: 'transparent' }
                 }
             },
             plugins: { legend: { display: false } }
@@ -124,12 +188,18 @@
             datasets: [{
                 data: {{ diff_data | tojson }},
                 backgroundColor: ['#20c997', '#0dcaf0', '#fd7e14', '#dc3545'],
-                borderWidth: 0
+                borderWidth: 0,
+                hoverOffset: 10
             }]
         },
         options: {
-            cutout: '70%', // Thinner ring looks more modern
-            plugins: { legend: { position: 'bottom', labels: { padding: 20, boxWidth: 10 } } }
+            cutout: '75%',
+            plugins: { 
+                legend: { 
+                    position: 'right', 
+                    labels: { boxWidth: 10, padding: 15, color: '#adb5bd', font: { size: 11 } } 
+                } 
+            }
         }
     });
 
@@ -141,14 +211,14 @@
             datasets: [{
                 label: 'XP Gained',
                 data: {{ bar_data | tojson }},
-                backgroundColor: '#0dcaf0',
-                borderRadius: 4,
-                barPercentage: 0.6
+                backgroundColor: accentColor,
+                borderRadius: 2,
+                barPercentage: 0.5
             }]
         },
         options: {
             scales: {
-                y: { beginAtZero: true, grid: { color: gridColor } },
+                y: { beginAtZero: true, grid: { color: gridColor, borderDash: [2, 2] } },
                 x: { grid: { display: false } }
             },
             plugins: { legend: { display: false } }
@@ -156,115 +226,62 @@
     });
 
     // --- 5. LINE CHART ---
-    new Chart(document.getElementById('lineChart'), {
+    // Gradient Setup for Line Chart
+    const lineCtx = document.getElementById('lineChart').getContext('2d');
+    const gradient = lineCtx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(13, 202, 240, 0.3)');
+    gradient.addColorStop(1, 'rgba(13, 202, 240, 0.0)');
+
+    new Chart(lineCtx, {
         type: 'line',
         data: {
             labels: {{ line_labels | tojson }},
             datasets: [{
                 label: 'Total XP',
                 data: {{ line_data | tojson }},
-                borderColor: '#0dcaf0',
-                backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                borderColor: accentColor,
+                backgroundColor: gradient,
                 borderWidth: 2,
                 fill: true,
-                tension: 0.4
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 6
             }]
         },
         options: {
             interaction: { intersect: false, mode: 'index' },
-            plugins: { legend: { display: false } },
             scales: {
-                x: { grid: { display: false } },
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
                 y: { grid: { color: gridColor } }
-            }
+            },
+            plugins: { legend: { display: false } }
         }
     });
 
-    // --- 6. HEATMAP ---
+    // --- 6. HEATMAP GENERATOR ---
     const heatmapData = {{ heatmap_data | tojson }};
     const container = document.getElementById('heatmapContainer');
-    const today = new Date();
-
+    // Generate last 60 days
     for (let i = 59; i >= 0; i--) {
         const d = new Date();
-        d.setDate(today.getDate() - i);
+        d.setDate(d.getDate() - i);
         const dateStr = d.toISOString().split('T')[0];
         const xp = heatmapData[dateStr] || 0;
 
-        let colorClass = 'bg-secondary bg-opacity-10';
+        let colorClass = 'bg-secondary bg-opacity-10'; // Default Empty
         if (xp > 0) colorClass = 'bg-info bg-opacity-25';
         if (xp > 50) colorClass = 'bg-info bg-opacity-50';
         if (xp > 100) colorClass = 'bg-info';
 
         const box = document.createElement('div');
         box.className = `rounded-1 ${colorClass}`;
-        box.style.width = '12px';
-        box.style.height = '12px';
+        box.style.width = '14px';
+        box.style.height = '14px';
+        box.style.cursor = 'pointer';
         box.title = `${dateStr}: ${xp} XP`;
-        box.setAttribute('data-bs-toggle', 'tooltip');
+        box.setAttribute('data-bs-toggle', 'tooltip'); // Bootstrap Tooltip
         container.appendChild(box);
     }
-
-// --- LOAD MISSED TASK GRAPH ---
-async function loadMissedGraph() {
-    const response = await fetch('/api/missed_data');
-    const missedData = await response.json();
-
-    const ctx = document.getElementById('missedChart').getContext('2d');
-
-    new Chart(ctx, {
-        type: 'bubble', // Bubble allows us to store custom data like 'task name'
-        data: {
-            datasets: [{
-                label: 'Missed Objectives',
-                data: missedData,
-                backgroundColor: 'rgba(255, 99, 132, 0.7)', // Red for danger/missed
-                borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    type: 'category', // Shows Dates
-                    grid: { color: '#333' },
-                    ticks: { color: '#fff' }
-                },
-                y: {
-                    min: -0.5,
-                    max: 4.5,
-                    grid: { color: '#333' },
-                    ticks: {
-                        color: '#aaa',
-                        callback: function(value) {
-                            // Convert numbers back to Category Names
-                            const labels = ["General", "Creativity", "Charisma", "Intelligence", "Strength"];
-                            return labels[value] || "";
-                        }
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            // SHOW THE EXACT TASK NAME ON HOVER
-                            return ' MISSED: ' + context.raw.task;
-                        }
-                    },
-                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                    titleColor: '#ff4444',
-                    bodyFont: { family: 'Courier New', size: 14 }
-                },
-                legend: { display: false }
-            }
-        }
-    });
-}
-
-// Call it on page load
-loadMissedGraph();
 </script>
+
 {% endblock %}

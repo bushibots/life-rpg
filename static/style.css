@@ -200,3 +200,42 @@ body {
         width: 100% !important; /* Force full width stacking */
     }
 }
+
+/* --- ANALYTICS SPECIFIC OVERRIDES --- */
+
+/* Force charts to have height on mobile */
+.chart-container {
+    position: relative;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    /* 1. Stack the Control Bar */
+    .control-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 15px !important;
+    }
+
+    /* 2. Space out buttons */
+    .control-actions {
+        justify-content: space-between !important;
+        width: 100% !important;
+    }
+
+    /* 3. Taller Charts for Phone Screens */
+    .chart-container {
+        min-height: 300px !important;
+    }
+
+    /* 4. Spacing between stacked cards */
+    .stat-card {
+        margin-bottom: 15px;
+    }
+
+    /* 5. Fix Radar Chart Squishing */
+    #radarChart {
+        min-height: 300px !important;
+        max-height: 400px !important;
+    }
+}

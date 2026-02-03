@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mission Report</title>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; color: #000; padding: 40px; }
+        .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; display: flex; justify-content: space-between; }
+        .title { font-size: 24px; font-weight: bold; text-transform: uppercase; }
+        .meta { font-size: 12px; }
+        .stamp { 
+            position: absolute; top: 20px; right: 20px; 
+            border: 3px double #d00; color: #d00; 
+            padding: 5px 10px; font-weight: bold; 
+            text-transform: uppercase; transform: rotate(-10deg);
+        }
+        .stats-grid { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .stat-box { border: 1px solid #000; padding: 10px; width: 30%; text-align: center; }
+        .stat-label { display: block; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #ccc; margin-bottom: 5px; }
+        .stat-value { font-size: 20px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+        th { border-bottom: 2px solid #000; text-align: left; padding: 5px; text-transform: uppercase; }
+        td { border-bottom: 1px solid #ccc; padding: 8px 5px; }
+        .footer { margin-top: 50px; text-align: center; font-size: 10px; border-top: 1px solid #000; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="stamp">CONFIDENTIAL // DECLASSIFIED</div>
+
+    <div class="header">
+        <div>
+            <div class="title">MONTHLY PERFORMANCE REVIEW</div>
+            <div class="meta">OPERATOR: {{ user.username }}</div>
+        </div>
+        <div style="text-align: right;">
+            <div class="meta">PERIOD: {{ month_name }} {{ year }}</div>
+            <div class="meta">GENERATED: {{ now }}</div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-box">
+            <span class="stat-label">Total XP Yield</span>
+            <span class="stat-value">{{ total_xp }} XP</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Missions Completed</span>
+            <span class="stat-value">{{ mission_count }}</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Efficiency Rating</span>
+            <span class="stat-value">A+</span>
+        </div>
+    </div>
+
+    <h3>// MISSION LOG_</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Mission Objective</th>
+                <th>Sector (Type)</th>
+                <th>Difficulty</th>
+                <th>XP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.date_completed.strftime('%Y-%m-%d') }}</td>
+                <td>{{ log.name }}</td>
+                <td>{{ log.stat_type }}</td>
+                <td>{{ log.difficulty }}</td>
+                <td>+{{ log.xp_gained }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        LIFE-RPG TACTICAL COMMAND // SYSTEM GENERATED REPORT // DO NOT DISTRIBUTE
+    </div>
+</body>
+</html>

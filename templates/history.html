@@ -1,65 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="text-info" style="font-family: 'Orbitron', sans-serif;">
-            <i class="bi bi-archive me-2"></i>MISSION ARCHIVES
-        </h2>
-        <p class="text-muted">A permanent record of completed objectives.</p>
-    </div>
-</div>
-
-<div class="card bg-dark border-secondary shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-dark table-hover mb-0" style="background: transparent;">
-                <thead>
-                    <tr class="text-muted small text-uppercase">
-                        <th class="ps-4">Date</th>
-                        <th>Quest</th>
-                        <th>Attribute</th>
-                        <th>Difficulty</th>
-                        <th class="text-end pe-4">XP Gained</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for quest in history %}
-                    <tr>
-                        <td class="ps-4 align-middle text-secondary" style="font-family: monospace;">
-                            {{ quest.date_completed.strftime('%Y-%m-%d') }}
-                        </td>
-                        <td class="align-middle fw-bold text-white">
-                            {{ quest.name }}
-                        </td>
-                        <td class="align-middle">
-                            <span class="badge bg-dark border border-secondary text-light">
-                                {{ quest.stat_type }}
-                            </span>
-                        </td>
-                        <td class="align-middle">
-                            <span class="badge 
-                                {% if quest.difficulty == 'Easy' %}bg-success bg-opacity-25 text-success
-                                {% elif quest.difficulty == 'Medium' %}bg-warning bg-opacity-25 text-warning
-                                {% elif quest.difficulty == 'Hard' %}bg-danger bg-opacity-25 text-danger
-                                {% else %}bg-info bg-opacity-25 text-info{% endif %}">
-                                {{ quest.difficulty }}
-                            </span>
-                        </td>
-                        <td class="align-middle text-end pe-4 text-info">
-                            +{{ quest.xp_gained }} XP
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
-                            No records found. Complete a mission to initialize the archives.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-info" style="font-family: 'Orbitron', sans-serif;">
+                <i class="bi bi-archive me-2"></i>MISSION ARCHIVES
+            </h2>
+            <p class="text-muted">Historical records of past operational cycles.</p>
         </div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> BACK TO ACTIVE
+        </a>
+    </div>
+
+    <div class="row g-4">
+        {% for arch in archives %}
+        <div class="col-md-4">
+            <div class="card bg-dark border-secondary hover-card h-100">
+                <div class="card-body text-center py-4">
+                    <h4 class="text-white text-uppercase mb-1">{{ arch.name }} {{ arch.year }}</h4>
+                    <h2 class="display-5 fw-bold text-success mb-3">+{{ arch.xp }} XP</h2>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('history_details', year=arch.year, month=arch.month) }}" class="btn btn-outline-info">
+                            <i class="bi bi-eye"></i> VIEW LOGS
+                        </a>
+                        <a href="{{ url_for('download_report', year=arch.year, month=arch.month) }}" class="btn btn-sm btn-dark text-muted">
+                            <i class="bi bi-download"></i> CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <h4 class="text-muted">No archives found.</h4>
+            <p class="text-secondary">Complete missions to generate history.</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
