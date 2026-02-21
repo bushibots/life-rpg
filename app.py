@@ -1,5 +1,8 @@
 import os
 import time
+import io  # <--- FIXED: Added missing import
+import csv # <--- FIXED: Added missing import
+from collections import Counter # <--- FIXED: Added missing import
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 
@@ -15,10 +18,13 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationE
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy import func, extract
 import google.generativeai as genai
+from weasyprint import HTML # <--- FIXED: Added missing import
+import uuid
 
 # --- LOCAL IMPORTS ---
-# We import 'db' from extensions to avoid the Circular Import Loop
 from extensions import db
+# Import utils functions
+from utils import guess_category, smart_ai_parse, get_ai_feedback, get_backlog_strategy
 
 # Load Environment Variables
 load_dotenv()
@@ -33,19 +39,14 @@ except AttributeError:
 app = Flask(__name__)
 
 # ========================================================
-# 1. CONFIGURATION (MUST COME FIRST)
+# 1. CONFIGURATION
 # ========================================================
-
-# A. Database Config
-# We define WHERE the database is before we turn it on
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'rpg.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# B. Security Config
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key-change-this')
 
-# C. Email Config
+# Email Config
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -54,34 +55,39 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = ('LifeRPG Command', os.getenv('MAIL_USERNAME'))
 
 # ========================================================
-# 2. INITIALIZATION (MUST COME SECOND)
+# 2. INITIALIZATION
 # ========================================================
-
-# Initialize Database (Now it knows where the DB is)
 db.init_app(app)
-
-# Initialize Other Tools
 bcrypt = Bcrypt(app)
 mail = Mail(app)
 migrate = Migrate(app, db)
 s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-# Initialize Login Manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # ========================================================
-# 3. LOAD MODELS (MUST COME THIRD)
+# 3. LOAD MODELS
 # ========================================================
-# We import models HERE so the DB is ready for them.
-# This prevents the "ImportError: cannot import name db" crash.
 from models import User, Goal, Habit, DailyLog, Feedback, QuestHistory, Notification, Task
 
 # ========================================================
-# 4. HELPERS & GLOBAL CHECKS
+# 4. PRESETS
 # ========================================================
+PRESETS = [
+    {"id": 1, "name": "50 Pushups", "category": "Physical", "attribute": "STR", "difficulty": "Medium", "is_daily": True},
+    {"id": 2, "name": "Morning Run (3km)", "category": "Physical", "attribute": "STR", "difficulty": "Hard", "is_daily": True},
+    {"id": 11, "name": "Read 10 Pages", "category": "Intellect", "attribute": "INT", "difficulty": "Easy", "is_daily": True},
+    {"id": 12, "name": "Code for 1 Hour", "category": "Career", "attribute": "INT", "difficulty": "Hard", "is_daily": True},
+    {"id": 21, "name": "Meditation (10m)", "category": "Mental Health", "attribute": "WIS", "difficulty": "Easy", "is_daily": True},
+    {"id": 31, "name": "Drink 3L Water", "category": "Health", "attribute": "CON", "difficulty": "Medium", "is_daily": True},
+    {"id": 41, "name": "Call Family", "category": "Social", "attribute": "CHA", "difficulty": "Medium", "is_daily": False},
+]
 
+# ========================================================
+# 5. HELPER FUNCTIONS
+# ========================================================
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -114,8 +120,10 @@ class LoginForm(FlaskForm):
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
-# --- (YOUR PRESETS AND ROUTES CONTINUE BELOW) ---
-# --- ROUTES ---
+# ========================================================
+# 6. ROUTES
+# ========================================================
+
 @app.route('/')
 @app.route('/dashboard')
 @login_required
@@ -134,25 +142,12 @@ def dashboard():
 
     goals = Goal.query.filter_by(user_id=current_user.id).all()
 
-    # 2. GET COMPLETED TASKS (For Vanishing Logic)
+    # 2. GET COMPLETED TASKS
     todays_completed = [
         q.name for q in QuestHistory.query.filter_by(user_id=current_user.id, date_completed=today).all()
     ]
 
-    # 3. SMART COLLAPSE LOGIC (The New Part)
-    # We want a list of Goal IDs that have tasks due TODAY
-    active_goal_ids = []
-    for goal in goals:
-        has_today_task = False
-        for habit in goal.habits:
-            # Check if task is due today and NOT completed
-            if habit.target_date == today and not habit.completed:
-                has_today_task = True
-                break
-        if has_today_task:
-            active_goal_ids.append(goal.id)
-
-    # 4. STATS & REPORT
+    # 3. STATS
     monthly_xp = get_monthly_xp(current_user.id)
     overdue_count = Habit.query.join(Goal).filter(
         Goal.user_id == current_user.id,
@@ -176,19 +171,32 @@ def dashboard():
                            monthly_xp=monthly_xp,
                            show_report=show_report,
                            prev_month=prev_month_date,
-                           todays_completed=todays_completed,
-                           active_goal_ids=active_goal_ids) # <--- PASS THIS LIST
+                           todays_completed=todays_completed)
 
+@app.route('/guest_login')
+def guest_login():
+    # Generate a random temporary username
+    guest_name = f"Guest_{uuid.uuid4().hex[:8]}"
 
+    # Create the guest user
+    guest_user = User(
+        username=guest_name,
+        email=f"{guest_name}@temp.com",
+        password="none",
+        is_guest=True
+    )
+    db.session.add(guest_user)
+    db.session.commit()
 
+    # Log them in instantly
+    login_user(guest_user)
+    flash("Welcome, Guest! Register to save your progress.", "info")
+    return redirect(url_for('dashboard'))
 
 @app.route('/analytics')
 @login_required
 def analytics():
-    # --- 1. HANDLE DATE SELECTION ---
     today = date.today()
-
-    # Get params from URL (e.g., ?month=1&year=2025)
     try:
         selected_month = int(request.args.get('month', today.month))
         selected_year = int(request.args.get('year', today.year))
@@ -198,31 +206,17 @@ def analytics():
 
     show_all = request.args.get('all') == 'true'
 
-    # --- 2. FETCH DATA ---
     query = QuestHistory.query.filter_by(user_id=current_user.id)
 
     if not show_all:
-        # Filter by the selected month/year
         query = query.filter(
             extract('year', QuestHistory.date_completed) == selected_year,
             extract('month', QuestHistory.date_completed) == selected_month
         )
-        # Determine the "Reference Date" for the graphs
-        # If looking at past month, set reference to the last day of that month
-        last_day = calendar.monthrange(selected_year, selected_month)[1]
-        reference_date = date(selected_year, selected_month, last_day)
-
-        # If selected month is current month, clamp reference to today (don't show future)
-        if selected_year == today.year and selected_month == today.month:
-            reference_date = today
-    else:
-        reference_date = today # For All Time, just use today as anchor
 
     history = query.order_by(QuestHistory.date_completed.asc()).all()
 
-    # --- 3. PROCESS GRAPHS ---
-
-    # A. RADAR & ATTRIBUTES
+    # A. RADAR
     stats = {'STR': 0, 'INT': 0, 'WIS': 0, 'CON': 0, 'CHA': 0}
     for h in history:
         if h.stat_type in stats:
@@ -230,37 +224,25 @@ def analytics():
     radar_data = list(stats.values())
     radar_labels = list(stats.keys())
 
-    # B. XP MAP (For Heatmap & Line Chart)
+    # B. XP MAP
     xp_map = {}
     for h in history:
         d_str = h.date_completed.strftime('%Y-%m-%d')
         xp_map[d_str] = xp_map.get(d_str, 0) + h.xp_gained
 
-    # C. HEALTH SCORE (Based on the selected period's reference date)
-    # We look at the 7 days leading up to the reference_date
-    last_7_days_dates = [reference_date - timedelta(days=i) for i in range(7)]
+    # C. HEALTH SCORE
+    last_7_days_dates = [today - timedelta(days=i) for i in range(7)]
     active_days = sum(1 for day in last_7_days_dates if day.strftime('%Y-%m-%d') in xp_map)
     health_score = int((active_days / 7) * 100)
 
-    # D. LINE CHART (Cumulative for the period)
+    # D. LINE CHART
     line_labels = []
     line_data = []
     cumulative_xp = 0
-
-    # If filtering by month, we fill in missing days to make the chart smooth
-    if not show_all:
-        # Create a list of ALL days in that month (up to reference date)
-        start_date = date(selected_year, selected_month, 1)
-        delta = (reference_date - start_date).days + 1
-        sorted_dates = [(start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(delta)]
-    else:
-        # For all time, just use the days we have data
-        sorted_dates = sorted(xp_map.keys())
+    sorted_dates = sorted(xp_map.keys())
 
     for d_str in sorted_dates:
-        # Add daily gain to cumulative
-        gain = xp_map.get(d_str, 0)
-        cumulative_xp += gain
+        cumulative_xp += xp_map.get(d_str, 0)
         line_labels.append(d_str)
         line_data.append(cumulative_xp)
 
@@ -268,19 +250,19 @@ def analytics():
         line_labels = [today.strftime('%Y-%m-%d')]
         line_data = [0]
 
-    # E. DONUT (Difficulty)
+    # E. DONUT
     difficulty_counts = {'Easy': 0, 'Medium': 0, 'Hard': 0, 'Epic': 0}
     for h in history:
         if h.difficulty in difficulty_counts:
             difficulty_counts[h.difficulty] += 1
 
-    # F. BAR CHART (Last 7 Days of Selected Period)
+    # F. BAR CHART
     bar_labels = []
     bar_data = []
     for i in range(6, -1, -1):
-        d = reference_date - timedelta(days=i)
+        d = today - timedelta(days=i)
         d_str = d.strftime('%Y-%m-%d')
-        bar_labels.append(d.strftime('%a')) # Mon, Tue...
+        bar_labels.append(d.strftime('%a'))
         bar_data.append(xp_map.get(d_str, 0))
 
     return render_template('analytics.html',
@@ -294,7 +276,6 @@ def analytics():
                          diff_data=list(difficulty_counts.values()),
                          bar_labels=bar_labels,
                          bar_data=bar_data,
-                         # Pass selection back to UI
                          selected_month=selected_month,
                          selected_year=selected_year,
                          show_all=show_all)
@@ -311,7 +292,7 @@ def planning():
     scheduled.sort(key=lambda x: x.target_date)
 
     date_strings = [h.target_date.strftime('%Y-%m-%d') for h in scheduled]
-    counts = Counter(date_strings)
+    counts = Counter(date_strings) # <--- This works now because we imported Counter
     sorted_dates = sorted(counts.keys())
     chart_data = [counts[d] for d in sorted_dates]
 
@@ -322,6 +303,61 @@ def planning():
                            chart_labels=sorted_dates,
                            chart_data=chart_data)
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    # If a normal user is logged in, send them away. If it's a guest, let them stay.
+    if current_user.is_authenticated and not current_user.is_guest:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password, method='sha256')
+
+        # CHECK IF THEY ARE A GUEST UPGRADING
+        if current_user.is_authenticated and current_user.is_guest:
+            current_user.username = username
+            current_user.email = email
+            current_user.password = hashed_password
+            current_user.is_guest = False
+            db.session.commit()
+            flash("Account successfully linked! All your guest data has been saved.", "success")
+            return redirect(url_for('dashboard'))
+
+        # ELSE: Normal registration for totally new people
+        else:
+            new_user = User(username=username, email=email, password=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+            flash("Registration successful. Please log in.", "success")
+            return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+    return render_template('register.html', form=form)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        user = User.query.filter_by(username=request.form.get('username')).first()
+        # FIXED: Using bcrypt.check_password_hash
+        if user and bcrypt.check_password_hash(user.password, request.form.get('password')):
+            login_user(user, remember=True if request.form.get('remember') else False)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Login Unsuccessful. Check username and password.', 'danger')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 @app.route('/add_habit', methods=['POST'])
 @login_required
 def add_habit():
@@ -329,9 +365,8 @@ def add_habit():
     name = request.form.get('name')
     stat_type = request.form.get('stat_type')
     difficulty = request.form.get('difficulty')
-    duration = request.form.get('duration')
     date_str = request.form.get('target_date')
-    description = request.form.get('description') # <--- NEW: Get the description
+    description = request.form.get('description')
 
     xp_map = {'Easy': 10, 'Medium': 30, 'Hard': 50, 'Epic': 100}
     xp = xp_map.get(difficulty, 10)
@@ -350,23 +385,17 @@ def add_habit():
             stat_type=stat_type,
             difficulty=difficulty,
             xp_value=xp,
-            duration=int(duration) if duration else 0,
             completed=False,
             is_daily=False,
             target_date=target_date_obj,
-            description=description if description else "" # <--- NEW: Save it!
+            description=description if description else ""
         )
         db.session.add(new_habit)
         db.session.commit()
 
     return redirect(url_for('dashboard'))
 
-@app.route('/operations/backlog')
-@login_required
-def backlog_calculator():
-    return render_template('backlog_calculator.html')
-
-@app.route('/toggle_habit/<int:habit_id>', methods=['POST']) # Changed to POST for safety
+@app.route('/toggle_habit/<int:habit_id>', methods=['POST'])
 @login_required
 def toggle_habit(habit_id):
     habit = Habit.query.get(habit_id)
@@ -375,16 +404,13 @@ def toggle_habit(habit_id):
         today = date.today()
 
         if habit.completed:
-            # Add XP
             current_user.total_xp += habit.xp_value
-            # Update Stats
             if habit.stat_type == 'STR': current_user.str_score += habit.xp_value
             elif habit.stat_type == 'INT': current_user.int_score += habit.xp_value
             elif habit.stat_type == 'WIS': current_user.wis_score += habit.xp_value
             elif habit.stat_type == 'CON': current_user.con_score += habit.xp_value
             elif habit.stat_type == 'CHA': current_user.cha_score += habit.xp_value
 
-            # Log History
             history_entry = QuestHistory(
                 user_id=current_user.id,
                 name=habit.name,
@@ -394,18 +420,14 @@ def toggle_habit(habit_id):
                 date_completed=today
             )
             db.session.add(history_entry)
-            action = "completed"
         else:
-            # Remove XP (Undo)
             current_user.total_xp -= habit.xp_value
-            # Remove Stats
             if habit.stat_type == 'STR': current_user.str_score -= habit.xp_value
             elif habit.stat_type == 'INT': current_user.int_score -= habit.xp_value
             elif habit.stat_type == 'WIS': current_user.wis_score -= habit.xp_value
             elif habit.stat_type == 'CON': current_user.con_score -= habit.xp_value
             elif habit.stat_type == 'CHA': current_user.cha_score -= habit.xp_value
 
-            # Remove History Log
             log_to_delete = QuestHistory.query.filter_by(
                 user_id=current_user.id,
                 name=habit.name,
@@ -413,19 +435,14 @@ def toggle_habit(habit_id):
             ).order_by(QuestHistory.id.desc()).first()
             if log_to_delete:
                 db.session.delete(log_to_delete)
-            action = "uncompleted"
 
         db.session.commit()
-
-        # Calculate new Monthly XP to update the UI instantly
         new_monthly_xp = get_monthly_xp(current_user.id)
 
         return jsonify({
             'success': True,
-            'action': action,
             'new_total_xp': current_user.total_xp,
-            'new_monthly_xp': new_monthly_xp,
-            'habit_id': habit.id
+            'new_monthly_xp': new_monthly_xp
         })
 
     return jsonify({'success': False}), 400
@@ -433,7 +450,13 @@ def toggle_habit(habit_id):
 @app.route('/add_goal', methods=['POST'])
 @login_required
 def add_goal():
-    name = request.form.get('name')
+    name = request.form.get
+    # ADD THIS GUEST CHECK:
+    if current_user.is_guest:
+        current_goals = Goal.query.filter_by(user_id=current_user.id).count()
+        if current_goals >= 2:
+            flash("Guests can only create 2 categories. Please Register to unlock unlimited slots!", "warning")
+            return redirect(url_for('planning'))
     if name:
         db.session.add(Goal(name=name, user_id=current_user.id))
         db.session.commit()
@@ -452,36 +475,13 @@ def delete_goal(goal_id):
 @login_required
 def delete_habit(habit_id):
     h = db.session.get(Habit, habit_id)
-    if h:
-        # GRANT ACCESS IF: User owns it OR User is Admin
-        if h.goal.user_id == current_user.id or current_user.is_admin:
-            target_user_id = h.goal.user_id # Remember who we are deleting from
-            db.session.delete(h)
-            db.session.commit()
-
-            # IF ADMIN ACTION: Redirect back to inspection, not dashboard
-            if current_user.is_admin and target_user_id != current_user.id:
-                flash(f"Moderation: Mission '{h.name}' terminated.", "warning")
-                return redirect(url_for('admin_inspect', user_id=target_user_id))
-
+    if h and (h.goal.user_id == current_user.id or current_user.is_admin):
+        target_id = h.goal.user_id
+        db.session.delete(h)
+        db.session.commit()
+        if current_user.is_admin and target_id != current_user.id:
+            return redirect(url_for('admin_inspect', user_id=target_id))
     return redirect(url_for('dashboard'))
-
-@app.route('/admin/inspect/<int:user_id>')
-@login_required
-def admin_inspect(user_id):
-    # SECURITY CHECK: Only Admins can enter
-    if not current_user.is_admin:
-        flash("Unauthorized Access.", "danger")
-        return redirect(url_for('dashboard'))
-
-    target_user = db.session.get(User, user_id)
-    if not target_user:
-        return redirect(url_for('admin_panel'))
-
-    # Fetch ALL active missions for this user
-    habits = Habit.query.join(Goal).filter(Goal.user_id == user_id).all()
-
-    return render_template('admin_inspect.html', target=target_user, habits=habits)
 
 @app.route('/edit_habit', methods=['POST'])
 @login_required
@@ -493,109 +493,58 @@ def edit_habit():
         h.description = request.form.get('description')
         h.is_daily = True if request.form.get('is_daily') else False
 
-        # 1. Handle Date
         date_str = request.form.get('target_date')
         if date_str:
             h.target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         else:
             h.target_date = None
 
-        # 2. Handle Category Change
-        new_cat_name = request.form.get('category_name')
-        if new_cat_name and new_cat_name != h.goal.name:
-            new_goal = Goal.query.filter_by(user_id=current_user.id, name=new_cat_name).first()
-            if not new_goal:
-                new_goal = Goal(name=new_cat_name, user_id=current_user.id)
-                db.session.add(new_goal)
+        # Handle Category Move
+        new_cat = request.form.get('category_name')
+        if new_cat and new_cat != h.goal.name:
+            goal = Goal.query.filter_by(user_id=current_user.id, name=new_cat).first()
+            if not goal:
+                goal = Goal(name=new_cat, user_id=current_user.id)
+                db.session.add(goal)
                 db.session.flush()
-            h.goal_id = new_goal.id
+            h.goal_id = goal.id
 
         db.session.commit()
     return redirect(url_for('dashboard'))
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    form = RegisterForm()
-    if request.method == 'POST':
-        # FIXED: Use Flask-WTF validation for cleaner handling
-        if form.validate_on_submit():
-            # FIXED: Ensure hashing matches Login logic
-            hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-            user = User(username=form.username.data, password=hashed_password)
-            db.session.add(user)
-            starter_goal = Goal(name="Starter Quests", user=user)
-            db.session.add(starter_goal)
-            db.session.flush()
-            h1 = Habit(name="Create your first real task", difficulty="Easy", stat_type='INT', xp_value=10, goal=starter_goal)
-            h2 = Habit(name="Drink a glass of water", difficulty="Easy", stat_type='CON', xp_value=10, goal=starter_goal)
-            h3 = Habit(name="Visit the Focus Hub", difficulty="Easy", stat_type='WIS', xp_value=10, goal=starter_goal)
-            db.session.add_all([h1, h2, h3])
-            db.session.commit()
-            login_user(user)
-            flash('Welcome, Agent.', 'success')
-            return redirect(url_for('dashboard'))
-    return render_template('register.html', form=form)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        user = User.query.filter_by(username=request.form.get('username')).first()
-        # FIXED:
-        if user and check_password_hash(user.password, request.form.get('password')):
-            login_user(user, remember=True if request.form.get('remember') else False)
-            return redirect(url_for('dashboard'))
-        flash('Invalid credentials. Access Denied.')
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
-
-@app.route('/settings', methods=['GET', 'POST'])  # <--- CHANGED: Added POST support
+@app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     if request.method == 'POST':
-        # --- EMAIL SAVING LOGIC ---
         new_email = request.form.get('email')
-
         if new_email:
-            # Check if email is already taken by another user
-            existing_user = User.query.filter_by(email=new_email).first()
-
-            if existing_user and existing_user.id != current_user.id:
-                flash('Frequency (Email) already occupied by another operator.', 'danger')
+            existing = User.query.filter_by(email=new_email).first()
+            if existing and existing.id != current_user.id:
+                flash('Email already in use.', 'danger')
             else:
                 current_user.email = new_email
                 db.session.commit()
-                flash('Comms uplink established. Account secured.', 'success')
-        # --------------------------
-
+                flash('Settings updated.', 'success')
     return render_template('settings.html', user=current_user, presets=PRESETS)
-
-
-@app.route('/restore_preset/<int:preset_id>')
-@login_required
-def restore_preset(preset_id):
-    p = next((x for x in PRESETS if x['id'] == preset_id), None)
-    g = Goal.query.filter_by(user_id=current_user.id, name=p['category']).first()
-    if not g:
-        g = Goal(name=p['category'], user_id=current_user.id)
-        db.session.add(g)
-        db.session.commit()
-    db.session.add(Habit(name=p['name'], goal_id=g.id, difficulty=p['difficulty'], is_daily=p['is_daily'], xp_value=10, stat_type=p['attribute']))
-    db.session.commit()
-    return redirect(url_for('dashboard'))
 
 @app.route('/update_profile', methods=['POST'])
 @login_required
 def update_profile():
-    if request.form.get('username'): current_user.username = request.form.get('username')
-    # FIXED: Standardize profile update hashing to use Bcrypt as well
+    if request.form.get('username'):
+        current_user.username = request.form.get('username')
     if request.form.get('password'):
+        # FIXED: Use bcrypt
         current_user.password = bcrypt.generate_password_hash(request.form.get('password')).decode('utf-8')
     db.session.commit()
     return redirect(url_for('settings'))
+
+@app.route('/delete_account', methods=['POST'])
+@login_required
+def delete_account():
+    db.session.delete(current_user)
+    db.session.commit()
+    logout_user()
+    return redirect(url_for('login'))
 
 @app.route('/reset_progress')
 @login_required
@@ -606,25 +555,39 @@ def reset_progress():
     current_user.wis_score = 0
     current_user.cha_score = 0
     current_user.con_score = 0
+
     habits = Habit.query.join(Goal).filter(Goal.user_id == current_user.id).all()
-    for h in habits:
-        h.completed = False
-    db.session.query(QuestHistory).filter(QuestHistory.user_id==current_user.id).delete()
+    for h in habits: h.completed = False
+
+    QuestHistory.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
     return redirect(url_for('settings'))
+
+@app.route('/restore_preset/<int:preset_id>')
+@login_required
+def restore_preset(preset_id):
+    p = next((x for x in PRESETS if x['id'] == preset_id), None)
+    if p:
+        g = Goal.query.filter_by(user_id=current_user.id, name=p['category']).first()
+        if not g:
+            g = Goal(name=p['category'], user_id=current_user.id)
+            db.session.add(g)
+            db.session.commit()
+
+        h = Habit(name=p['name'], goal_id=g.id, difficulty=p['difficulty'],
+                  is_daily=p['is_daily'], xp_value=10, stat_type=p['attribute'])
+        db.session.add(h)
+        db.session.commit()
+    return redirect(url_for('dashboard'))
 
 @app.route('/mission_print')
 @login_required
 def mission_print():
     habits = Habit.query.join(Goal).filter(Goal.user_id == current_user.id).all()
     today = date.today()
-    start_of_week = today - timedelta(days=today.weekday())
-    week_labels = [(start_of_week + timedelta(days=i)).strftime('%a %d') for i in range(7)]
+    start_week = today - timedelta(days=today.weekday())
+    week_labels = [(start_week + timedelta(days=i)).strftime('%a %d') for i in range(7)]
     return render_template('print.html', habits=habits, week_labels=week_labels, user=current_user)
-
-@app.route('/get_reminders')
-def get_reminders():
-    return {"alert": False}
 
 @app.route('/export')
 @login_required
@@ -635,101 +598,80 @@ def export_data():
     history = QuestHistory.query.filter_by(user_id=current_user.id).order_by(QuestHistory.date_completed.desc()).all()
     for h in history:
         writer.writerow([h.date_completed, h.name, 'N/A', h.stat_type, h.xp_gained, h.difficulty])
-    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=cosmo_tracker_export.csv"})
-
-# --- ADMIN ROUTES ---
+    return Response(output.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=cosmo_export.csv"})
 
 @app.route('/admin')
 @login_required
 def admin_panel():
     if not current_user.is_admin:
-        flash("Access Denied: Admin privileges required.", "danger")
         return redirect(url_for('dashboard'))
 
-    # FETCH ALL USERS
     users_list = User.query.all()
     total_quests = Habit.query.count()
-    active_feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
+    feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
 
     return render_template('admin.html',
-                           users=users_list,        # <--- CHANGE THIS: Pass the LIST, not the length
-                           user_count=len(users_list), # Pass the count as a new variable
+                           users=users_list,
+                           user_count=len(users_list),
                            quests=total_quests,
-                           feedbacks=active_feedbacks)
+                           feedbacks=feedbacks)
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    if not current_user.is_admin: return redirect(url_for('dashboard'))
+    if user_id == current_user.id: return redirect(url_for('admin_panel'))
+
+    u = db.session.get(User, user_id)
+    if u:
+        db.session.delete(u)
+        db.session.commit()
+    return redirect(url_for('admin_panel'))
+
+@app.route('/admin/inspect/<int:user_id>')
+@login_required
+def admin_inspect(user_id):
+    if not current_user.is_admin: return redirect(url_for('dashboard'))
+    target = db.session.get(User, user_id)
+    habits = Habit.query.join(Goal).filter(Goal.user_id == user_id).all()
+    return render_template('admin_inspect.html', target=target, habits=habits)
+
+@app.route('/admin/bulk_purge', methods=['POST'])
+@login_required
+def bulk_purge():
+    if not current_user.is_admin: return redirect(url_for('dashboard'))
+    target_id = request.form.get('target_user_id')
+    habit_ids = request.form.getlist('habit_ids')
+    msg = request.form.get('system_message')
+
+    for hid in habit_ids:
+        h = db.session.get(Habit, int(hid))
+        if h: db.session.delete(h)
+
+    if msg and target_id:
+        db.session.add(Notification(user_id=target_id, message=msg, type='warning'))
+
+    db.session.commit()
+    return redirect(url_for('admin_inspect', user_id=target_id))
+
+@app.route('/admin/broadcast', methods=['POST'])
+@login_required
+def admin_broadcast():
+    if not current_user.is_admin: return redirect(url_for('dashboard'))
+    msg = request.form.get('broadcast_message')
+    if msg:
+        for u in User.query.all():
+            db.session.add(Notification(user_id=u.id, message=msg, type='info'))
+        db.session.commit()
+    return redirect(url_for('admin_panel'))
 
 @app.route('/admin/toggle_pro/<int:user_id>')
 @login_required
 def toggle_pro(user_id):
-    # Only Admin can flip this switch
-    if not current_user.is_admin:
-        return redirect(url_for('dashboard'))
-
+    if not current_user.is_admin: return redirect(url_for('dashboard'))
     u = db.session.get(User, user_id)
     if u:
         u.is_pro = not u.is_pro
-        db.session.commit()
-        status = "ENABLED" if u.is_pro else "DISABLED"
-        flash(f"AI Clearance {status} for Agent {u.username}.", "info")
-
-    return redirect(url_for('admin_panel'))
-
-@app.route('/submit_feedback', methods=['POST'])
-@login_required
-def submit_feedback():
-    msg = request.form.get('message')
-    if msg:
-        db.session.add(Feedback(user_id=current_user.id, message=msg))
-        db.session.commit()
-        flash("System Log updated.", "success")
-    return redirect(url_for('dashboard'))
-
-@app.route('/delete_account', methods=['POST'])
-@login_required
-def delete_account():
-    try:
-        # Delete the user. SQLAlchemy usually handles cascading deletes
-        # (deleting their tasks/inventory) if models are set up right.
-        db.session.delete(current_user)
-        db.session.commit()
-        logout_user()
-        flash('Account terminated. Data purged.', 'info')
-        return redirect(url_for('login'))
-    except Exception as e:
-        db.session.rollback() # Undo if it fails
-        flash(f'Self-destruct failed: {e}', 'danger')
-        return redirect(url_for('settings'))
-
-# 2. ADMIN FORCE DELETE (Delete anyone)
-@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
-@login_required
-def admin_delete_user(user_id):
-    if not current_user.is_admin:
-        return redirect(url_for('dashboard'))
-
-    user_to_delete = User.query.get_or_404(user_id)
-
-    # Prevent Admin from deleting themselves here (safety)
-    if user_to_delete.id == current_user.id:
-        flash('Cannot delete yourself from Admin panel. Use Settings.', 'warning')
-        return redirect(url_for('admin'))
-
-    try:
-        db.session.delete(user_to_delete)
-        db.session.commit()
-        flash(f'User {user_to_delete.username} has been eradicated.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error deleting user: {e}', 'danger')
-
-    return redirect(url_for('admin'))
-
-@app.route('/admin/mark_read/<int:feedback_id>')
-@login_required
-def mark_read(feedback_id):
-    if not current_user.is_admin: return redirect(url_for('dashboard'))
-    f = db.session.get(Feedback, feedback_id)
-    if f:
-        f.is_read = not f.is_read
         db.session.commit()
     return redirect(url_for('admin_panel'))
 
@@ -742,6 +684,160 @@ def ban_user(user_id):
         u.is_banned = not u.is_banned
         db.session.commit()
     return redirect(url_for('admin_panel'))
+
+@app.route('/submit_feedback', methods=['POST'])
+@login_required
+def submit_feedback():
+    msg = request.form.get('message')
+    if msg:
+        db.session.add(Feedback(user_id=current_user.id, message=msg))
+        db.session.commit()
+    return redirect(url_for('dashboard'))
+
+@app.route('/dismiss_notification/<int:notif_id>')
+@login_required
+def dismiss_notification(notif_id):
+    n = db.session.get(Notification, notif_id)
+    if n and n.user_id == current_user.id:
+        n.is_read = True
+        db.session.commit()
+    return redirect(url_for('dashboard'))
+
+@app.route('/get_reminders')
+def get_reminders():
+    return {"alert": False}
+
+@app.route('/focus_hub')
+@login_required
+def focus_hub():
+    return render_template('focus.html', user=current_user, target=240, progress=0)
+
+@app.route('/save_focus_session', methods=['POST'])
+@login_required
+def save_focus_session():
+    data = request.json
+    minutes = data.get('minutes', 25)
+    current_user.total_focus_time += minutes
+    current_user.total_xp += (minutes * 2)
+    current_user.gold += int(minutes / 10)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/import', methods=['GET', 'POST'])
+@login_required
+def import_tasks():
+    if request.method == 'POST':
+        text = request.form.get('raw_text')
+        if not text: return redirect(url_for('import_tasks'))
+
+        # 1. GET TASKS FROM AI
+        if current_user.is_pro:
+            key = os.getenv('GEMINI_API_KEY')
+            tasks = smart_ai_parse(text, key)
+        else:
+            tasks = [guess_category(line) for line in text.split('\n') if line.strip()]
+
+        # 2. SAVE TO DATABASE
+        for t in tasks:
+            # Ensure Goal Exists
+            cat = t.get('category', 'General')
+            goal = Goal.query.filter_by(user_id=current_user.id, name=cat).first()
+            if not goal:
+                goal = Goal(name=cat, author=current_user) # Fixed 'author' here too
+                db.session.add(goal)
+                db.session.flush()
+
+            # Map Difficulty Number to Name
+            diff_map = {1: 'Easy', 2: 'Medium', 3: 'Hard', 4: 'Epic'}
+            diff_val = t.get('difficulty', 1)
+            # Handle if AI returns a string "Easy" instead of number
+            if isinstance(diff_val, str):
+                diff_name = diff_val
+            else:
+                diff_name = diff_map.get(diff_val, 'Easy')
+
+            # Parse Date
+            date_obj = None
+            if t.get('target_date'):
+                try:
+                    date_obj = datetime.strptime(t['target_date'], '%Y-%m-%d').date()
+                except:
+                    date_obj = None
+
+            # Create Habit
+            h = Habit(
+                name=t['name'],
+                goal_id=goal.id,
+                difficulty=diff_name,
+                xp_value=10 * (t.get('difficulty', 1) if isinstance(t.get('difficulty', 1), int) else 1),
+                completed=False,
+                description=t.get('description', ''), # <--- ADDED DESCRIPTION
+                target_date=date_obj                 # <--- ADDED DATE
+            )
+            db.session.add(h)
+
+        db.session.commit()
+        flash(f"Successfully imported {len(tasks)} tasks!", "success")
+        return redirect(url_for('dashboard'))
+
+    return render_template('import_tasks.html')
+
+@app.route('/operations/backlog')
+@login_required
+def backlog_calculator():
+    return render_template('backlog_calculator.html')
+
+@app.route('/api/strategy_brief', methods=['POST'])
+@login_required
+def strategy_brief():
+    data = request.json
+    msg = get_backlog_strategy(data.get('hours'), data.get('days'), data.get('mode'))
+    return jsonify({'message': msg})
+
+@app.route('/audit')
+@login_required
+def audit():
+    today = date.today()
+    tasks = Habit.query.join(Goal).filter(
+        Goal.user_id == current_user.id,
+        Habit.target_date < today,
+        Habit.completed == False
+    ).all()
+    return render_template('audit.html', tasks=tasks)
+
+@app.route('/process_audit', methods=['POST'])
+@login_required
+def process_audit():
+    action = request.form.get('action')
+    ids = request.form.getlist('task_ids')
+    today = date.today()
+
+    for tid in ids:
+        h = db.session.get(Habit, int(tid))
+        if h and h.goal.user_id == current_user.id:
+            if action == 'delete': db.session.delete(h)
+            elif action == 'today': h.target_date = today
+            elif action == 'tomorrow': h.target_date = today + timedelta(days=1)
+            elif action == 'unschedule': h.target_date = None
+
+    db.session.commit()
+    return redirect(url_for('audit'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', user=current_user)
+
+@app.route('/edit_goal', methods=['POST'])
+@login_required
+def edit_goal():
+    gid = request.form.get('goal_id')
+    name = request.form.get('name')
+    g = db.session.get(Goal, gid)
+    if g and g.user_id == current_user.id:
+        g.name = name
+        db.session.commit()
+    return redirect(url_for('dashboard'))
 
 @app.route('/admin/delete_feedback', methods=['POST'])
 @login_required
@@ -758,328 +854,48 @@ def delete_feedback():
     db.session.commit()
     return redirect(url_for('admin_panel'))
 
-@app.route('/import', methods=['GET', 'POST'])
+@app.route('/admin/mark_read/<int:feedback_id>')
 @login_required
-def import_tasks():
-    if request.method == 'POST':
-        # --- 1. COOLDOWN CHECK ---
-        current_time = time.time()
-        last_request_time = session.get('last_ai_usage', 0)
-        cooldown_duration = 30 # Lock for 30 seconds (Increase to 60 if you want)
-
-        if (current_time - last_request_time) < cooldown_duration:
-            wait_seconds = int(cooldown_duration - (current_time - last_request_time))
-            flash(f"⚠️ AI Core Recharging. Stand by for {wait_seconds} seconds.", "warning")
-            return redirect(url_for('import_tasks'))
-
-        # --- 2. STANDARD PROCESSING ---
-        raw_text = request.form.get('raw_text')
-        if not raw_text:
-            flash("Please paste some text first!", "error")
-            return redirect(url_for('import_tasks'))
-
-        new_tasks_data = []
-        # Mark the timestamp NOW so the lock engages
-        session['last_ai_usage'] = current_time
-
-        if current_user.is_pro:
-           api_key = os.getenv('GEMINI_API_KEY')
-           # Note: Make sure smart_ai_parse is imported from utils
-           new_tasks_data = smart_ai_parse(raw_text, api_key)
-        else:
-            # Fallback for non-pro users
-            lines = raw_text.split('\n')
-            for line in lines:
-                if line.strip():
-                    new_tasks_data.append(guess_category(line))
-
-        # --- 3. SAVE TO DB (Standard Logic) ---
-        count = 0
-        diff_map = {1: 'Easy', 2: 'Medium', 3: 'Hard'}
-        stat_map = {
-            'Strength': 'STR', 'Physical': 'STR', 'Intelligence': 'INT',
-            'Intellect': 'INT', 'Charisma': 'CHA', 'Social': 'CHA',
-            'Creativity': 'WIS', 'Mental Health': 'WIS', 'General': 'CON', 'Health': 'CON'
-        }
-
-        for data in new_tasks_data:
-            cat_name = data.get('category', 'General')
-            goal = Goal.query.filter_by(user_id=current_user.id, name=cat_name).first()
-            if not goal:
-                goal = Goal(name=cat_name, user_id=current_user.id)
-                db.session.add(goal)
-                db.session.flush()
-
-            difficulty_int = data.get('difficulty', 1)
-
-            # Handle potential AI date errors gracefully
-            target_date_obj = None
-            date_str = data.get('target_date')
-            if date_str:
-                try:
-                    target_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-                except:
-                    target_date_obj = None
-
-            new_habit = Habit(
-                name=data['name'],
-                goal_id=goal.id,
-                difficulty=diff_map.get(difficulty_int, 'Easy'),
-                stat_type=stat_map.get(cat_name, 'CON'),
-                xp_value=10 * difficulty_int,
-                is_daily=False,
-                completed=False,
-                target_date=target_date_obj,
-                description=data.get('description', '')
-            )
-            db.session.add(new_habit)
-            count += 1
-
+def mark_read(feedback_id):
+    if not current_user.is_admin: return redirect(url_for('dashboard'))
+    f = db.session.get(Feedback, feedback_id)
+    if f:
+        f.is_read = not f.is_read
         db.session.commit()
-        flash(f"Successfully imported {count} quests!", "success")
-        return redirect(url_for('dashboard'))
-
-    return render_template('import_tasks.html')
-
-@app.route('/focus_hub')
-@login_required
-def focus_hub():
-    from datetime import date
-    today = date.today()
-    if current_user.last_active_date:
-        delta = (today - current_user.last_active_date).days
-        if delta > 1:
-            current_user.current_streak = 0
-            db.session.commit()
-    daily_target = 240
-    user_time = current_user.total_focus_time if current_user.total_focus_time else 0
-    progress_pct = min(100, int((user_time / daily_target) * 100))
-    return render_template('focus.html', user=current_user, target=daily_target, progress=progress_pct)
-
-@app.route('/save_focus_session', methods=['POST'])
-@login_required
-def save_focus_session():
-    data = request.json
-    minutes = data.get('minutes', 25)
-    current_user.total_focus_time += minutes
-    current_user.last_active_date = date.today()
-    xp_gained = minutes * 2
-    gold_gained = max(1, int(minutes / 10))
-    current_user.total_xp += xp_gained
-    current_user.gold += gold_gained
-    db.session.commit()
-    return jsonify({'success': True, 'new_xp': current_user.total_xp, 'new_gold': current_user.gold})
-
-@app.route('/profile', methods=['GET', 'POST'])
-@login_required
-def profile():
-    return render_template('profile.html', user=current_user)
-
-@app.route('/audit')
-@login_required
-def audit():
-    today = date.today()
-    overdue_tasks = Habit.query.join(Goal).filter(
-        Goal.user_id == current_user.id,
-        Habit.target_date < today,
-        Habit.completed == False
-    ).order_by(Habit.target_date).all()
-    return render_template('audit.html', tasks=overdue_tasks)
-
-@app.route('/process_audit', methods=['POST'])
-@login_required
-def process_audit():
-    action = request.form.get('action')
-    task_ids = request.form.getlist('task_ids')
-    today = date.today()
-    count = 0
-    for tid in task_ids:
-        habit = Habit.query.get(int(tid))
-        if habit and habit.goal.user_id == current_user.id:
-            if action == 'delete':
-                db.session.delete(habit)
-            # FIXED: Matches value="today" from HTML
-            elif action == 'today':
-                habit.target_date = today
-            # FIXED: Matches value="tomorrow" from HTML
-            elif action == 'tomorrow':
-                habit.target_date = today + timedelta(days=1)
-            # FIXED: Matches value="unschedule" from HTML
-            elif action == 'unschedule':
-                habit.target_date = None
-            count += 1
-    db.session.commit()
-    flash(f"Processed {count} items.", "success")
-    return redirect(url_for('audit'))
-
-@app.route('/edit_goal', methods=['POST'])
-@login_required
-def edit_goal():
-    goal_id = request.form.get('goal_id')
-    new_name = request.form.get('name')
-
-    goal = db.session.get(Goal, goal_id)
-    if goal and goal.user_id == current_user.id and new_name:
-        goal.name = new_name
-        db.session.commit()
-
-    return redirect(url_for('dashboard'))
-
-@app.route('/admin/bulk_purge', methods=['POST'])
-@login_required
-def bulk_purge():
-    if not current_user.is_admin:
-        flash("Unauthorized Access.", "danger")
-        return redirect(url_for('dashboard'))
-
-    target_user_id = request.form.get('target_user_id')
-    habit_ids = request.form.getlist('habit_ids')
-    system_msg = request.form.get('system_message') # Capture your custom text
-
-    if not habit_ids:
-        flash("No missions selected.", "info")
-        return redirect(url_for('admin_inspect', user_id=target_user_id))
-
-    count = 0
-    for hid in habit_ids:
-        habit = db.session.get(Habit, int(hid))
-        if habit:
-            db.session.delete(habit)
-            count += 1
-
-    # SEND NOTIFICATION IF MESSAGE PROVIDED
-    if system_msg and target_user_id:
-        new_notif = Notification(
-            user_id=target_user_id,
-            message=system_msg,
-            type='warning'
-        )
-        db.session.add(new_notif)
-
-    db.session.commit()
-    flash(f"Purged {count} missions. User notified.", "warning")
-    return redirect(url_for('admin_inspect', user_id=target_user_id))
-
-@app.route('/admin/broadcast', methods=['POST'])
-@login_required
-def admin_broadcast():
-    if not current_user.is_admin:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
-
-    msg_text = request.form.get('broadcast_message')
-
-    if msg_text:
-        all_agents = User.query.all()
-        count = 0
-        for agent in all_agents:
-            new_notif = Notification(
-                user_id=agent.id,
-                message=msg_text,
-                type='info'  # <--- CHANGE THIS: Sets the color to Blue
-            )
-            db.session.add(new_notif)
-            count += 1
-
-        db.session.commit()
-        flash(f"📢 Transmission sent to {count} agents.", "info") # Blue flash for you too
-
     return redirect(url_for('admin_panel'))
 
-@app.route('/dismiss_notification/<int:notif_id>')
-@login_required
-def dismiss_notification(notif_id):
-    n = db.session.get(Notification, notif_id)
-    if n and n.user_id == current_user.id:
-        n.is_read = True
-        db.session.commit()
-    return redirect(url_for('dashboard'))
-
-# Inside app.py
-
-@app.route('/api/strategy_brief', methods=['POST'])
-@login_required
-@csrf.exempt
-def strategy_brief():
-    data = request.json
-    hours = data.get('hours', 0)
-    days = data.get('days', 0)
-    mode = data.get('mode', 'General')
-
-    # Call the AI function we just wrote
-    ai_message = get_backlog_strategy(hours, days, mode)
-
-    return jsonify({'message': ai_message})
-
-# --- MISSING GRAPH ROUTE ---
-# --- MISSING GRAPH DATA (FIXED FOR DailyLog) ---
-@app.route('/api/missed_data')
-@login_required
-def missed_data():
-    today = date.today()
-    missed_points = []
-    cat_map = {"Strength": 4, "Intelligence": 3, "Charisma": 2, "Creativity": 1, "General": 0}
-
-    for i in range(7):
-        check_date = today - timedelta(days=i)
-        date_str = check_date.strftime("%b %d")
-
-        # FIXED: Use QuestHistory instead of HabitHistory
-        # We match by NAME because QuestHistory doesn't store habit_id
-        completed_names = [h.name for h in QuestHistory.query.filter_by(user_id=current_user.id, date_completed=check_date).all()]
-        active_habits = Habit.query.filter(Habit.goal.has(user_id=current_user.id)).all()
-
-        for habit in active_habits:
-            if habit.name not in completed_names:
-                missed_points.append({
-                    "x": date_str,
-                    "y": cat_map.get(habit.stat_type, 0),
-                    "task": habit.name,
-                    "r": 6
-                })
-
-    return jsonify(missed_points)
-
-# --- ARCHIVE & HISTORY ROUTES ---
-
-# --- FIXED: RENAMED TO 'history' TO MATCH BASE.HTML ---
 @app.route('/history')
 @login_required
 def history():
-    # Get distinct dates from history
+    # Group by month
     dates = db.session.query(QuestHistory.date_completed).filter_by(user_id=current_user.id).distinct().all()
-    months = set()
-    for d in dates:
-        if d.date_completed:
-            months.add((d.date_completed.year, d.date_completed.month))
-
+    months = set([(d.date_completed.year, d.date_completed.month) for d in dates if d.date_completed])
     sorted_months = sorted(list(months), reverse=True)
+
     archives = []
+    import calendar
     for y, m in sorted_months:
-        month_name = calendar.month_name[m]
-        xp = db.session.query(func.sum(QuestHistory.xp_gained)).filter(
+        total = db.session.query(func.sum(QuestHistory.xp_gained)).filter(
             QuestHistory.user_id == current_user.id,
             extract('year', QuestHistory.date_completed) == y,
             extract('month', QuestHistory.date_completed) == m
         ).scalar() or 0
-
-        archives.append({'year': y, 'month': m, 'name': month_name, 'xp': xp})
+        archives.append({'year': y, 'month': m, 'name': calendar.month_name[m], 'xp': total})
 
     return render_template('history.html', archives=archives)
 
 @app.route('/history_details/<int:year>/<int:month>')
 @login_required
 def history_details(year, month):
+    import calendar
     logs = QuestHistory.query.filter(
         QuestHistory.user_id == current_user.id,
         extract('year', QuestHistory.date_completed) == year,
         extract('month', QuestHistory.date_completed) == month
     ).order_by(QuestHistory.date_completed.desc()).all()
 
-    month_name = calendar.month_name[month]
-    total_xp = sum(l.xp_gained for l in logs)
-
-    return render_template('history_details.html', logs=logs, month=month_name, year=year, total_xp=total_xp)
+    total = sum(l.xp_gained for l in logs)
+    return render_template('history_details.html', logs=logs, month=calendar.month_name[month], year=year, total_xp=total)
 
 @app.route('/download_report/<int:year>/<int:month>')
 @login_required
@@ -1088,99 +904,169 @@ def download_report(year, month):
         QuestHistory.user_id == current_user.id,
         extract('year', QuestHistory.date_completed) == year,
         extract('month', QuestHistory.date_completed) == month
-    ).order_by(QuestHistory.date_completed).all()
+    ).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Date', 'Mission Name', 'Category', 'Difficulty', 'XP Gained'])
+    writer.writerow(['Date', 'Mission', 'Type', 'XP'])
     for log in logs:
-        writer.writerow([log.date_completed, log.name, log.stat_type, log.difficulty, log.xp_gained])
+        writer.writerow([log.date_completed, log.name, log.stat_type, log.xp_gained])
 
-    output.seek(0)
-    month_name = calendar.month_name[month]
-    return Response(
-        output,
-        mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=Mission_Report_{month_name}_{year}.csv"}
-    )
+    return Response(output.getvalue(), mimetype='text/csv',
+                    headers={"Content-Disposition": f"attachment;filename=Report_{year}_{month}.csv"})
 
-# --- NEW PDF ROUTE ---
 @app.route('/download_report_pdf/<int:year>/<int:month>')
 @login_required
 def download_report_pdf(year, month):
-    # 1. Fetch Data
+    import calendar
     logs = QuestHistory.query.filter(
         QuestHistory.user_id == current_user.id,
         extract('year', QuestHistory.date_completed) == year,
         extract('month', QuestHistory.date_completed) == month
-    ).order_by(QuestHistory.date_completed).all()
+    ).all()
 
-    total_xp = sum(l.xp_gained for l in logs)
-    month_name = calendar.month_name[month]
+    html = render_template('report_pdf.html', user=current_user, logs=logs,
+                           total_xp=sum(l.xp_gained for l in logs),
+                           mission_count=len(logs), month_name=calendar.month_name[month],
+                           year=year, now=datetime.now().strftime('%Y-%m-%d'))
 
-    # 2. Render HTML Template
-    html = render_template('report_pdf.html',
-                           user=current_user,
-                           logs=logs,
-                           total_xp=total_xp,
-                           mission_count=len(logs),
-                           month_name=month_name,
-                           year=year,
-                           now=datetime.now().strftime("%Y-%m-%d %H:%M"))
-
-    # 3. Convert to PDF using WeasyPrint
     pdf = HTML(string=html).write_pdf()
+    return Response(pdf, mimetype='application/pdf',
+                    headers={"Content-Disposition": f"attachment;filename=Report_{year}_{month}.pdf"})
 
-    # 4. Return as Download
-    return Response(
-        pdf,
-        mimetype='application/pdf',
-        headers={"Content-Disposition": f"attachment;filename=Mission_Dossier_{month_name}_{year}.pdf"}
-    )
-
-# --- PASSWORD RESET ROUTES ---
-
+# --- PASSWORD RESET ---
 @app.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_request():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-
     if request.method == 'POST':
-        email = request.form.get('email')
-        user = User.query.filter_by(email=email).first()
-
+        user = User.query.filter_by(email=request.form.get('email')).first()
         if user:
             token = s.dumps(user.email, salt='recover-key')
-            msg = Message('Password Reset Request', recipients=[email])
+            msg = Message('Password Reset', recipients=[user.email])
             link = url_for('reset_token', token=token, _external=True)
-            msg.body = f'Click to reset your password: {link}'
-            try:
-                mail.send(msg)
-                flash('Recovery email sent. Check your inbox.', 'info')
-            except Exception as e:
-                flash(f'Error sending email: {e}', 'danger')
+            msg.body = f'Click to reset: {link}'
+            mail.send(msg)
+            flash('Email sent.', 'info')
             return redirect(url_for('login'))
-        else:
-            flash('Email not found.', 'warning')
+        flash('Email not found.', 'danger')
     return render_template('reset_request.html')
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_token(token):
     try:
-        email = s.loads(token, salt='recover-key', max_age=1800) # 30 mins
+        email = s.loads(token, salt='recover-key', max_age=1800)
     except:
-        flash('Link is invalid or expired.', 'danger')
+        flash('Invalid token.', 'danger')
         return redirect(url_for('reset_request'))
 
     if request.method == 'POST':
         user = User.query.filter_by(email=email).first()
-        password = request.form.get('password')
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        user.password = hashed_password
+        # FIXED: Using bcrypt
+        user.password = bcrypt.generate_password_hash(request.form.get('password')).decode('utf-8')
         db.session.commit()
-        flash('Password updated! Please login.', 'success')
+        flash('Password updated.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_token.html')
+
+# ========================================================
+# 7. PROTOCOL API (FOR ANDROID WIDGET)
+# ========================================================
+
+@app.route('/api/get_protocol', methods=['GET'])
+def get_protocol():
+    """
+    The Widget calls this to get the Agent's status and top 3 missions.
+    Usage: /api/get_protocol?username=CosmoCommander&key=YOUR_SECRET_KEY
+    """
+    username = request.args.get('username')
+    # In a real app, use a real API Token. For now, we trust the username for personal use.
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "Agent not found"}), 404
+
+    # 1. Get Stats
+    stats = {
+        "level": int(user.total_xp / 1000) + 1, # Simple level calc
+        "xp": user.total_xp,
+        "streak": user.current_streak,
+        "gold": user.gold
+    }
+
+    # 2. Get Top 3 Priority Tasks
+    # Prioritizes: Overdue -> Today -> High Difficulty
+    today = date.today()
+
+    tasks_query = Habit.query.join(Goal).filter(
+        Goal.user_id == user.id,
+        Habit.completed == False
+    ).order_by(
+        Habit.target_date.asc(), # Oldest dates first
+        Habit.difficulty.desc()  # Then hardest tasks
+    ).limit(3).all()
+
+    mission_list = []
+    for t in tasks_query:
+        # Calculate if overdue
+        status = "Active"
+        if t.target_date and t.target_date < today: status = "OVERDUE"
+        elif t.target_date == today: status = "TODAY"
+
+        mission_list.append({
+            "id": t.id,
+            "name": t.name,
+            "status": status,
+            "xp": t.xp_value,
+            "difficulty": t.difficulty
+        })
+
+    return jsonify({
+        "agent": user.username,
+        "status": "OPERATIONAL",
+        "stats": stats,
+        "missions": mission_list
+    })
+
+@app.route('/api/complete_mission/<int:task_id>', methods=['POST'])
+# @csrf.exempt # Uncomment if you enable global CSRF later
+def complete_mission_api(task_id):
+    """
+    The Widget calls this when you tap the checkbox.
+    """
+    # 1. Verification (Simple version)
+    username = request.args.get('username')
+    user = User.query.filter_by(username=username).first()
+
+    task = db.session.get(Habit, task_id)
+
+    if not task or not user or task.goal.user_id != user.id:
+        return jsonify({"error": "Access Denied"}), 403
+
+    # 2. Complete the Task
+    if not task.completed:
+        task.completed = True
+        user.total_xp += task.xp_value
+        user.gold += int(task.xp_value / 10)
+
+        # Log History
+        history = QuestHistory(
+            user_id=user.id,
+            name=task.name,
+            difficulty=task.difficulty,
+            stat_type=task.stat_type,
+            xp_gained=task.xp_value,
+            date_completed=date.today()
+        )
+        db.session.add(history)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Objective Complete",
+            "new_xp": user.total_xp
+        })
+
+    return jsonify({"success": False, "message": "Already completed"})
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

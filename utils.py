@@ -62,7 +62,14 @@ def guess_category(text):
     if "hour" in text or "finish" in text or "complete" in text: difficulty = 2
     if "project" in text or "mock" in text or "syllabus" in text: difficulty = 3
 
-    return {"name": text.capitalize(), "category": category, "difficulty": difficulty}
+    return {
+        "name": text.capitalize(), 
+        "category": category, 
+        "difficulty": difficulty,
+        # ADDED THESE TWO LINES TO PREVENT CRASHES IN APP.PY
+        "description": "",
+        "target_date": None
+    }
 
 # ---------------------------------------------------------
 # 2. SMART BRAIN DUMP PARSER (Gemini)
@@ -81,7 +88,7 @@ def smart_ai_parse(text_input, primary_api_key):
 
     today_str = date.today().strftime("%Y-%m-%d")
 
-    # PROMPT: Updated to allow Custom Categories
+    # PROMPT: Updated to allow Custom Categories & Date Extraction
     prompt = f"""
     You are a logic-based task extraction engine.
     Current Date: {today_str}
@@ -98,7 +105,7 @@ def smart_ai_parse(text_input, primary_api_key):
 
     2. IF USER PROVIDES A LIST (e.g., "Buy milk, gym, email boss"):
        - Extract distinct tasks.
-       - Target Date: Today (unless specific dates are mentioned).
+       - Target Date: Today (unless specific dates are mentioned like "tomorrow").
        - Description: Keep it empty or very brief.
 
     STYLE GUIDELINES:

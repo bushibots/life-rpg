@@ -90,6 +90,11 @@
     </div>
   </div>
 </nav>
+{% if current_user.is_authenticated and current_user.is_guest %}
+<div class="alert alert-warning text-center m-0 border-0 rounded-0" style="background: #ffcc00; color: #000; font-weight: bold;">
+    <i class="bi bi-exclamation-triangle-fill"></i> GUEST MODE: You are playing on a temporary account.
+    <a href="{{ url_for('register') }}" class="text-decoration-underline text-dark">Register now</a> to save your XP and unlock all features!
+</div>
 {% endif %}
 
 <div class="container-fluid px-3 pb-5">

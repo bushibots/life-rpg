@@ -1,24 +1,42 @@
-from datetime import date, datetime
 from flask_login import UserMixin
-from extensions import db
+from datetime import datetime, date
+from extensions import db  # Importing from extensions to avoid loops
 
-
-class Goal(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    # Foreign Key: Links this goal to a specific User ID
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
+# --- 1. TASK CLASS ---
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False) # <--- Moved from User
-    complete = db.Column(db.Boolean, default=False)   # <--- Moved from User
-    # Foreign Key: Links this task to a specific User ID
+    title = db.Column(db.String(150), nullable=False)
+    complete = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# --- 2. GOAL CLASS ---
+class Goal(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # FIXED: Changed 'title' to 'name' to match your database
+    name = db.Column(db.String(150), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # Relationship to Habits
+    habits = db.relationship('Habit', backref='goal', cascade="all, delete-orphan", lazy=True)
+
+# --- 3. HABIT CLASS ---
+class Habit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    goal_id = db.Column(db.Integer, db.ForeignKey('goal.id'), nullable=False)
+    difficulty = db.Column(db.String(20), default="Medium")
+    xp_value = db.Column(db.Integer, default=10)
+    stat_type = db.Column(db.String(10), default="INT") # STR, INT, WIS, etc.
+    completed = db.Column(db.Boolean, default=False)
+    is_daily = db.Column(db.Boolean, default=False)
+    target_date = db.Column(db.Date, nullable=True)
+    description = db.Column(db.String(500), nullable=True)
+
+# --- 4. USER CLASS ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
+    is_guest = db.Column(db.Boolean, default=False)
     email = db.Column(db.String(150), unique=True, nullable=True)
     password = db.Column(db.String(150), nullable=False)
 
@@ -44,79 +62,40 @@ class User(UserMixin, db.Model):
     con_score = db.Column(db.Integer, default=0)
 
     # Relationships
-    # These link to the classes defined above
     goals = db.relationship('Goal', backref='author', lazy=True, cascade="all, delete-orphan")
     tasks = db.relationship('Task', backref='author', lazy=True, cascade="all, delete-orphan")
+    notifications = db.relationship('Notification', backref='user', lazy=True, cascade="all, delete-orphan")
 
-    # ... (Keep your existing Property methods: level, xp_progress, title_info) ...
-    # PASTE YOUR EXISTING @property METHODS HERE (I am hiding them to save space, but DO NOT DELETE THEM)
-    @property
-    def level(self):
-        return max(1, 1 + (self.total_xp // 100))
-
-    @property
-    def xp_progress(self):
-        current_level_xp = ((self.level - 1) * 100)
-        return int(((self.total_xp - current_level_xp) / 100) * 100)
-
-    @property
-    def title_info(self):
-        stats = {'Warrior': self.str_score, 'Mage': self.int_score, 'Monk': self.wis_score, 'Bard': self.cha_score, 'Guardian': self.con_score}
-        highest = max(stats, key=stats.get)
-        return {"name": f"{highest} {self.level}", "reason": f"Class: {highest}"}
-# --- PASTE THIS MISSING CODE INTO YOUR FILE ---
-
-# ----------------------------------------------
-
+# --- 5. OTHER MODELS ---
 class QuestHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(150))
-    difficulty = db.Column(db.String(50))
+    difficulty = db.Column(db.String(20))
     stat_type = db.Column(db.String(10))
     xp_gained = db.Column(db.Integer)
-    date_completed = db.Column(db.Date, default=datetime.now)
+    date_completed = db.Column(db.Date, default=date.today)
 
-class Habit(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150))
-    goal_id = db.Column(db.Integer, db.ForeignKey('goal.id'))
-    xp_value = db.Column(db.Integer)
-    difficulty = db.Column(db.String(50))
-    stat_type = db.Column(db.String(10))
-    target_date = db.Column(db.Date, nullable=True)
-    description = db.Column(db.Text, nullable=True)
-
-    # These were likely missing or misnamed
-    completed = db.Column(db.Boolean, default=False)
-    is_daily = db.Column(db.Boolean, default=False)
-
-    # Timer/Duration column (just in case you use the timer feature)
-    duration = db.Column(db.Integer, default=0)
-
-class DailyLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    habit_id = db.Column(db.Integer, db.ForeignKey('habit.id'), nullable=False)
-    date = db.Column(db.Date, default=date.today)
-    status = db.Column(db.Boolean, default=False)
-
-# NEW: Feedback Table
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
 
-    # Link to know WHO sent it
-    user = db.relationship('User', backref='feedbacks')
+    user_rel = db.relationship('User', backref='feedbacks')
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.String(500), nullable=False)
+    type = db.Column(db.String(20), default='info') # info, warning, success
     is_read = db.Column(db.Boolean, default=False)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
-    type = db.Column(db.String(20), default='system') # 'system', 'warning', 'info'
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship('User', backref='notifications')
+class DailyLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, default=date.today)
+    mood = db.Column(db.String(50), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
