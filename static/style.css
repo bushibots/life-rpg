@@ -304,3 +304,87 @@ body {
     /* Animation Classes */
     .task-item.hidden-task { display: none !important; }
     .goal-card.hidden-card { display: none !important; }
+
+/* =========================================
+   GENIE VIP FEATURE ANIMATIONS
+   ========================================= */
+
+/* Glowing Dashboard Button */
+.glowing-genie-btn {
+    color: #ffde59 !important;
+    box-shadow: 0 0 10px rgba(255, 222, 89, 0.4);
+    animation: pulse-glow-btn 2s infinite;
+}
+
+@keyframes pulse-glow-btn {
+    0% { box-shadow: 0 0 5px rgba(255, 222, 89, 0.4); text-shadow: 0 0 5px #ffde59; }
+    50% { box-shadow: 0 0 20px rgba(255, 158, 0, 0.8); text-shadow: 0 0 15px #ffde59; }
+    100% { box-shadow: 0 0 5px rgba(255, 222, 89, 0.4); text-shadow: 0 0 5px #ffde59; }
+}
+
+/* Screen Shake Effect */
+.screen-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-2px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Full Screen Whirlpool Overlay */
+#genie-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #050014;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* The Spinning Whirlpool */
+.whirlpool-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.whirlpool {
+    position: absolute;
+    width: 200vw;
+    height: 200vw;
+    background: conic-gradient(from 0deg, #4b0082, #9400d3, #ff1493, #4b0082);
+    animation: spin-vortex 2s linear infinite;
+    filter: blur(20px);
+    opacity: 0.8;
+}
+
+/* The Text in the Middle */
+.genie-text {
+    position: relative;
+    z-index: 10;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 5rem;
+    color: #fff;
+    text-shadow: 0 0 20px #ffde59, 0 0 40px #ff9e00;
+    letter-spacing: 10px;
+    animation: zoom-in 2.5s forwards;
+}
+
+@keyframes spin-vortex {
+    100% { transform: rotate(360deg) scale(1.5); }
+}
+
+@keyframes zoom-in {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(5); opacity: 0; }
+}

@@ -164,3 +164,31 @@ function updateSystemClock() {
     // Update immediately, then every second
     updateSystemClock();
     setInterval(updateSystemClock, 1000);
+
+function triggerGenie(event) {
+    event.preventDefault();
+
+    // 1. Vibrate the phone
+    if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 300]);
+    }
+
+    // 2. Show the overlay and play the video
+    const overlay = document.getElementById('genie-overlay');
+    const vid = document.getElementById('genie-video');
+    const text = document.getElementById('genie-text');
+
+    overlay.classList.remove('d-none');
+    document.body.classList.add('screen-shake');
+    vid.play();
+
+    // 3. Flash the GENIE text after 1 second of video playing
+    setTimeout(() => {
+        text.classList.remove('d-none');
+    }, 1000);
+
+    // 4. Redirect to /genie just before the video ends (around 3 seconds)
+    setTimeout(() => {
+        window.location.href = "/genie";
+    }, 3200);
+}

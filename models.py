@@ -9,12 +9,19 @@ class Task(db.Model):
     complete = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+    # --- NEW GENIE ADDITIONS ---
+    description = db.Column(db.Text, nullable=True) # For the detailed AI task descriptions
+    is_genie_task = db.Column(db.Boolean, default=False) # Triggers the special Arabic animations
+    completion_notes = db.Column(db.Text, nullable=True) # For the weekly AI to read
+
 # --- 2. GOAL CLASS ---
 class Goal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # FIXED: Changed 'title' to 'name' to match your database
     name = db.Column(db.String(150), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # --- NEW GENIE ADDITIONS ---
+    is_genie_quest = db.Column(db.Boolean, default=False) # Identifies it as a Master Quest
 
     # Relationship to Habits
     habits = db.relationship('Habit', backref='goal', cascade="all, delete-orphan", lazy=True)
@@ -53,6 +60,12 @@ class User(UserMixin, db.Model):
     total_xp = db.Column(db.Integer, default=0)
     last_check_in = db.Column(db.Date, default=date.today)
     last_check_date = db.Column(db.Date, nullable=True)
+
+    # --- NEW GENIE TRACKING ---
+    has_used_free_wish = db.Column(db.Boolean, default=False) # Locks out the 1 Lifetime Wish
+    genie_wishes = db.Column(db.Integer, default=0) # Weekly wishes for Pro users
+    last_wish_reset = db.Column(db.DateTime, nullable=True) # Tracks Sunday resets
+    last_genie_evaluation = db.Column(db.DateTime, nullable=True) # Tracks the weekly AI task review
 
     # S.P.E.C.I.A.L. Scores
     str_score = db.Column(db.Integer, default=0)

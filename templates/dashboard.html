@@ -77,23 +77,43 @@
 {% endif %}
 
 <div class="row align-items-end mb-3 gy-3">
-    <div class="col-md-6">
+    <div class="col-md-7">
         <h4 class="text-white mb-3" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">ACTIVE PROTOCOLS</h4>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
             <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#feedbackModal">
                 <i class="bi bi-chat-left-text me-1"></i> Log
             </button>
             <a href="{{ url_for('mission_print') }}" target="_blank" class="btn btn-sm btn-outline-light">
                 <i class="bi bi-file-earmark-text me-1"></i> Print
             </a>
-            <a href="{{ url_for('import_tasks') }}" class="btn btn-info btn-sm text-white shadow-sm">
+            <a href="{{ url_for('import_tasks') }}" class="btn btn-sm btn-outline-info shadow-sm">
                 <i class="bi bi-cpu me-1"></i> Brain Dump
             </a>
-            <button class="btn btn-sm btn-info text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#addGoalModal">
+
+            <a href="#" onclick="triggerGenie(event)" class="d-inline-flex align-items-center" style="transition: transform 0.2s; text-decoration: none;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="{{ url_for('static', filename='genie_btn.jpg') }}" alt="Summon Genie" style="height: 34px; width: auto; border-radius: 50px; filter: drop-shadow(0 0 8px rgba(255, 222, 89, 0.7));">
+            </a>
+
+            <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addGoalModal">
                 <i class="bi bi-plus-lg me-1"></i> New Directive
             </button>
         </div>
     </div>
+
+    <div class="col-md-5">
+        <div class="input-group input-group-sm shadow-sm">
+            <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+            <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Search directives..." onkeyup="filterTasks()">
+            <select class="form-select bg-dark text-white border-secondary font-monospace" id="sortSelect" onchange="sortTasks()" style="max-width: 100px;">
+                <option value="default">Def</option>
+                <option value="diff_high">Hard</option>
+                <option value="diff_low">Easy</option>
+                <option value="date">Date</option>
+                <option value="name">A-Z</option>
+            </select>
+        </div>
+    </div>
+</div>
 
     <div class="col-md-6">
         <div class="input-group shadow-sm">

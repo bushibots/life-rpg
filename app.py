@@ -5,6 +5,7 @@ import csv # <--- FIXED: Added missing import
 from collections import Counter # <--- FIXED: Added missing import
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
+import requests
 
 # --- FLASK & EXTENSIONS ---
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
@@ -47,7 +48,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key-change-this')
 
 # Email Config
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_SERVER'] = 'smtp-relay.brevo.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
@@ -305,36 +306,40 @@ def planning():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # 1. Create the form so the HTML page doesn't crash
+    form = RegisterForm()
+
     # If a normal user is logged in, send them away. If it's a guest, let them stay.
     if current_user.is_authenticated and not current_user.is_guest:
         return redirect(url_for('dashboard'))
 
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        hashed_password = generate_password_hash(password, method='sha256')
+    # 2. Use WTForms validation
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         # CHECK IF THEY ARE A GUEST UPGRADING
         if current_user.is_authenticated and current_user.is_guest:
             current_user.username = username
-            current_user.email = email
             current_user.password = hashed_password
+            current_user.email = None  # Clear the temporary guest email
             current_user.is_guest = False
             db.session.commit()
-            flash("Account successfully linked! All your guest data has been saved.", "success")
+            flash("Account linked! WARNING: No recovery email set. Add one in Settings to prevent data loss.", "warning")
             return redirect(url_for('dashboard'))
 
         # ELSE: Normal registration for totally new people
         else:
-            new_user = User(username=username, email=email, password=hashed_password)
+            # We pass email=None explicitly
+            new_user = User(username=username, password=hashed_password, email=None)
             db.session.add(new_user)
             db.session.commit()
-            flash("Registration successful. Please log in.", "success")
+            flash("Registration successful! WARNING: No recovery email set. Add one in Settings to prevent data loss.", "warning")
             return redirect(url_for('login'))
 
-    return render_template('register.html')
-
+    # 3. Pass the form to the template
     return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -450,7 +455,7 @@ def toggle_habit(habit_id):
 @app.route('/add_goal', methods=['POST'])
 @login_required
 def add_goal():
-    name = request.form.get
+    name = request.form.get('name')
     # ADD THIS GUEST CHECK:
     if current_user.is_guest:
         current_goals = Goal.query.filter_by(user_id=current_user.id).count()
@@ -743,7 +748,7 @@ def import_tasks():
             cat = t.get('category', 'General')
             goal = Goal.query.filter_by(user_id=current_user.id, name=cat).first()
             if not goal:
-                goal = Goal(name=cat, author=current_user) # Fixed 'author' here too
+                goal = Goal(name=cat, user_id=current_user.id) # Fixed 'author' here too
                 db.session.add(goal)
                 db.session.flush()
 
@@ -935,18 +940,38 @@ def download_report_pdf(year, month):
                     headers={"Content-Disposition": f"attachment;filename=Report_{year}_{month}.pdf"})
 
 # --- PASSWORD RESET ---
+# --- PASSWORD RESET ---
 @app.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_request():
     if request.method == 'POST':
         user = User.query.filter_by(email=request.form.get('email')).first()
         if user:
             token = s.dumps(user.email, salt='recover-key')
-            msg = Message('Password Reset', recipients=[user.email])
             link = url_for('reset_token', token=token, _external=True)
-            msg.body = f'Click to reset: {link}'
-            mail.send(msg)
-            flash('Email sent.', 'info')
+
+            # --- SEND EMAIL VIA BREVO HTTP API ---
+            url = "https://api.brevo.com/v3/smtp/email"
+            headers = {
+                "accept": "application/json",
+                "api-key": os.getenv('BREVO_API_KEY'),
+                "content-type": "application/json"
+            }
+            payload = {
+                "sender": {"name": "LifeRPG Command", "email": os.getenv('MAIL_USERNAME')},
+                "to": [{"email": user.email}],
+                "subject": "LifeRPG - Password Reset",
+                "htmlContent": f"<html><body><h3>Password Reset Request</h3><p>Click the link below to reset your LifeRPG password:</p><p><a href='{link}'>{link}</a></p></body></html>"
+            }
+
+            try:
+                # This bypasses the firewall!
+                requests.post(url, json=payload, headers=headers)
+                flash('Email sent! Please check your inbox.', 'info')
+            except Exception as e:
+                flash('Error communicating with mail server.', 'danger')
+
             return redirect(url_for('login'))
+
         flash('Email not found.', 'danger')
     return render_template('reset_request.html')
 
@@ -1066,6 +1091,13 @@ def complete_mission_api(task_id):
         })
 
     return jsonify({"success": False, "message": "Already completed"})
+
+# --- VIP GENIE FEATURE ---
+@app.route('/genie', methods=['GET', 'POST'])
+@login_required
+def genie():
+    # We will build out the logic and Arabic theme here in Phase 3
+    return "<h1>Welcome to the Genie's Lamp. (UI Coming Soon)</h1>"
 
 if __name__ == '__main__':
     with app.app_context():
