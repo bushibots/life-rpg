@@ -113,9 +113,28 @@
     {% block content %}{% endblock %}
 </div>
 
-<div id="genie-overlay" class="d-none" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; overflow: hidden;">
-    <video id="genie-video" src="{{ url_for('static', filename='genie_whirlpool.mp4') }}" preload="auto" style="position: absolute; width: 100%; height: 100%; object-fit: cover;"></video>
-    <h1 id="genie-text" class="d-none position-relative" style="z-index: 10; font-family: 'Courier New', monospace; font-size: 5rem; color: #fff; text-shadow: 0 0 20px #ffde59, 0 0 40px #ff9e00; letter-spacing: 10px; animation: zoom-in 2.5s forwards;">GENIE</h1>
+<div id="genie-overlay" class="d-none">
+
+    <div class="smoke-container">
+        <div class="smoke-cloud cloud-1"></div>
+        <div class="smoke-cloud cloud-2"></div>
+        <div class="smoke-cloud cloud-3"></div>
+        <div class="smoke-cloud cloud-4"></div>
+    </div>
+
+    <div class="magic-lamp-container">
+        <svg class="magic-lamp-svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#ffde59" d="M464,304c-11.8,0-24.8-5.3-33.9-14.4c-9.1-9.1-14.4-22.1-14.4-33.9c0-8.8,3.6-17.6,10-24
+            c6.4-6.4,15.2-10,24-10c17.7,0,32-14.3,32-32s-14.3-32-32-32c-35.3,0-64,28.7-64,64c0,11.8-5.3,24.8-14.4,33.9
+            C362.2,264.7,349.2,270,337.4,270H174.6c-11.8,0-24.8-5.3-33.9-14.4C131.6,246.5,126.3,233.5,126.3,221.7c0-35.3-28.7-64-64-64
+            s-64,28.7-64,64c0,17.7,14.3,32,32,32c8.8,0,17.6,3.6,24,10c6.4,6.4,10,15.2,10,24c0,11.8,5.3,24.8,14.4,33.9
+            C87.8,298.7,100.8,304,112.6,304h22.2l-14.9,44.7C114.7,364.5,126.4,382,143.1,382h225.8c16.7,0,28.4-17.5,23.2-33.3L377.2,304H464z"/>
+            <path fill="#d4af37" d="M344.4,414H167.6c-13.3,0-24,10.7-24,24v10c0,17.7,14.3,32,32,32h160.8c17.7,0,32-14.3,32-32v-10
+            C368.4,424.7,357.7,414,344.4,414z"/>
+            <path fill="#ff9e00" d="M256,64c-35.3,0-64,28.7-64,64h128C320,92.7,291.3,64,256,64z"/>
+            <circle fill="#ffde59" cx="256" cy="48" r="16"/>
+        </svg>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

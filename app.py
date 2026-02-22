@@ -1093,12 +1093,45 @@ def complete_mission_api(task_id):
     return jsonify({"success": False, "message": "Already completed"})
 
 # --- VIP GENIE FEATURE ---
+# --- VIP GENIE FEATURE ---
 @app.route('/genie', methods=['GET', 'POST'])
 @login_required
 def genie():
-    # We will build out the logic and Arabic theme here in Phase 3
-    return "<h1>Welcome to the Genie's Lamp. (UI Coming Soon)</h1>"
+    # 1. Lock out Guests completely
+    if current_user.is_guest:
+        flash("The Genie only appears to Masters who engrave their name in the registry. Please register.", "warning")
+        return redirect(url_for('dashboard'))
 
+    # 2. Check VIP Limits
+    # Free users get 1 lifetime wish. Pro users get 3 per week.
+    if not current_user.is_pro:
+        if current_user.has_used_free_wish:
+            flash("Your free lifetime wish has been exhausted. Upgrade to Pro to summon the Genie again.", "info")
+            return redirect(url_for('dashboard'))
+    else:
+        # Check weekly resets for Pro users (We will build the Sunday reset logic later)
+        if current_user.genie_wishes <= 0:
+            flash("The Genie rests. Your 3 wishes will replenish next week.", "info")
+            return redirect(url_for('dashboard'))
+
+    # 3. Handle the Wish Submission
+    if request.method == 'POST':
+        wish = request.form.get('wish')
+
+        # Deduct a wish
+        if not current_user.is_pro:
+            current_user.has_used_free_wish = True
+        else:
+            current_user.genie_wishes -= 1
+
+        db.session.commit()
+
+        # We will forward this wish to Phase 4 (The AI Question Generator)
+        flash(f"The Genie has heard your wish: 'I want to {wish}'. Generating blueprint...", "success")
+        return redirect(url_for('dashboard')) # Temporary redirect until Phase 4 is built
+
+    # 4. Show the magical room
+    return render_template('genie.html')
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

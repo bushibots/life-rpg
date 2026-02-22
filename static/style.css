@@ -308,40 +308,16 @@ body {
 /* =========================================
    GENIE VIP FEATURE ANIMATIONS
    ========================================= */
+/* =========================================
+   GENIE MAGIC LAMP & SMOKE ANIMATIONS
+   ========================================= */
 
-/* Glowing Dashboard Button */
-.glowing-genie-btn {
-    color: #ffde59 !important;
-    box-shadow: 0 0 10px rgba(255, 222, 89, 0.4);
-    animation: pulse-glow-btn 2s infinite;
-}
-
-@keyframes pulse-glow-btn {
-    0% { box-shadow: 0 0 5px rgba(255, 222, 89, 0.4); text-shadow: 0 0 5px #ffde59; }
-    50% { box-shadow: 0 0 20px rgba(255, 158, 0, 0.8); text-shadow: 0 0 15px #ffde59; }
-    100% { box-shadow: 0 0 5px rgba(255, 222, 89, 0.4); text-shadow: 0 0 5px #ffde59; }
-}
-
-/* Screen Shake Effect */
-.screen-shake {
-    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
-}
-
-@keyframes shake {
-    10%, 90% { transform: translate3d(-2px, 0, 0); }
-    20%, 80% { transform: translate3d(2px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-    40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-
-/* Full Screen Whirlpool Overlay */
+/* The Dark Room */
 #genie-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #050014;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-color: #050014; /* Dark night sky */
     z-index: 9999;
     display: flex;
     justify-content: center;
@@ -349,42 +325,193 @@ body {
     overflow: hidden;
 }
 
-/* The Spinning Whirlpool */
-.whirlpool-container {
+/* The Magic Lamp */
+.magic-lamp-container {
     position: relative;
+    z-index: 100;
+    width: 150px;
+    height: 150px;
+    filter: drop-shadow(0 0 20px rgba(255, 222, 89, 0.8));
+    animation: lamp-shake 0.4s infinite alternate ease-in-out;
+}
+
+.magic-lamp-svg {
+    width: 100%;
+    height: 100%;
+    transform-origin: bottom center;
+}
+
+/* Smoke Container - positioned right at the spout of the lamp */
+.smoke-container {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw; height: 100vh;
+    z-index: 50;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.whirlpool {
+/* Base Smoke Cloud Styling */
+.smoke-cloud {
     position: absolute;
-    width: 200vw;
-    height: 200vw;
-    background: conic-gradient(from 0deg, #4b0082, #9400d3, #ff1493, #4b0082);
-    animation: spin-vortex 2s linear infinite;
-    filter: blur(20px);
-    opacity: 0.8;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    filter: blur(25px);
+    opacity: 0;
 }
 
-/* The Text in the Middle */
-.genie-text {
+/* Deep Purple Smoke */
+.cloud-1 {
+    background: radial-gradient(circle, #4b0082, #2b0054);
+    animation: smoke-explosion 2.5s forwards ease-in;
+    animation-delay: 0.2s;
+}
+
+/* Magenta/Pink Smoke */
+.cloud-2 {
+    background: radial-gradient(circle, #ff1493, #9400d3);
+    animation: smoke-explosion 2.3s forwards ease-in;
+    animation-delay: 0.5s;
+}
+
+/* Midnight Blue Smoke */
+.cloud-3 {
+    background: radial-gradient(circle, #050014, #4b0082);
+    animation: smoke-explosion 2.0s forwards ease-in;
+    animation-delay: 0.8s;
+}
+
+/* Final Gold Flash Smoke */
+.cloud-4 {
+    background: radial-gradient(circle, rgba(255, 222, 89, 0.9), transparent);
+    animation: smoke-explosion-fast 1.5s forwards ease-in;
+    animation-delay: 1.2s;
+}
+
+/* Animations */
+@keyframes lamp-shake {
+    0% { transform: rotate(-5deg) translateY(0); }
+    100% { transform: rotate(5deg) translateY(-5px); }
+}
+
+/* Smoke scales up by 100x to swallow the entire viewport */
+@keyframes smoke-explosion {
+    0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+    20% { opacity: 0.9; transform: scale(5) translateY(-50px); }
+    100% { opacity: 1; transform: scale(100) translateY(-150px); }
+}
+
+@keyframes smoke-explosion-fast {
+    0% { opacity: 0; transform: scale(0.5); }
+    50% { opacity: 1; transform: scale(50); }
+    100% { opacity: 1; transform: scale(120); }
+}
+
+/* =========================================
+   PURE CSS GENIE BUTTON
+   ========================================= */
+/* =========================================
+   ULTIMATE VIP GENIE BUTTON (HEAVY & ADVANCED)
+   ========================================= */
+.genie-css-btn {
     position: relative;
-    z-index: 10;
+    height: 36px; /* Slightly taller for a premium, heavy feel */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px;
+    color: #ffde59 !important;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 5rem;
-    color: #fff;
-    text-shadow: 0 0 20px #ffde59, 0 0 40px #ff9e00;
-    letter-spacing: 10px;
-    animation: zoom-in 2.5s forwards;
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-shadow: 0 0 8px rgba(255, 222, 89, 0.5);
+    border: none;
+    border-radius: 50px;
+    background: transparent;
+    z-index: 1;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* The magical outer glow cast on the dashboard */
+    box-shadow: 0 0 15px rgba(148, 0, 211, 0.6), 0 0 30px rgba(255, 222, 89, 0.2);
 }
 
-@keyframes spin-vortex {
-    100% { transform: rotate(360deg) scale(1.5); }
+/* 1. The Flowing Magical Energy Border */
+.genie-css-btn::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 50px;
+    background: linear-gradient(60deg, #ffde59, #ff9e00, #9400d3, #4b0082, #ffde59);
+    background-size: 300% 300%;
+    z-index: -2;
+    animation: genie-energy-flow 4s linear infinite;
 }
 
-@keyframes zoom-in {
-    0% { transform: scale(0); opacity: 0; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(5); opacity: 0; }
+/* 2. The Deep Jewel Core (The physical button glass) */
+.genie-css-btn::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px; right: 2px; bottom: 2px;
+    border-radius: 50px;
+    background: linear-gradient(180deg, #1a0033 0%, #050014 100%);
+    z-index: -1;
+    box-shadow:
+        inset 0 0 15px rgba(255, 222, 89, 0.15), /* inner gold reflection */
+        inset 0 2px 4px rgba(255, 255, 255, 0.25); /* glass top highlight */
+    transition: all 0.3s ease;
+}
+
+/* The Magic Wand Icon */
+.genie-css-btn i {
+    font-size: 1.1rem;
+    margin-right: 8px;
+    color: #ff9e00;
+    text-shadow: 0 0 10px #ffde59, 0 0 20px #ff9e00;
+    animation: wand-pulse 2s infinite alternate ease-in-out;
+}
+
+/* --- HOVER STATE (Explosive Satisfaction) --- */
+.genie-css-btn:hover {
+    transform: scale(1.08) translateY(-3px); /* Physically lifts up */
+    color: #fff !important;
+    text-shadow: 0 0 15px #fff, 0 0 30px #ffde59;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 40px rgba(255, 158, 0, 0.6), 0 0 60px rgba(148, 0, 211, 0.4);
+}
+
+.genie-css-btn:hover::after {
+    background: linear-gradient(180deg, #3d0066 0%, #11001c 100%); /* Core brightens */
+    box-shadow: inset 0 0 25px rgba(255, 222, 89, 0.4), inset 0 2px 6px rgba(255, 255, 255, 0.4);
+}
+
+.genie-css-btn:hover::before {
+    animation: genie-energy-flow 1.5s linear infinite; /* Energy spins 3x faster! */
+    filter: blur(4px); /* Border erupts into a blazing aura */
+}
+
+/* --- ACTIVE/CLICK STATE (Heavy Mechanical Press) --- */
+.genie-css-btn:active {
+    transform: scale(0.95) translateY(2px); /* Slams down */
+    box-shadow: 0 0 10px rgba(255, 158, 0, 0.8);
+}
+
+.genie-css-btn:active::after {
+    background: #050014;
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.9); /* Deep internal shadow for click impact */
+}
+
+/* --- ANIMATIONS --- */
+@keyframes genie-energy-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes wand-pulse {
+    0% { transform: rotate(0deg) scale(1); }
+    100% { transform: rotate(20deg) scale(1.2); filter: brightness(1.5); }
 }

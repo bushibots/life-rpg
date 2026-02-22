@@ -192,3 +192,24 @@ function triggerGenie(event) {
         window.location.href = "/genie";
     }, 3200);
 }
+
+function triggerGenie(event) {
+    event.preventDefault();
+
+    // 1. Phone Vibration Magic Feel
+    if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100, 50, 400]);
+    }
+
+    // 2. Show the Overlay (Starts the CSS Animations)
+    const overlay = document.getElementById('genie-overlay');
+    overlay.classList.remove('d-none');
+
+    // 3. Screen Shake effect on the body
+    document.body.classList.add('screen-shake');
+
+    // 4. Redirect after the smoke fills the screen (2.8 seconds)
+    setTimeout(() => {
+        window.location.href = "/genie";
+    }, 2800);
+}
