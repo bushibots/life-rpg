@@ -6,6 +6,7 @@ from collections import Counter # <--- FIXED: Added missing import
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 import requests
+from utils import generate_genie_questions
 
 # --- FLASK & EXTENSIONS ---
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
@@ -1114,21 +1115,15 @@ def genie():
             flash("The Genie rests. Your 3 wishes will replenish next week.", "info")
             return redirect(url_for('dashboard'))
 
-    # 3. Handle the Wish Submission
+   # 3. Handle the Wish Submission
     if request.method == 'POST':
         wish = request.form.get('wish')
 
-        # Deduct a wish
-        if not current_user.is_pro:
-            current_user.has_used_free_wish = True
-        else:
-            current_user.genie_wishes -= 1
+        # Ask Gemini to generate the 3 specific questions
+        questions = generate_genie_questions(wish)
 
-        db.session.commit()
-
-        # We will forward this wish to Phase 4 (The AI Question Generator)
-        flash(f"The Genie has heard your wish: 'I want to {wish}'. Generating blueprint...", "success")
-        return redirect(url_for('dashboard')) # Temporary redirect until Phase 4 is built
+        # Send the user to the questionnaire room
+        return render_template('genie_questions.html', wish=wish, questions=questions)
 
     # 4. Show the magical room
     return render_template('genie.html')

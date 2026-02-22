@@ -63,8 +63,8 @@ def guess_category(text):
     if "project" in text or "mock" in text or "syllabus" in text: difficulty = 3
 
     return {
-        "name": text.capitalize(), 
-        "category": category, 
+        "name": text.capitalize(),
+        "category": category,
         "difficulty": difficulty,
         # ADDED THESE TWO LINES TO PREVENT CRASHES IN APP.PY
         "description": "",
@@ -136,14 +136,14 @@ def smart_ai_parse(text_input, primary_api_key):
                 try:
                     model = genai.GenerativeModel(model_name)
                     response = model.generate_content(prompt)
-                    
+
                     clean_text = response.text.strip()
                     if clean_text.startswith("```json"): clean_text = clean_text[7:]
                     if clean_text.endswith("```"): clean_text = clean_text[:-3]
-                    
+
                     tasks = json.loads(clean_text)
                     if isinstance(tasks, dict): tasks = [tasks]
-                    return tasks 
+                    return tasks
                 except Exception:
                     continue
         except Exception:
@@ -157,7 +157,7 @@ def smart_ai_parse(text_input, primary_api_key):
 # ---------------------------------------------------------
 def get_backlog_strategy(hours_debt, days_to_clear, mode):
     global API_TIMESTAMPS
-    
+
     # --- COOLDOWN CHECK ---
     # If less than 10 mins since last call, return STATIC text.
     if time.time() - API_TIMESTAMPS['strategy'] < COOLDOWN_SECONDS:
@@ -172,18 +172,18 @@ def get_backlog_strategy(hours_debt, days_to_clear, mode):
             os.environ["https_proxy"] = "http://proxy.server:3128"
 
         genai.configure(api_key=api_key)
-        
+
         prompt = (
             f"The user has {hours_debt} hours of academic backlog to cover in {days_to_clear} days "
             f"using {mode} methods. "
             f"Provide one sentence of clear, practical, and serious advice. "
             f"No motivational fluff. Just strategy. Under 25 words."
         )
-        
+
         # Try primary model
-        model = genai.GenerativeModel(MODEL_LIST[0]) 
+        model = genai.GenerativeModel(MODEL_LIST[0])
         response = model.generate_content(prompt)
-        
+
         # Update Timestamp only on successful AI call
         API_TIMESTAMPS['strategy'] = time.time()
         return response.text.strip()
@@ -211,18 +211,47 @@ def get_ai_feedback(stats_text):
             os.environ["https_proxy"] = "http://proxy.server:3128"
 
         genai.configure(api_key=api_key)
-        
+
         prompt = f"""
         Analyze this user performance report: "{stats_text}"
         Give 2 sentences of feedback. Be analytical and clear.
         Avoid flowery language. Focus on facts and improvement.
         """
-        
+
         # Try primary model
         model = genai.GenerativeModel(MODEL_LIST[0])
         response = model.generate_content(prompt)
-        
+
         API_TIMESTAMPS['feedback'] = time.time()
         return response.text.strip()
     except Exception:
         return random.choice(FEEDBACK_FALLBACKS)
+
+def generate_genie_questions(wish):
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        The user wants to achieve this major life goal: "{wish}".
+        You are a wise, analytical Genie. To create a perfect, personalized Master Quest for them,
+        you need to ask 3 highly specific, practical questions about their current situation,
+        limitations, or preferences regarding this exact goal.
+
+        Return ONLY a JSON array of 3 strings containing the questions. Do not include markdown formatting or extra text.
+        Example format:
+        ["How many hours a week can you dedicate to this?", "What is your current budget?", "Do you have any prior experience with this?"]
+        """
+        response = model.generate_content(prompt)
+
+        # Clean up response and parse JSON
+        clean_text = response.text.replace('```json', '').replace('```', '').strip()
+        questions = json.loads(clean_text)
+        return questions[:3] # Ensure we only get 3
+
+    except Exception as e:
+        print(f"Genie Question Generation Error: {e}")
+        # Intelligent fallback questions just in case the API glitches
+        return [
+            "How much time can you realistically dedicate to this goal each week?",
+            "What is the biggest obstacle currently standing in your way?",
+            "What specific resources, tools, or budget do you currently have available for this?"
+        ]
