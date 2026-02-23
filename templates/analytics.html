@@ -4,7 +4,7 @@
 
 <div class="card bg-dark border-secondary mb-4 shadow-lg">
     <div class="card-body py-3 d-flex justify-content-between align-items-center control-bar">
-        
+
         <div class="mb-2 mb-md-0">
             <h4 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">
                 <i class="bi bi-activity me-2 text-info"></i>
@@ -15,9 +15,9 @@
                 {% endif %}
             </h4>
         </div>
-        
+
         <form action="{{ url_for('analytics') }}" method="GET" class="d-flex gap-2 align-items-center control-bar" style="flex-wrap: wrap;">
-            
+
             <div class="input-group input-group-sm">
                 <select name="year" class="form-select bg-dark text-white border-secondary font-monospace">
                     {% for y in range(2025, 2031) %}
@@ -35,7 +35,7 @@
                     <i class="bi bi-search"></i>
                 </button>
             </div>
-            
+
             <div class="d-flex gap-2 control-actions">
                 <a href="{{ url_for('analytics', all='true') }}" class="btn btn-sm w-100 {{ 'btn-light fw-bold' if show_all else 'btn-outline-secondary text-muted' }}">
                     ALL TIME
@@ -145,7 +145,7 @@
     const gridColor = 'rgba(255, 255, 255, 0.05)';
     const textColor = '#94a3b8';
     const accentColor = '#0dcaf0'; // Cyan/Info
-    
+
     // Ensure charts scale properly
     Chart.defaults.color = textColor;
     Chart.defaults.borderColor = gridColor;
@@ -153,136 +153,423 @@
     Chart.defaults.responsive = true;
     Chart.defaults.maintainAspectRatio = false; // CRITICAL FOR MOBILE
 
-    // --- 2. RADAR CHART ---
-    new Chart(document.getElementById('radarChart'), {
-        type: 'radar',
-        data: {
-            labels: {{ radar_labels | tojson }},
-            datasets: [{
-                label: 'Attribute Level',
-                data: {{ radar_data | tojson }},
-                backgroundColor: 'rgba(13, 202, 240, 0.2)',
-                borderColor: accentColor,
-                borderWidth: 2,
-                pointBackgroundColor: accentColor,
-                pointBorderColor: '#fff',
-                pointRadius: 3
-            }]
-        },
-        options: {
-            scales: {
-                r: {
-                    angleLines: { color: gridColor },
-                    grid: { color: gridColor },
-                    pointLabels: { color: '#fff', font: { size: 11, weight: '600' } },
-                    ticks: { display: false, backdropColor: 'transparent' }
-                }
-            },
-            plugins: { legend: { display: false } }
-        }
-    });
+   // --- 2. ENHANCED RADAR CHART (Attribute Matrix HUD) ---
+const radarCtx = document.getElementById('radarChart').getContext('2d');
 
-    // --- 3. DONUT CHART ---
-    new Chart(document.getElementById('donutChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Easy', 'Medium', 'Hard', 'Epic'],
-            datasets: [{
-                data: {{ diff_data | tojson }},
-                backgroundColor: ['#20c997', '#0dcaf0', '#fd7e14', '#dc3545'],
-                borderWidth: 0,
-                hoverOffset: 10
-            }]
+// 1. Bio-Scanner Gradient Fill
+const radarGradient = radarCtx.createLinearGradient(0, 0, 0, 400);
+radarGradient.addColorStop(0, 'rgba(0, 242, 255, 0.5)');   // Neon Cyan High
+radarGradient.addColorStop(1, 'rgba(148, 0, 211, 0.2)'); // Dark Purple Low
+
+new Chart(radarCtx, {
+    type: 'radar',
+    data: {
+        labels: {{ radar_labels | tojson }},
+        datasets: [{
+            label: 'Attribute Level',
+            data: {{ radar_data | tojson }},
+
+            // Neon Polygon
+            backgroundColor: radarGradient,
+            borderColor: '#00f2ff',
+            borderWidth: 2,
+
+            // Glowing Stat Nodes
+            pointBackgroundColor: '#00f2ff',
+            pointBorderColor: '#050014', // Matches the dark background
+            pointBorderWidth: 2,
+            pointRadius: 4,
+
+            // Explosive Hover Effect on Nodes
+            pointHoverRadius: 9,
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#9400d3', // Flashes purple
+            pointHoverBorderWidth: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+            // Snaps outward like a tactical map deploying
+            duration: 2500,
+            easing: 'easeOutElastic'
         },
-        options: {
-            cutout: '75%',
-            plugins: { 
-                legend: { 
-                    position: 'right', 
-                    labels: { boxWidth: 10, padding: 15, color: '#adb5bd', font: { size: 11 } } 
-                } 
+        scales: {
+            r: {
+                // The "Spokes" of the radar
+                angleLines: {
+                    color: 'rgba(0, 242, 255, 0.3)',
+                    lineWidth: 1,
+                    borderDash: [5, 5] // Tactical dashed scanning lines
+                },
+                // The "Web" of the radar
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.05)',
+                    lineWidth: 1
+                },
+                // The Attribute Names (Strength, Intellect, etc.)
+                pointLabels: {
+                    color: '#00f2ff',
+                    font: { family: 'Orbitron', size: 12, weight: 'bold', letterSpacing: 1 },
+                    padding: 15
+                },
+                // Hides the messy numbers on the web itself
+                ticks: {
+                    display: false,
+                    backdropColor: 'transparent'
+                }
+            }
+        },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(5, 0, 20, 0.95)',
+                titleFont: { family: 'Orbitron', size: 14, color: '#fff' },
+                bodyFont: { family: 'monospace', size: 13, color: '#00f2ff' },
+                borderColor: '#00f2ff',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    label: function(context) {
+                        return " 🧬 PROFICIENCY: Lvl " + context.parsed.r;
+                    }
+                }
             }
         }
-    });
-
-    // --- 4. BAR CHART ---
-    new Chart(document.getElementById('barChart'), {
-        type: 'bar',
-        data: {
-            labels: {{ bar_labels | tojson }},
-            datasets: [{
-                label: 'XP Gained',
-                data: {{ bar_data | tojson }},
-                backgroundColor: accentColor,
-                borderRadius: 2,
-                barPercentage: 0.5
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, grid: { color: gridColor, borderDash: [2, 2] } },
-                x: { grid: { display: false } }
-            },
-            plugins: { legend: { display: false } }
-        }
-    });
-
-    // --- 5. LINE CHART ---
-    const lineCtx = document.getElementById('lineChart').getContext('2d');
-    const gradient = lineCtx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(13, 202, 240, 0.3)');
-    gradient.addColorStop(1, 'rgba(13, 202, 240, 0.0)');
-
-    new Chart(lineCtx, {
-        type: 'line',
-        data: {
-            labels: {{ line_labels | tojson }},
-            datasets: [{
-                label: 'Total XP',
-                data: {{ line_data | tojson }},
-                borderColor: accentColor,
-                backgroundColor: gradient,
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            interaction: { intersect: false, mode: 'index' },
-            scales: {
-                x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
-                y: { grid: { color: gridColor } }
-            },
-            plugins: { legend: { display: false } }
-        }
-    });
-
-    // --- 6. HEATMAP GENERATOR ---
-    const heatmapData = {{ heatmap_data | tojson }};
-    const container = document.getElementById('heatmapContainer');
-    // Generate last 60 days
-    for (let i = 59; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
-        const xp = heatmapData[dateStr] || 0;
-
-        let colorClass = 'bg-secondary bg-opacity-10'; // Default Empty
-        if (xp > 0) colorClass = 'bg-info bg-opacity-25';
-        if (xp > 50) colorClass = 'bg-info bg-opacity-50';
-        if (xp > 100) colorClass = 'bg-info';
-
-        const box = document.createElement('div');
-        box.className = `rounded-1 ${colorClass}`;
-        box.style.width = '14px';
-        box.style.height = '14px';
-        box.style.cursor = 'pointer';
-        box.title = `${dateStr}: ${xp} XP`;
-        box.setAttribute('data-bs-toggle', 'tooltip');
-        container.appendChild(box);
     }
+});
+
+  // --- 3. ENHANCED DONUT CHART (Tactical Threat Radar) ---
+const donutCtx = document.getElementById('donutChart').getContext('2d');
+
+new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+        // Upgraded labels to match an RPG ranking system
+        labels: ['Easy (F-Rank)', 'Medium (C-Rank)', 'Hard (A-Rank)', 'Epic (S-Rank)'],
+        datasets: [{
+            data: {{ diff_data | tojson }},
+            // High-contrast Neon Cyberpunk Colors
+            backgroundColor: [
+                'rgba(0, 255, 157, 0.7)', // Neon Green
+                'rgba(0, 242, 255, 0.7)', // Neon Cyan
+                'rgba(255, 158, 0, 0.7)', // Neon Orange
+                'rgba(255, 0, 60, 0.7)'   // Neon Crimson
+            ],
+            // Solid brights when hovering
+            hoverBackgroundColor: [
+                'rgba(0, 255, 157, 1)',
+                'rgba(0, 242, 255, 1)',
+                'rgba(255, 158, 0, 1)',
+                'rgba(255, 0, 60, 1)'
+            ],
+            // 1. Tactical Gaps: Matches your deep night background to make slices "float"
+            borderColor: '#050014',
+            borderWidth: 4,
+
+            // 2. High-Tech Edges: Rounds the corners of each slice
+            borderRadius: 5,
+
+            // 3. Extrude Effect: Pops out heavily when hovered
+            hoverOffset: 15
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        // Thinner, sleeker ring (leaving room in the center for the HUD feel)
+        cutout: '80%',
+        animation: {
+            animateRotate: true, // Spins in like a radar booting up
+            animateScale: true,  // Scales up from the center
+            duration: 2000,
+            easing: 'easeOutCirc'
+        },
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: {
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    font: { family: 'monospace', size: 12 },
+                    padding: 20,
+                    // Replaces chunky squares with sleek glowing dots
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(5, 0, 20, 0.95)',
+                titleFont: { family: 'Orbitron', size: 14 },
+                bodyFont: { family: 'monospace', size: 13, weight: 'bold' },
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                borderWidth: 1,
+                padding: 12,
+                callbacks: {
+                    label: function(context) {
+                        return " 🎯 TARGETS: " + context.parsed + " Missions";
+                    }
+                }
+            }
+        }
+    }
+});
+
+// --- 4. ENHANCED BAR CHART (Daily XP Yield) ---
+const barCtx = document.getElementById('barChart').getContext('2d');
+
+// 1. Cyberpunk Vertical Gradient for the Bars
+const barGradient = barCtx.createLinearGradient(0, 0, 0, 300);
+barGradient.addColorStop(0, 'rgba(148, 0, 211, 0.8)'); // Deep Purple Top
+barGradient.addColorStop(1, 'rgba(0, 242, 255, 0.1)'); // Cyan Base
+
+// Glowing gradient for when the user hovers over a bar
+const hoverBarGradient = barCtx.createLinearGradient(0, 0, 0, 300);
+hoverBarGradient.addColorStop(0, 'rgba(0, 242, 255, 1)'); // Bright Cyan Top
+hoverBarGradient.addColorStop(1, 'rgba(148, 0, 211, 0.4)'); // Purple Base
+
+new Chart(barCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ bar_labels | tojson }},
+        datasets: [{
+            label: 'XP Gained',
+            data: {{ bar_data | tojson }},
+            backgroundColor: barGradient,
+            hoverBackgroundColor: hoverBarGradient,
+            // Creates a bright "scanner line" on the top edge of the bar
+            borderColor: '#00f2ff',
+            borderWidth: { top: 2, right: 0, bottom: 0, left: 0 },
+            borderRadius: 4, // Sleek, pill-like rounded tops
+            barPercentage: 0.6,
+            categoryPercentage: 0.8
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+            duration: 1500,
+            easing: 'easeOutElastic' // Satisfying "spring up" animation on load
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.05)',
+                    borderDash: [4, 4], // Tactical dotted scanner lines
+                    drawBorder: false
+                },
+                ticks: {
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    font: { family: 'monospace' }
+                }
+            },
+            x: {
+                grid: { display: false },
+                ticks: {
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    font: { family: 'monospace' }
+                }
+            }
+        },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(5, 0, 20, 0.95)',
+                titleFont: { family: 'Orbitron', size: 14 },
+                bodyFont: { family: 'monospace', size: 13, weight: 'bold' },
+                borderColor: '#9400d3', // Purple border for the tooltip box
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    label: function(context) {
+                        return "💥 DAILY YIELD: " + context.parsed.y + " XP";
+                    }
+                }
+            }
+        }
+    }
+});
+
+    // --- 5. ENHANCED XP VELOCITY ENGINE ---
+const lineCtx = document.getElementById('lineChart').getContext('2d');
+
+// 1. Tactical Visual: Advanced Multi-Stop Gradient
+const gradient = lineCtx.createLinearGradient(0, 0, 0, 400);
+gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)');   // Bright Cyan Top
+gradient.addColorStop(0.5, 'rgba(148, 0, 211, 0.1)'); // Deep Purple Mid
+gradient.addColorStop(1, 'rgba(5, 0, 20, 0.0)');     // Transparent Bottom
+
+new Chart(lineCtx, {
+    type: 'line',
+    data: {
+        labels: {{ line_labels | tojson }},
+        datasets: [{
+            label: 'Total XP',
+            data: {{ line_data | tojson }},
+            borderColor: '#00f2ff', // Neon Cyan
+            backgroundColor: gradient,
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4, // Smoother "Velocity" curves
+
+            // TACTICAL FIX: Visibility on Day 1
+            pointRadius: 4,
+            pointBackgroundColor: '#00f2ff',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+
+            // VISUAL SATISFACTION: Glow effect
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#00f2ff',
+            pointHoverBorderWidth: 4,
+
+            // Line Shadow (Glow Effect)
+            segment: {
+                borderCapStyle: 'round'
+            }
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        animation: {
+            duration: 2000,
+            easing: 'easeOutQuart' // Smooth "growth" animation on load
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: {
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    font: { family: 'monospace' },
+                    maxTicksLimit: 7
+                }
+            },
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.05)', // Subtle scanning lines
+                    drawBorder: false
+                },
+                ticks: {
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    font: { family: 'monospace' },
+                    callback: function(value) { return value + ' XP'; }
+                }
+            }
+        },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(5, 0, 20, 0.9)',
+                titleFont: { family: 'Orbitron', size: 14 },
+                bodyFont: { family: 'monospace', size: 13 },
+                borderColor: '#00f2ff',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    label: function(context) {
+                        return "⚡ TOTAL POWER: " + context.parsed.y + " XP";
+                    }
+                }
+            }
+        }
+    }
+});
+// --- 6. ENHANCED HEATMAP (Activity Matrix) ---
+const heatmapData = {{ heatmap_data | tojson }};
+const container = document.getElementById('heatmapContainer');
+
+// Clear container to prevent duplicates on reload
+container.innerHTML = '';
+
+// Generate last 60 days
+for (let i = 59; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const xp = heatmapData[dateStr] || 0;
+
+    // Tactical Colors based on XP intensity
+    let bgColor = 'rgba(255, 255, 255, 0.05)'; // Empty Node
+    let border = '1px solid rgba(255, 255, 255, 0.02)';
+    let boxShadow = 'none';
+
+    if (xp > 0 && xp <= 50) {
+        bgColor = 'rgba(0, 242, 255, 0.3)'; // Low Power
+        border = '1px solid rgba(0, 242, 255, 0.5)';
+    } else if (xp > 50 && xp <= 100) {
+        bgColor = 'rgba(0, 242, 255, 0.7)'; // Optimal Power
+        border = '1px solid #00f2ff';
+        boxShadow = '0 0 5px rgba(0, 242, 255, 0.4)'; // Slight Glow
+    } else if (xp > 100 && xp <= 200) {
+        bgColor = '#00f2ff'; // High Output (Solid Cyan)
+        border = '1px solid #fff';
+        boxShadow = '0 0 8px #00f2ff'; // Heavy Glow
+    } else if (xp > 200) {
+        bgColor = '#9400d3'; // OVERDRIVE (Purple)
+        border = '1px solid #fff';
+        boxShadow = '0 0 12px #9400d3'; // Core Breach Glow
+    }
+
+    const box = document.createElement('div');
+
+    // Core Styling
+    box.style.width = '14px';
+    box.style.height = '14px';
+    box.style.borderRadius = '3px';
+    box.style.backgroundColor = bgColor;
+    box.style.border = border;
+    box.style.boxShadow = boxShadow;
+    box.style.cursor = 'crosshair'; // Tactical targeting cursor
+    box.style.transition = 'all 0.2s ease-in-out';
+    box.style.position = 'relative'; // Required for z-index scaling
+
+    // Initial invisible state for the boot-up animation
+    box.style.opacity = '0';
+    box.style.transform = 'scale(0.1)';
+
+    // Interactive Hover Zoom
+    box.addEventListener('mouseenter', () => {
+        box.style.transform = 'scale(1.5)';
+        box.style.zIndex = '10'; // Pops over the other boxes
+        if (xp > 0) {
+            box.style.boxShadow = `0 0 15px ${xp > 200 ? '#9400d3' : '#00f2ff'}`;
+        } else {
+            box.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+        }
+    });
+
+    // Reset on Mouse Leave
+    box.addEventListener('mouseleave', () => {
+        box.style.transform = 'scale(1)';
+        box.style.zIndex = '1';
+        box.style.boxShadow = boxShadow;
+        box.style.backgroundColor = bgColor;
+    });
+
+    // Custom RPG Tooltip Text
+    box.title = xp > 0 ? `[${dateStr}] ⚡ YIELD: ${xp} XP` : `[${dateStr}] NO DATA`;
+    box.setAttribute('data-bs-toggle', 'tooltip');
+
+    container.appendChild(box);
+
+    // Staggered Boot-Up Animation (Cascades from oldest to newest)
+    setTimeout(() => {
+        box.style.opacity = '1';
+        box.style.transform = 'scale(1)';
+    }, (60 - i) * 15); // 15ms delay per box creates a fast scanning effect
+}
 </script>
 
 {% endblock %}
