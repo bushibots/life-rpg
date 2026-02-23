@@ -101,18 +101,6 @@
             <i class="bi bi-plus-lg me-1"></i> New Directive
         </button>
 
-        <div class="input-group input-group-sm shadow-sm" style="max-width: 280px;">
-            <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
-            <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Search..." onkeyup="filterTasks()">
-            <select class="form-select bg-dark text-white border-secondary font-monospace" id="sortSelect" onchange="sortTasks()" style="max-width: 80px;">
-                <option value="default">Def</option>
-                <option value="diff_high">Hard</option>
-                <option value="diff_low">Easy</option>
-                <option value="date">Date</option>
-                <option value="name">A-Z</option>
-            </select>
-        </div>
-
     </div>
 </div>
 
@@ -126,6 +114,18 @@
     <button class="filter-pill" onclick="applyFilter('completed', this)">DONE TODAY</button>
     <button class="filter-pill" onclick="applyFilter('unscheduled', this)">BACKLOG</button>
 </div>
+
+        <div class="input-group input-group-sm shadow-sm" style="max-width: 280px;">
+            <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+            <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Search..." onkeyup="filterTasks()">
+            <select class="form-select bg-dark text-white border-secondary font-monospace" id="sortSelect" onchange="sortTasks()" style="max-width: 80px;">
+                <option value="default">Def</option>
+                <option value="diff_high">Hard</option>
+                <option value="diff_low">Easy</option>
+                <option value="date">Date</option>
+                <option value="name">A-Z</option>
+            </select>
+        </div>
 
 <div id="missionControl" class="mt-4 accordion">
 {% for goal in goals %}
