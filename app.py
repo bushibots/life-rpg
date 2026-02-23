@@ -6,7 +6,7 @@ from collections import Counter # <--- FIXED: Added missing import
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 import requests
-from utils import generate_genie_questions
+from utils import generate_genie_questions, generate_genie_blueprint
 
 # --- FLASK & EXTENSIONS ---
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response, session
@@ -1103,6 +1103,14 @@ def genie():
         flash("The Genie only appears to Masters who engrave their name in the registry. Please register.", "warning")
         return redirect(url_for('dashboard'))
 
+    # --- AUTO-HEAL OLD ACCOUNTS ---
+    if current_user.has_used_free_wish is None:
+        current_user.has_used_free_wish = False
+        db.session.commit()
+    if current_user.genie_wishes is None and current_user.is_pro:
+        current_user.genie_wishes = 3
+        db.session.commit()
+
     # 2. Check VIP Limits
     # Free users get 1 lifetime wish. Pro users get 3 per week.
     if not current_user.is_pro:
@@ -1110,12 +1118,12 @@ def genie():
             flash("Your free lifetime wish has been exhausted. Upgrade to Pro to summon the Genie again.", "info")
             return redirect(url_for('dashboard'))
     else:
-        # Check weekly resets for Pro users (We will build the Sunday reset logic later)
+        # Check weekly resets for Pro users
         if current_user.genie_wishes <= 0:
             flash("The Genie rests. Your 3 wishes will replenish next week.", "info")
             return redirect(url_for('dashboard'))
 
-   # 3. Handle the Wish Submission
+    # 3. Handle the Wish Submission
     if request.method == 'POST':
         wish = request.form.get('wish')
 
@@ -1127,6 +1135,67 @@ def genie():
 
     # 4. Show the magical room
     return render_template('genie.html')
+
+# --- VIP GENIE: QUEST GENERATOR ---
+# --- VIP GENIE: QUEST GENERATOR ---
+@app.route('/genie_generate_quest', methods=['POST'])
+@login_required
+def genie_generate_quest():
+    # 1. Grab the original wish and the answers
+    wish = request.form.get('wish')
+    question_1 = request.form.get('question_1')
+    answer_1 = request.form.get('answer_1')
+    question_2 = request.form.get('question_2')
+    answer_2 = request.form.get('answer_2')
+    question_3 = request.form.get('question_3')
+    answer_3 = request.form.get('answer_3')
+
+    # 2. Call the AI to forge the Master Blueprint
+    blueprint = generate_genie_blueprint(wish, question_1, answer_1, question_2, answer_2, question_3, answer_3)
+
+    if not blueprint:
+        flash("The Genie's magic was interrupted by a cosmic storm (AI Error). Please try again.", "danger")
+        return redirect(url_for('dashboard'))
+
+    # 3. Create the New Goal in the Database
+    new_goal = Goal(
+        name=f"🧞‍♂️ {blueprint['goal_name']}",
+        user_id=current_user.id,
+        is_genie_quest=True
+    )
+    db.session.add(new_goal)
+    db.session.commit() # Commit here so we get the Goal ID for the habit!
+
+    # 4. Create the Daily Habit tied to the Goal
+    new_habit = Habit(
+        name=f"🧞‍♂️ {blueprint['habit']['name']}",
+        time_of_day=blueprint['habit']['time_of_day'],
+        user_id=current_user.id,
+        goal_id=new_goal.id
+    )
+    db.session.add(new_habit)
+
+    # 5. Create the 3 Milestone Tasks
+    for t in blueprint['tasks']:
+        new_task = Task(
+            title=f"🧞‍♂️ {t['title']}",
+            description=t['description'],
+            user_id=current_user.id,
+            is_genie_task=True
+        )
+        db.session.add(new_task)
+
+    # 6. Deduct the wish from the user's wallet
+    if not current_user.is_pro:
+        current_user.has_used_free_wish = True
+    else:
+        current_user.genie_wishes -= 1
+
+    db.session.commit()
+
+    flash(f"The Genie has forged your Master Quest! Check your Active Protocols and Habits.", "success")
+    return redirect(url_for('dashboard'))
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

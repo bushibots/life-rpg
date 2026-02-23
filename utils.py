@@ -203,7 +203,7 @@ def get_ai_feedback(stats_text):
         return random.choice(FEEDBACK_FALLBACKS)
 
     try:
-        api_key = os.getenv('GEMINI_API_KEY')
+        api_key = os.getenv('GEMINI_API_KEY_2')
         if not api_key: return "AI offline."
 
         if 'PYTHONANYWHERE_DOMAIN' in os.environ:
@@ -229,7 +229,7 @@ def get_ai_feedback(stats_text):
 
 def generate_genie_questions(wish):
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = f"""
         The user wants to achieve this major life goal: "{wish}".
         You are a wise, analytical Genie. To create a perfect, personalized Master Quest for them,
@@ -255,3 +255,48 @@ def generate_genie_questions(wish):
             "What is the biggest obstacle currently standing in your way?",
             "What specific resources, tools, or budget do you currently have available for this?"
         ]
+
+def generate_genie_blueprint(wish, q1, a1, q2, a2, q3, a3):
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        prompt = f"""
+        You are a master life coach AI. The user wants to achieve this major life goal: "{wish}".
+        You asked them these questions and received these answers:
+        1. {q1} -> {a1}
+        2. {q2} -> {a2}
+        3. {q3} -> {a3}
+
+        Based on their specific answers, create a highly personalized Master Quest blueprint.
+        Return ONLY a JSON object with this EXACT structure. Do not include markdown formatting or extra text.
+        {{
+            "goal_name": "A short, inspiring name for this Master Quest",
+            "habit": {{
+                "name": "One highly specific daily habit to build momentum",
+                "time_of_day": "Morning", "Afternoon", or "Evening"
+            }},
+            "tasks": [
+                {{
+                    "title": "Phase 1: Beginner Milestone",
+                    "description": "Detailed, step-by-step instructions on exactly what to do first based on their answers."
+                }},
+                {{
+                    "title": "Phase 2: Intermediate Milestone",
+                    "description": "The next major hurdle they need to clear."
+                }},
+                {{
+                    "title": "Phase 3: Final Mastery",
+                    "description": "The final step to conquer the goal."
+                }}
+            ]
+        }}
+        """
+        response = model.generate_content(prompt)
+
+        # Clean up response and parse JSON
+        clean_text = response.text.replace('```json', '').replace('```', '').strip()
+        blueprint = json.loads(clean_text)
+        return blueprint
+
+    except Exception as e:
+        print(f"Genie Blueprint Generation Error: {e}")
+        return None
