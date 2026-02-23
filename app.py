@@ -948,7 +948,9 @@ def reset_request():
         user = User.query.filter_by(email=request.form.get('email')).first()
         if user:
             token = s.dumps(user.email, salt='recover-key')
-            link = url_for('reset_token', token=token, _external=True)
+            base_url = request.host_url.rstrip('/')
+            path = url_for('reset_token', token=token)
+            link = f"{base_url}{path}"
 
             # --- SEND EMAIL VIA BREVO HTTP API ---
             url = "https://api.brevo.com/v3/smtp/email"
