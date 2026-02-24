@@ -1,124 +1,407 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
+<style>
+    /* =========================================
+       FLAGSHIP FOCUS HUB STYLES
+       ========================================= */
+    .focus-card {
+        background: var(--glass-bg) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
 
-    <div class="row mb-4">
-        <div class="col-12">
-            <h4 class="text-white border-bottom border-secondary pb-2">
-                <i class="fas fa-laptop-code text-info me-2"></i> DEEP WORK STATION
-            </h4>
-        </div>
-    </div>
+    /* SVG Timer Ring Magic */
+    .timer-container {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        margin: 0 auto;
+    }
+    .timer-svg {
+        transform: rotate(-90deg);
+        width: 100%;
+        height: 100%;
+    }
+    .timer-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.05);
+        stroke-width: 3;
+    }
+    .timer-progress {
+        fill: none;
+        stroke: #0dcaf0; /* Neon Info Color */
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 283; /* 2 * pi * 45 */
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
+        filter: drop-shadow(0 0 10px rgba(13, 202, 240, 0.5));
+    }
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card bg-dark border-0 shadow-sm">
-                <div class="card-body text-center py-5">
-                    <h5 class="text-muted text-uppercase mb-4" style="letter-spacing: 2px;">Active Session</h5>
+    #time-display {
+        font-family: 'Exo 2', sans-serif;
+        font-size: 5rem;
+        font-weight: 700;
+        letter-spacing: -2px;
+        text-shadow: 0 0 20px rgba(255,255,255,0.2);
+    }
 
-                    <h1 id="timer" class="display-1 fw-bold text-white" style="font-family: monospace;">25:00</h1>
+    /* Ambient Sound Buttons */
+    .sound-btn {
+        border-radius: 12px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: var(--transition-smooth);
+        cursor: pointer;
+    }
+    .sound-btn:hover {
+        background: rgba(255,255,255,0.05);
+        transform: translateX(4px);
+    }
+    .sound-btn.playing {
+        background: rgba(13, 202, 240, 0.1);
+        border-color: rgba(13, 202, 240, 0.3);
+        box-shadow: 0 0 15px rgba(13, 202, 240, 0.1);
+    }
+    .sound-btn.playing .play-icon::before {
+        content: "\f4fa"; /* Bootstrap pause-circle-fill icon */
+        color: #0dcaf0;
+    }
 
-                    <div class="mt-4">
-                        <button onclick="startTimer()" class="btn btn-primary px-5 py-2 fw-bold">
-                            <i class="fas fa-play me-2"></i> INITIATE
-                        </button>
-                        <button onclick="resetTimer()" class="btn btn-outline-secondary px-4 py-2 ms-2">
-                            RESET
-                        </button>
-                    </div>
-                    <p class="mt-4 text-white-50 small">
-                        <i class="fas fa-info-circle"></i>
-                        Timer data is currently local. Completion adds to your daily log.
-                    </p>
+    /* Volume Slider Polish */
+    .form-range::-webkit-slider-thumb {
+        background: #0dcaf0;
+        box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);
+    }
+
+    /* =========================================
+       ZEN MODE OVERRIDES
+       ========================================= */
+    body.zen-mode .navbar { display: none !important; }
+    body.zen-mode .ambient-panel { display: none !important; }
+    body.zen-mode .zen-hide { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
+    
+    body.zen-mode .focus-wrapper {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        background: #05070a;
+    }
+    
+    body.zen-mode .focus-card {
+        border: none;
+        box-shadow: none;
+        background: transparent !important;
+        transform: scale(1.1);
+    }
+</style>
+
+<div class="container mt-4 focus-wrapper">
+    <div class="row justify-content-center w-100">
+        
+        <div class="col-lg-7">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4 zen-hide">
+                <h4 class="text-white fw-bold mb-0"><i class="bi bi-bullseye text-info me-2"></i>Focus Hub</h4>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleZenMode()" title="Hide all distractions">
+                    <i class="bi bi-arrows-fullscreen me-1"></i> Zen Mode
+                </button>
+            </div>
+
+            <div class="card focus-card p-4 p-md-5 text-center">
+                
+                <div class="d-flex justify-content-center gap-2 gap-md-3 mb-5 filter-scroll-container pb-0" style="mask-image: none; -webkit-mask-image: none;">
+                    <button class="filter-pill active" id="btn-pomodoro" onclick="setMode('pomodoro', 25)">Deep Work (25m)</button>
+                    <button class="filter-pill" id="btn-short" onclick="setMode('short', 5)">Short Break (5m)</button>
+                    <button class="filter-pill" id="btn-long" onclick="setMode('long', 15)">Long Break (15m)</button>
                 </div>
+
+                <div class="timer-container mb-5">
+                    <svg class="timer-svg" viewBox="0 0 100 100">
+                        <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
+                        <circle class="timer-progress" cx="50" cy="50" r="45" id="timer-ring"></circle>
+                    </svg>
+                    <div class="position-absolute top-50 start-50 translate-middle w-100">
+                        <h1 id="time-display" class="mb-0 text-white">25:00</h1>
+                        <p id="mode-label" class="text-info text-uppercase fw-semibold mb-0 mt-2" style="letter-spacing: 2px; font-size: 0.8rem;">Focus Protocol</p>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center align-items-center gap-4">
+                    <button class="btn btn-lg btn-info text-dark fw-bold px-5 shadow-sm" id="start-btn" onclick="toggleTimer()" style="border-radius: 50px; font-size: 1.2rem; width: 180px;">
+                        START
+                    </button>
+                    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" onclick="resetTimer()" style="width: 52px; height: 52px; transition: 0.3s;" onmouseover="this.style.transform='rotate(-180deg)'" onmouseout="this.style.transform='rotate(0deg)'">
+                        <i class="bi bi-arrow-counterclockwise fs-4"></i>
+                    </button>
+                </div>
+
+                <div class="mt-5 pt-4 border-top zen-hide" style="border-color: rgba(255,255,255,0.05) !important;">
+                    <p class="text-white-50 small text-uppercase fw-semibold mb-3" style="letter-spacing: 1px;">Daily Sessions Completed</p>
+                    <div class="d-flex justify-content-center gap-3" id="session-dots">
+                        <i class="bi bi-circle text-muted fs-5"></i>
+                        <i class="bi bi-circle text-muted fs-5"></i>
+                        <i class="bi bi-circle text-muted fs-5"></i>
+                        <i class="bi bi-circle text-muted fs-5"></i>
+                    </div>
+                </div>
+                
+                <button class="btn btn-outline-light btn-sm position-absolute top-0 end-0 m-4 d-none" id="exit-zen-btn" onclick="toggleZenMode()">
+                    <i class="bi bi-fullscreen-exit me-1"></i> Exit Zen
+                </button>
             </div>
         </div>
-
-        <div class="col-md-4">
-
-            <div class="card bg-dark border-secondary mb-3">
-                <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">Consistency Streak</h6>
-                    <div class="d-flex align-items-center mt-2">
-                        <h2 class="text-white mb-0 me-3">{{ user.current_streak }} Days</h2>
-                        <span class="badge bg-success">ACTIVE</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card bg-dark border-secondary">
-                <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">Daily Target (4 Hrs)</h6>
-
-                    <div class="progress mt-3" style="height: 20px; background-color: #2c3035;">
-                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated"
-                             role="progressbar"
-                             style="width: {{ progress }}%;">
+        
+        <div class="col-lg-4 mt-4 mt-lg-0 ambient-panel">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h6 class="text-white fw-bold mb-0 opacity-0">Spacer</h6> </div>
+            
+            <div class="card bg-dark text-white shadow-lg p-4 h-100" style="border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;">
+                <h6 class="fw-bold mb-4 text-white-50 text-uppercase" style="letter-spacing: 1px;">
+                    <i class="bi bi-headphones text-info me-2"></i>Ambient Audio
+                </h6>
+                
+                <div class="d-flex flex-column gap-3">
+                    
+                    <div class="sound-btn d-flex align-items-center justify-content-between p-3" onclick="toggleSound('rain', this, 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_6b52a550fa.mp3')">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-info bg-opacity-10 p-2 rounded me-3 text-info"><i class="bi bi-cloud-rain fs-4"></i></div>
+                            <div class="text-start">
+                                <h6 class="mb-0 fw-bold text-white">Heavy Rain</h6>
+                                <small class="text-white-50">Deep focus & masking</small>
+                            </div>
                         </div>
+                        <i class="bi bi-play-circle-fill fs-3 play-icon text-white-50"></i>
                     </div>
 
-                    <div class="d-flex justify-content-between mt-2 text-white-50 small">
-                        <span>{{ user.total_focus_time }} mins</span>
-                        <span>{{ target }} mins</span>
+                    <div class="sound-btn d-flex align-items-center justify-content-between p-3" onclick="toggleSound('cafe', this, 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3')">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning bg-opacity-10 p-2 rounded me-3 text-warning"><i class="bi bi-cup-hot fs-4"></i></div>
+                            <div class="text-start">
+                                <h6 class="mb-0 fw-bold text-white">Coffee Shop</h6>
+                                <small class="text-white-50">Creative ambient buzz</small>
+                            </div>
+                        </div>
+                        <i class="bi bi-play-circle-fill fs-3 play-icon text-white-50"></i>
                     </div>
+                    
+                    <div class="sound-btn d-flex align-items-center justify-content-between p-3" onclick="toggleSound('waves', this, 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_7565705b63.mp3')">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary"><i class="bi bi-water fs-4"></i></div>
+                            <div class="text-start">
+                                <h6 class="mb-0 fw-bold text-white">Ocean Waves</h6>
+                                <small class="text-white-50">Calming rhythm</small>
+                            </div>
+                        </div>
+                        <i class="bi bi-play-circle-fill fs-3 play-icon text-white-50"></i>
+                    </div>
+
+                </div>
+
+                <div class="mt-auto pt-4 border-top mt-4" style="border-color: rgba(255,255,255,0.05) !important;">
+                    <div class="d-flex justify-content-between text-white-50 small mb-2 fw-semibold">
+                        <span>Master Volume</span>
+                        <i class="bi bi-volume-up"></i>
+                    </div>
+                    <input type="range" class="form-range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolume()">
                 </div>
             </div>
-
         </div>
+
     </div>
 </div>
 
+<audio id="ambient-player" loop></audio>
+<audio id="ding-player" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3"></audio>
+
 <script>
-    let time = 25 * 60;
-    let interval;
-    const timerEl = document.getElementById('timer');
+    // --- TIMER ENGINE ---
+    let timerInterval;
+    let isRunning = false;
+    let totalSeconds = 25 * 60; 
+    let remainingSeconds = totalSeconds;
+    let completedSessions = 0;
+    
+    const display = document.getElementById('time-display');
+    const ring = document.getElementById('timer-ring');
+    const startBtn = document.getElementById('start-btn');
+    const modeLabel = document.getElementById('mode-label');
+    const ringCircumference = 283; // 2 * pi * 45
 
     function updateDisplay() {
-        const m = Math.floor(time / 60);
-        const s = time % 60;
-        timerEl.innerHTML = `${m}:${s < 10 ? '0' : ''}${s}`;
+        let mins = Math.floor(remainingSeconds / 60);
+        let secs = remainingSeconds % 60;
+        display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        
+        // Update SVG Ring
+        let fraction = remainingSeconds / totalSeconds;
+        let offset = ringCircumference - (fraction * ringCircumference);
+        ring.style.strokeDashoffset = offset;
     }
 
-    function startTimer() {
-        if (interval) return;
-
-        // Disable button while running
-        document.querySelector('button[onclick="startTimer()"]').disabled = true;
-
-        interval = setInterval(() => {
-            time--;
-            updateDisplay();
-
-            if (time <= 0) {
-                clearInterval(interval);
-                saveSession(); // <--- THIS IS NEW
-            }
-        }, 1000);
-        // Note: Change 1000 to 10 for testing (fast forward)
+    function toggleTimer() {
+        if (isRunning) {
+            clearInterval(timerInterval);
+            startBtn.innerText = "RESUME";
+            startBtn.classList.replace('btn-danger', 'btn-info');
+            startBtn.classList.remove('text-white');
+            startBtn.classList.add('text-dark');
+        } else {
+            startBtn.innerText = "PAUSE";
+            startBtn.classList.replace('btn-info', 'btn-danger');
+            startBtn.classList.remove('text-dark');
+            startBtn.classList.add('text-white');
+            
+            timerInterval = setInterval(() => {
+                remainingSeconds--;
+                updateDisplay();
+                
+                if (remainingSeconds <= 0) {
+                    timerComplete();
+                }
+            }, 1000);
+        }
+        isRunning = !isRunning;
     }
 
-    function saveSession() {
-        fetch("{{ url_for('save_focus_session') }}", {
-            method: "POST",
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ minutes: 25 })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(`SESSION COMPLETE! \n+${25*2} XP \n+${Math.floor(25/10)} Gold`);
-                location.reload(); // Refresh to show new stats
-            }
-        });
+    function timerComplete() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        
+        // Play Ding
+        document.getElementById('ding-player').play();
+        
+        // Reset Button
+        startBtn.innerText = "START";
+        startBtn.classList.replace('btn-danger', 'btn-info');
+        startBtn.classList.remove('text-white');
+        startBtn.classList.add('text-dark');
+        
+        // If Pomodoro finished, log a dot!
+        if (totalSeconds === 25 * 60) {
+            logSession();
+            setMode('short', 5); // Auto switch to short break
+        } else {
+            setMode('pomodoro', 25); // Auto switch back to work
+        }
+        
+        // Browser Notification
+        if (Notification.permission === "granted") {
+            new Notification("Timer Complete!", { body: "Time to switch gears.", icon: "/static/logo.png" });
+        }
     }
 
     function resetTimer() {
-        clearInterval(interval);
-        interval = null;
-        time = 25 * 60;
+        clearInterval(timerInterval);
+        isRunning = false;
+        remainingSeconds = totalSeconds;
+        startBtn.innerText = "START";
+        startBtn.classList.replace('btn-danger', 'btn-info');
+        startBtn.classList.remove('text-white');
+        startBtn.classList.add('text-dark');
         updateDisplay();
-        document.querySelector('button[onclick="startTimer()"]').disabled = false;
     }
+
+    function setMode(modeId, minutes) {
+        // Update Buttons
+        document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${modeId}`).classList.add('active');
+        
+        // Update Colors & Labels
+        if (modeId === 'pomodoro') {
+            ring.style.stroke = '#0dcaf0';
+            modeLabel.innerText = "Focus Protocol";
+            modeLabel.className = "text-info text-uppercase fw-semibold mb-0 mt-2";
+        } else if (modeId === 'short') {
+            ring.style.stroke = '#0aff68';
+            modeLabel.innerText = "Short Recovery";
+            modeLabel.className = "text-success text-uppercase fw-semibold mb-0 mt-2";
+        } else {
+            ring.style.stroke = '#bc13fe';
+            modeLabel.innerText = "Deep Recharge";
+            modeLabel.className = "text-primary text-uppercase fw-semibold mb-0 mt-2";
+        }
+        
+        totalSeconds = minutes * 60;
+        resetTimer();
+    }
+
+    function logSession() {
+        completedSessions++;
+        const dotsContainer = document.getElementById('session-dots');
+        dotsContainer.innerHTML = '';
+        
+        // Draw 4 dots (fill them in based on completion)
+        for(let i=1; i<=4; i++) {
+            if (i <= (completedSessions % 4 || 4)) {
+                dotsContainer.innerHTML += '<i class="bi bi-circle-fill text-info fs-5" style="text-shadow: 0 0 10px rgba(13,202,240,0.5);"></i>';
+            } else {
+                dotsContainer.innerHTML += '<i class="bi bi-circle text-muted fs-5"></i>';
+            }
+        }
+    }
+
+    // --- AMBIENT AUDIO ENGINE ---
+    const audioPlayer = document.getElementById('ambient-player');
+    const volumeSlider = document.getElementById('volume-slider');
+    let currentSoundBtn = null;
+
+    function toggleSound(soundName, btnElement, url) {
+        // If clicking the same button that is already playing, pause it
+        if (currentSoundBtn === btnElement && !audioPlayer.paused) {
+            audioPlayer.pause();
+            btnElement.classList.remove('playing');
+            return;
+        }
+        
+        // Reset all buttons
+        document.querySelectorAll('.sound-btn').forEach(btn => btn.classList.remove('playing'));
+        
+        // Play the new sound
+        audioPlayer.src = url;
+        audioPlayer.volume = volumeSlider.value / 100;
+        audioPlayer.play();
+        
+        // Highlight active button
+        btnElement.classList.add('playing');
+        currentSoundBtn = btnElement;
+    }
+
+    function updateVolume() {
+        audioPlayer.volume = volumeSlider.value / 100;
+    }
+
+    // --- ZEN MODE ---
+    function toggleZenMode() {
+        document.body.classList.toggle('zen-mode');
+        
+        const exitBtn = document.getElementById('exit-zen-btn');
+        if (document.body.classList.contains('zen-mode')) {
+            exitBtn.classList.remove('d-none');
+            // Request full screen if browser allows
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        } else {
+            exitBtn.classList.add('d-none');
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    }
+
+    // Initialize
+    document.addEventListener("DOMContentLoaded", () => {
+        updateDisplay();
+        // Ask for notification permission early
+        if (Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    });
 </script>
 {% endblock %}

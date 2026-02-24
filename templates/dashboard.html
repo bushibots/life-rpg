@@ -149,17 +149,19 @@
             <a href="{{ url_for('import_tasks') }}" class="btn btn-sm btn-outline-info" style="border-radius: 6px;" data-intro="Paste meeting notes or thoughts here, and the AI will instantly organize them into tasks." data-step="2">
                 <i class="bi bi-lightning-charge me-1"></i> Auto-Plan
             </a>
-           <button onclick="triggerGenie(event)" class="genie-css-btn flex-shrink-0 mx-1" data-intro="Use the AI Genie to automatically break down massive life goals into step-by-step daily plans." data-step="3">
-             <i class="bi bi-magic"></i> AI Genie
-           </button>
-            <button class="btn btn-sm btn-info text-dark fw-bold" style="border-radius: 6px;" data-bs-toggle="modal" data-bs-target="#addGoalModal" data-intro="Create a new Project or Category to group your tasks." data-step="3">
+            
+            <a href="#" onclick="triggerGenie(event)" class="genie-css-btn flex-shrink-0 mx-1 text-decoration-none" data-intro="Use the AI Genie to automatically break down massive life goals into step-by-step daily plans." data-step="3">
+                <i class="bi bi-magic me-1"></i> AI Genie
+            </a>
+
+            <button class="btn btn-sm btn-info text-dark fw-bold" style="border-radius: 6px;" data-bs-toggle="modal" data-bs-target="#addGoalModal" data-intro="Create a new Project or Category to group your tasks." data-step="4">
                 <i class="bi bi-plus me-1"></i> New Project
             </button>
         </div>
     </div>
 </div>
 
-<div class="filter-scroll-container mb-3" data-intro="Quickly filter your view to focus only on what matters right now." data-step="4">
+<div class="filter-scroll-container mb-3" data-intro="Quickly filter your view to focus only on what matters right now." data-step="5">
     <button class="filter-pill active" onclick="applyFilter('all', this)">All Tasks</button>
     <button class="filter-pill" onclick="applyFilter('today', this)">Due Today</button>
     <button class="filter-pill" onclick="applyFilter('recurring', this)">Habits</button>
@@ -178,7 +180,7 @@
     </select>
 </div>
 
-<div id="missionControl" class="accordion" data-intro="Manage your tasks here. Check them off to mark as complete and build your daily progress." data-step="5">
+<div id="missionControl" class="accordion" data-intro="Manage your tasks here. Check them off to mark as complete and build your daily progress." data-step="6">
 {% for goal in goals %}
 <div class="mb-4 goal-card" data-category="{{ goal.name|lower }}">
     <div class="card-header border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.02);">
@@ -188,7 +190,7 @@
             <span class="badge bg-secondary bg-opacity-25 text-muted ms-3 rounded-pill fw-normal">{{ goal.habits|length }} items</span>
         </button>
         <div class="d-flex gap-3 align-items-center opacity-75">
-            <button class="btn btn-link text-muted p-0 hover-info" onclick="populateGoalEditModal('{{ goal.id }}', '{{ goal.name|replace("'", "\\'") }}')" data-bs-toggle="modal" data-bs-target="#editGoalModal"><i class="bi bi-pencil"></i></button>
+            <button type="button" class="btn btn-link text-muted p-0 hover-info" onclick="openGoalEditModal('{{ goal.id }}', '{{ goal.name|replace("'", "\\'") }}')"><i class="bi bi-pencil"></i></button>
             <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="text-muted hover-danger text-decoration-none" onclick="return confirm('Delete this project and all its tasks?')"><i class="bi bi-trash3"></i></a>
         </div>
     </div>
@@ -255,13 +257,13 @@
                     </div>
                 </div>
                 <div class="d-flex gap-3 ms-3 align-self-start pt-1 opacity-50">
-                    <button class="btn btn-link text-muted p-0 hover-info" onclick="populateEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')" data-bs-toggle="modal" data-bs-target="#editHabitModal"><i class="bi bi-three-dots"></i></button>
+                    <button type="button" class="btn btn-link text-muted p-0 hover-info" onclick="openEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')"><i class="bi bi-three-dots"></i></button>
                 </div>
             </div>
             {% endif %}
             {% endfor %}
             <div class="py-2 px-4" style="background: rgba(255, 255, 255, 0.01);">
-                <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0 hover-info fw-semibold" data-bs-toggle="modal" data-bs-target="#addHabitModal" onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'"><i class="bi bi-plus fs-5 align-middle"></i> Add Task</button>
+                <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none ps-0 hover-info fw-semibold" onclick="openAddHabitModal('{{ goal.id }}')"><i class="bi bi-plus fs-5 align-middle"></i> Add Task</button>
             </div>
         </div>
     </div>
@@ -536,23 +538,44 @@ function unlockAndRedirect() {
         } catch (error) { console.error('Sync failed', error); }
     }
     
-    // --- 5. MODAL HELPERS ---
-    function populateEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
+    // --- 5. BULLETPROOF JAVASCRIPT MODAL HELPERS ---
+    
+    function openEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
         document.getElementById('edit_habit_id').value = id;
         document.getElementById('edit_habit_name').value = name;
         document.getElementById('edit_habit_difficulty').value = difficulty;
         document.getElementById('edit_habit_category').value = catName;
         document.getElementById('edit_habit_description').value = desc;
+        
         const dateInput = document.getElementById('edit_habit_date');
         if (dateStr && dateStr !== 'None') dateInput.value = dateStr; else dateInput.value = '';
+        
         document.getElementById('edit_habit_daily').checked = (isDaily === 'True' || isDaily === 'true');
         document.getElementById('delete_habit_btn').href = "/delete_habit/" + id;
         
-        
+        // Use pure JS to launch modal safely
+        const modalEl = document.getElementById('editHabitModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
     }
-    function populateGoalEditModal(id, name) {
+    
+    function openGoalEditModal(id, name) {
         document.getElementById('edit_goal_id').value = id;
         document.getElementById('edit_goal_name').value = name;
+        
+        // Use pure JS to launch modal safely
+        const modalEl = document.getElementById('editGoalModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
+    function openAddHabitModal(goalId) {
+        document.getElementById('goal_id_input').value = goalId;
+        
+        // Use pure JS to launch modal safely
+        const modalEl = document.getElementById('addHabitModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
     }
 </script>
 
