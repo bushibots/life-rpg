@@ -229,7 +229,15 @@ def get_ai_feedback(stats_text):
 
 def generate_genie_questions(wish):
     try:
+        # 1. Setup API Key and PythonAnywhere Proxy
+        api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+        if 'PYTHONANYWHERE_DOMAIN' in os.environ:
+            os.environ["http_proxy"] = "http://proxy.server:3128"
+            os.environ["https_proxy"] = "http://proxy.server:3128"
+
+        genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
+
         prompt = f"""
         The user wants to achieve this major life goal: "{wish}".
         You are a wise, analytical Genie. To create a perfect, personalized Master Quest for them,
@@ -245,7 +253,7 @@ def generate_genie_questions(wish):
         # Clean up response and parse JSON
         clean_text = response.text.replace('```json', '').replace('```', '').strip()
         questions = json.loads(clean_text)
-        return questions[:3] # Ensure we only get 3
+        return questions[:3]
 
     except Exception as e:
         print(f"Genie Question Generation Error: {e}")
@@ -258,7 +266,15 @@ def generate_genie_questions(wish):
 
 def generate_genie_blueprint(wish, q1, a1, q2, a2, q3, a3):
     try:
+        # 1. Setup API Key and PythonAnywhere Proxy
+        api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+        if 'PYTHONANYWHERE_DOMAIN' in os.environ:
+            os.environ["http_proxy"] = "http://proxy.server:3128"
+            os.environ["https_proxy"] = "http://proxy.server:3128"
+
+        genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
+
         prompt = f"""
         You are a master life coach AI. The user wants to achieve this major life goal: "{wish}".
         You asked them these questions and received these answers:
@@ -272,7 +288,7 @@ def generate_genie_blueprint(wish, q1, a1, q2, a2, q3, a3):
             "goal_name": "A short, inspiring name for this Master Quest",
             "habit": {{
                 "name": "One highly specific daily habit to build momentum",
-                "time_of_day": "Morning", "Afternoon", or "Evening"
+                "time_of_day": "Morning"
             }},
             "tasks": [
                 {{

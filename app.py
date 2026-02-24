@@ -1140,6 +1140,7 @@ def genie():
 
 # --- VIP GENIE: QUEST GENERATOR ---
 # --- VIP GENIE: QUEST GENERATOR ---
+# --- VIP GENIE: QUEST GENERATOR ---
 @app.route('/genie_generate_quest', methods=['POST'])
 @login_required
 def genie_generate_quest():
@@ -1169,23 +1170,27 @@ def genie_generate_quest():
     db.session.commit() # Commit here so we get the Goal ID for the habit!
 
     # 4. Create the Daily Habit tied to the Goal
-    new_habit = Habit(
-        name=f"🧞‍♂️ {blueprint['habit']['name']}",
-        time_of_day=blueprint['habit']['time_of_day'],
-        user_id=current_user.id,
-        goal_id=new_goal.id
+    time_label = blueprint['habit'].get('time_of_day', 'Anytime')
+    new_daily = Habit(
+        name=f"🧞‍♂️ DAILY: {blueprint['habit']['name']} [{time_label}]",
+        goal_id=new_goal.id,
+        is_daily=True,
+        difficulty="Medium",
+        description="Daily momentum builder for your Master Quest."
     )
-    db.session.add(new_habit)
+    db.session.add(new_daily)
 
-    # 5. Create the 3 Milestone Tasks
+    # 5. Create the 3 Milestones AS HABITS (So they appear on the dashboard with notes!)
     for t in blueprint['tasks']:
-        new_task = Task(
-            title=f"🧞‍♂️ {t['title']}",
-            description=t['description'],
-            user_id=current_user.id,
-            is_genie_task=True
+        new_milestone = Habit(
+            name=f"🧞‍♂️ MILESTONE: {t['title']}",
+            description=t['description'], # The detailed AI instructions are now here!
+            goal_id=new_goal.id,
+            is_daily=False, # One-time epic tasks
+            difficulty="Epic",
+            xp_value=100
         )
-        db.session.add(new_task)
+        db.session.add(new_milestone)
 
     # 6. Deduct the wish from the user's wallet
     if not current_user.is_pro:
@@ -1195,8 +1200,17 @@ def genie_generate_quest():
 
     db.session.commit()
 
-    flash(f"The Genie has forged your Master Quest! Check your Active Protocols and Habits.", "success")
+    flash(f"The Genie has forged your Master Quest! Check your Active Protocols.", "success")
     return redirect(url_for('dashboard'))
+
+# --- VIRAL GROWTH: INSTAGRAM UNLOCK ---
+@app.route('/unlock_beta', methods=['POST'])
+@login_required
+def unlock_beta():
+    # Instantly upgrade the user to PRO
+    current_user.is_pro = True
+    db.session.commit()
+    return {"status": "success", "message": "Unlocked!"}, 200
 
 if __name__ == '__main__':
     with app.app_context():

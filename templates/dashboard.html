@@ -76,6 +76,15 @@
 </div>
 {% endif %}
 
+{% if not current_user.is_pro %}
+<div class="alert bg-dark border-info text-center mt-3 shadow-sm" style="border-width: 2px;">
+    <span class="text-white me-2">🚀 Want unlimited AI Genie wishes?</span>
+    <button class="btn btn-sm btn-info fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#instagramModal">
+        Unlock For Free
+    </button>
+</div>
+{% endif %}
+
 <div class="mb-4">
     <h4 class="text-white mb-3 text-center" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">ACTIVE PROTOCOLS</h4>
 
@@ -334,6 +343,45 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="instagramModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-info" style="box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-white" style="font-family: 'Orbitron', sans-serif;">
+                    <i class="bi bi-instagram text-info"></i> Unlock VIP AI
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <p class="text-white-50 mb-4">Support the solo dev! Follow us on Instagram to instantly and permanently unlock the VIP Genie and AI Brain Dump.</p>
+
+                <button onclick="unlockAndRedirect()" class="btn btn-lg w-100 fw-bold" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; border: none;">
+                    <i class="bi bi-instagram me-2"></i> Follow @cosmotracker
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function unlockAndRedirect() {
+    // 1. Replace this with your actual Instagram handle!
+    const igHandle = "cosmotracker";
+
+    // 2. Silently upgrade the user in the background via our new Python route
+    fetch("{{ url_for('unlock_beta') }}", { method: 'POST' })
+    .then(response => {
+        // 3. Try to force-open the actual Instagram App (Deep Link)
+        window.location.href = `instagram://user?username=${igHandle}`;
+
+        // 4. Fallback: If the app doesn't open (e.g. they are on Desktop),
+        // open the web browser version after 1.5 seconds.
+        setTimeout(function() {
+            window.location.href = `https://www.instagram.com/${igHandle}`;
+        }, 1500);
+    });
+}
+</script>
 
 <script>
     // --- 1. FILTER BAR LOGIC ---
