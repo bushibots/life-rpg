@@ -1,163 +1,279 @@
-/* IMPORTS */
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;500;700&family=Inter:wght@300;400;600&display=swap');
+/* =========================================
+   1. IMPORTS & GLOBAL VARIABLES
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;500;700&family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
+    /* Core Palette */
     --bg-deep: #05070a;
     --bg-nebula: #0f172a;
-    --glass-bg: rgba(20, 30, 50, 0.6);
-    --glass-border: rgba(100, 200, 255, 0.1);
+    --glass-bg: rgba(20, 30, 50, 0.4); /* Slightly sheerer for premium feel */
+    --glass-border: rgba(255, 255, 255, 0.08); /* White sheer border looks cleaner than blue */
+    
+    /* Neon Accents (Used sparingly for impact) */
     --neon-blue: #00f2ff;
     --neon-purple: #bc13fe;
     --neon-green: #0aff68;
     --neon-gold: #ffd700;
-    --text-main: #e2e8f0;
+    
+    /* Text */
+    --text-main: #f8fafc;
     --text-muted: #94a3b8;
+    
+    /* Premium Shadows & Transitions */
+    --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 20px rgba(0, 242, 255, 0.15);
+    --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+/* =========================================
+   2. BASE SETUP & TYPOGRAPHY
+   ========================================= */
 body {
     background-color: var(--bg-deep);
-    background-image:
-        radial-gradient(circle at 15% 50%, rgba(188, 19, 254, 0.1), transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(0, 242, 255, 0.08), transparent 25%);
+    /* Softer, more professional gradient backdrop */
+    background-image: 
+        radial-gradient(circle at 15% 0%, rgba(188, 19, 254, 0.05), transparent 35%),
+        radial-gradient(circle at 85% 100%, rgba(0, 242, 255, 0.05), transparent 35%);
+    background-attachment: fixed;
     color: var(--text-main);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
+    
+    /* Flagship App Font Rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    
+    /* Global Initial Load Animation */
+    animation: fadeUpIn 0.6s ease-out forwards;
+}
+
+::selection {
+    background: rgba(0, 242, 255, 0.3);
+    color: #fff;
 }
 
 h1, h2, h3, h4, h5, h6, .navbar-brand, .quest-font {
     font-family: 'Exo 2', sans-serif;
     letter-spacing: 0.5px;
-    text-transform: uppercase;
+    font-weight: 600;
 }
 
-/* GLASSMORPHISM CARDS */
+a { 
+    text-decoration: none; 
+    transition: var(--transition-smooth);
+}
+
+/* =========================================
+   3. CUSTOM SCROLLBARS (Flagship Polish)
+   ========================================= */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-deep);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* =========================================
+   4. PREMIUM GLASSMORPHISM CARDS
+   ========================================= */
 .card, .modal-content {
     background: var(--glass-bg) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.15); /* 3D Bevel effect */
+    border-radius: 16px; /* Modern rounded corners */
+    box-shadow: var(--shadow-premium);
     color: white;
+    transition: var(--transition-smooth);
+}
+
+.card:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), var(--shadow-glow);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .list-group-item {
     background: transparent !important;
-    border-color: var(--glass-border);
+    border-color: rgba(255, 255, 255, 0.05);
     color: var(--text-main);
-    transition: all 0.2s ease;
+    transition: var(--transition-smooth);
 }
 
 .list-group-item:hover {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    transform: translateX(4px); /* Satisfying sliding indent */
 }
 
-/* NEON BUTTONS */
+/* =========================================
+   5. BUTTONS & CONTROLS
+   ========================================= */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+}
+
+.btn:active {
+    transform: scale(0.97); /* Physical press effect */
+}
+
 .btn-primary {
-    background: transparent;
-    border: 1px solid var(--neon-blue);
+    background: rgba(0, 242, 255, 0.1);
+    border: 1px solid rgba(0, 242, 255, 0.3);
     color: var(--neon-blue);
-    box-shadow: 0 0 5px rgba(0, 242, 255, 0.2);
-    transition: 0.3s;
 }
 
 .btn-primary:hover {
-    background: var(--neon-blue);
-    color: #000;
-    box-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
+    background: rgba(0, 242, 255, 0.2);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
     border-color: var(--neon-blue);
+    transform: translateY(-2px); /* Lift effect */
 }
 
 .btn-success {
-    background: transparent;
-    border: 1px solid var(--neon-green);
+    background: rgba(10, 255, 104, 0.1);
+    border: 1px solid rgba(10, 255, 104, 0.3);
     color: var(--neon-green);
 }
 
 .btn-success:hover {
-    background: var(--neon-green);
-    color: #000;
-    box-shadow: 0 0 15px rgba(10, 255, 104, 0.5);
+    background: rgba(10, 255, 104, 0.2);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(10, 255, 104, 0.4);
+    transform: translateY(-2px);
 }
 
-/* CUSTOM PROGRESS BARS */
+/* =========================================
+   6. UI COMPONENTS
+   ========================================= */
+/* Progress Bars */
 .progress {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
     border-radius: 50px;
     overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
 }
 
 .progress-bar {
-    box-shadow: 0 0 10px currentColor;
+    box-shadow: 0 0 15px currentColor;
+    border-radius: 50px;
 }
 
-/* NAVBAR */
+/* Navbar */
 .navbar {
-    background: rgba(5, 7, 10, 0.8) !important;
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--glass-border);
+    background: rgba(5, 7, 10, 0.7) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .navbar-brand {
     font-weight: 700;
-    background: -webkit-linear-gradient(0deg, var(--neon-blue), var(--neon-purple));
+    background: linear-gradient(90deg, #fff, var(--neon-blue));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    transition: opacity 0.3s;
 }
+.navbar-brand:hover { opacity: 0.8; }
 
-/* FORM ELEMENTS */
+/* Forms */
 .form-control, .form-select {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white !important;
+    border-radius: 8px;
+    transition: var(--transition-smooth);
 }
 
-.form-control:focus {
-    background: rgba(0, 0, 0, 0.5);
+.form-control:focus, .form-select:focus {
+    background: rgba(0, 0, 0, 0.4);
     border-color: var(--neon-blue);
-    box-shadow: 0 0 5px rgba(0, 242, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(0, 242, 255, 0.15);
+    outline: none;
 }
 
-/* UTILITIES */
+/* Utilities */
 .text-muted { color: var(--text-muted) !important; }
-.badge { text-shadow: none; font-weight: 600; }
-a { text-decoration: none; }
+.badge { text-shadow: none; font-weight: 600; padding: 0.4em 0.8em; }
 
-/* --- MOBILE OPTIMIZATION --- */
+/* =========================================
+   7. FILTER BAR (Horizontal Shifter)
+   ========================================= */
+.filter-scroll-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 1rem;
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+}
+.filter-scroll-container::-webkit-scrollbar { display: none; }
 
-/* Fix background on mobile to prevent jitter */
-body {
-    background-attachment: fixed;
+.filter-pill {
+    display: inline-block;
+    padding: 6px 18px;
+    margin-right: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-smooth);
 }
 
-/* Scrollable Heatmap for small screens */
-#cal-heatmap {
-    display: flex;
-    flex-wrap: wrap; /* Default for desktop */
+.filter-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
 }
 
+.filter-pill.active {
+    background: rgba(0, 242, 255, 0.15);
+    color: var(--neon-blue);
+    border-color: rgba(0, 242, 255, 0.3);
+    font-weight: 600;
+}
+
+/* =========================================
+   8. MOBILE OPTIMIZATION
+   ========================================= */
 @media (max-width: 768px) {
-    /* 1. Shrink Giant Text */
-    h1.display-4, .display-4 {
-        font-size: 2.5rem !important;
-    }
+    /* Typographic scaling */
+    h1.display-4, .display-4 { font-size: 2.5rem !important; }
+    h1.display-3, .display-3 { font-size: 2rem !important; }
 
-    h1.display-3, .display-3 {
-        font-size: 2rem !important;
-    }
+    /* Compact Cards */
+    .card-body { padding: 1.25rem !important; }
+    .navbar-brand { font-size: 1.2rem; }
 
-    /* 2. Compact Cards */
-    .card-body {
-        padding: 1.25rem !important; /* Reduce padding from 3rem */
-    }
+    /* Form Inputs (Prevents iOS zoom) */
+    .form-control, .form-select { font-size: 16px; }
 
-    /* 3. Stack Navbar Items */
-    .navbar-brand {
-        font-size: 1.2rem;
-    }
+    /* Chart Overrides */
+    .card-body canvas, .chart-container { min-height: 250px !important; }
+    #radarChart { min-height: 300px !important; max-height: 400px !important; }
+    
+    /* Analytics Grid Fix */
+    .col-md-5, .col-md-7 { width: 100% !important; }
+    .stat-card { margin-bottom: 15px; }
 
-    /* 4. Heatmap: Horizontal Scroll on Mobile */
-    /* Instead of wrapping 365 squares, we scroll them */
+    /* Heatmap / Calendar Scroll */
     #cal-heatmap {
         flex-wrap: nowrap !important;
         overflow-x: auto;
@@ -165,159 +281,56 @@ body {
         justify-content: flex-start;
     }
 
-    /* 5. List Items */
-    .list-group-item {
-        flex-direction: column; /* Stack text and buttons */
+    /* List Items & Tasks */
+    .task-item.list-group-item {
+        flex-direction: row !important;
         align-items: flex-start !important;
-        gap: 10px;
+        gap: 10px !important;
     }
-
-    .list-group-item .btn {
-        width: 100%; /* Full width buttons on mobile */
-        margin-top: 5px;
-    }
-
-    /* 6. Form Inputs */
-    .form-control, .form-select {
-        font-size: 16px; /* Prevents iOS zooming on input focus */
-    }
-}
-
-/* Mobile Chart Fixes */
-@media (max-width: 768px) {
-    /* Force chart containers to be tall enough on mobile */
-    .card-body canvas {
-        min-height: 250px;
-    }
-
-    /* Specific tweak for Radar charts which need to be square-ish */
-    #radarChart {
-        min-height: 300px;
-    }
-
-    /* Analytics grid fix */
-    .col-md-5, .col-md-7 {
-        width: 100% !important; /* Force full width stacking */
-    }
-}
-
-/* --- ANALYTICS SPECIFIC OVERRIDES --- */
-
-/* Force charts to have height on mobile */
-.chart-container {
-    position: relative;
-    width: 100%;
-}
-
-@media (max-width: 768px) {
-    /* 1. Stack the Control Bar */
+    .task-item .btn-link { width: auto !important; margin-top: 0 !important; }
+    .task-item .d-flex.gap-2.ms-2 { flex-direction: column; gap: 5px !important; }
+    
+    /* Control Bars */
     .control-bar {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 15px !important;
     }
-
-    /* 2. Space out buttons */
     .control-actions {
         justify-content: space-between !important;
         width: 100% !important;
     }
-
-    /* 3. Taller Charts for Phone Screens */
-    .chart-container {
-        min-height: 300px !important;
-    }
-
-    /* 4. Spacing between stacked cards */
-    .stat-card {
-        margin-bottom: 15px;
-    }
-
-    /* 5. Fix Radar Chart Squishing */
-    #radarChart {
-        min-height: 300px !important;
-        max-height: 400px !important;
-    }
 }
 
-/* --- 1. FILTER BAR (Horizontal Shifter) --- */
-    .filter-scroll-container {
-        overflow-x: auto;
-        white-space: nowrap;
-        padding-bottom: 5px;
-        -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
-        scrollbar-width: none; /* Firefox */
-        margin-bottom: 1rem;
-    }
-    .filter-scroll-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-
-    .filter-pill {
-        display: inline-block;
-        padding: 6px 16px;
-        margin-right: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 50px;
-        color: #94a3b8;
-        font-family: 'Orbitron', sans-serif;
-        font-size: 0.75rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .filter-pill:hover {
-        background: rgba(0, 242, 255, 0.1);
-        color: #fff;
-        border-color: rgba(0, 242, 255, 0.1);
-    }
-
-    .filter-pill.active {
-        background: #0dcaf0;
-        color: #000;
-        border-color: #0dcaf0;
-        font-weight: bold;
-        box-shadow: 0 0 09px rgba(13, 202, 240, 0.1);
-    }
-
-    /* --- 2. MOBILE LAYOUT FIXES (Critical) --- */
-    @media (max-width: 768px) {
-        /* Force tasks to stay in a row (Checkbox - Text - Actions) */
-        .task-item.list-group-item {
-            flex-direction: row !important;
-            align-items: flex-start !important;
-            gap: 10px !important;
-        }
-
-        /* Prevent checkbox form becoming huge */
-        .task-item .btn-link {
-            width: auto !important;
-            margin-top: 0 !important;
-        }
-
-        /* Adjust action buttons spacing */
-        .task-item .d-flex.gap-2.ms-2 {
-            flex-direction: column;
-            gap: 5px !important;
-        }
-    }
-
-    /* Animation Classes */
-    .task-item.hidden-task { display: none !important; }
-    .goal-card.hidden-card { display: none !important; }
+/* JS Animation Classes */
+.task-item.hidden-task { display: none !important; }
+.goal-card.hidden-card { display: none !important; }
 
 /* =========================================
-   GENIE VIP FEATURE ANIMATIONS
+   9. GLOBAL KEYFRAMES & UTILITIES
    ========================================= */
+@keyframes fadeUpIn {
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Glowing text utility for high impact labels */
+.text-glow-info {
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
+}
+
 /* =========================================
-   GENIE MAGIC LAMP & SMOKE ANIMATIONS
+   10. GENIE VIP FEATURE ANIMATIONS
    ========================================= */
 
-/* The Dark Room */
+/* The Dark Room Overlay */
 #genie-overlay {
     position: fixed;
     top: 0; left: 0;
     width: 100vw; height: 100vh;
-    background-color: #050014; /* Dark night sky */
+    background-color: rgba(5, 0, 20, 0.95);
+    backdrop-filter: blur(10px);
     z-index: 9999;
     display: flex;
     justify-content: center;
@@ -331,7 +344,7 @@ body {
     z-index: 100;
     width: 150px;
     height: 150px;
-    filter: drop-shadow(0 0 20px rgba(255, 222, 89, 0.8));
+    filter: drop-shadow(0 0 25px rgba(255, 222, 89, 0.6));
     animation: lamp-shake 0.4s infinite alternate ease-in-out;
 }
 
@@ -341,7 +354,7 @@ body {
     transform-origin: bottom center;
 }
 
-/* Smoke Container - positioned right at the spout of the lamp */
+/* Smoke Cloud Engine */
 .smoke-container {
     position: absolute;
     top: 50%; left: 50%;
@@ -351,9 +364,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    pointer-events: none;
 }
 
-/* Base Smoke Cloud Styling */
 .smoke-cloud {
     position: absolute;
     width: 50px; height: 50px;
@@ -362,44 +375,19 @@ body {
     opacity: 0;
 }
 
-/* Deep Purple Smoke */
-.cloud-1 {
-    background: radial-gradient(circle, #4b0082, #2b0054);
-    animation: smoke-explosion 2.5s forwards ease-in;
-    animation-delay: 0.2s;
-}
+.cloud-1 { background: radial-gradient(circle, #4b0082, #2b0054); animation: smoke-explosion 2.5s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94); animation-delay: 0.2s; }
+.cloud-2 { background: radial-gradient(circle, #ff1493, #9400d3); animation: smoke-explosion 2.3s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94); animation-delay: 0.5s; }
+.cloud-3 { background: radial-gradient(circle, #050014, #4b0082); animation: smoke-explosion 2.0s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94); animation-delay: 0.8s; }
+.cloud-4 { background: radial-gradient(circle, rgba(255, 222, 89, 0.9), transparent); animation: smoke-explosion-fast 1.5s forwards ease-in; animation-delay: 1.2s; }
 
-/* Magenta/Pink Smoke */
-.cloud-2 {
-    background: radial-gradient(circle, #ff1493, #9400d3);
-    animation: smoke-explosion 2.3s forwards ease-in;
-    animation-delay: 0.5s;
-}
-
-/* Midnight Blue Smoke */
-.cloud-3 {
-    background: radial-gradient(circle, #050014, #4b0082);
-    animation: smoke-explosion 2.0s forwards ease-in;
-    animation-delay: 0.8s;
-}
-
-/* Final Gold Flash Smoke */
-.cloud-4 {
-    background: radial-gradient(circle, rgba(255, 222, 89, 0.9), transparent);
-    animation: smoke-explosion-fast 1.5s forwards ease-in;
-    animation-delay: 1.2s;
-}
-
-/* Animations */
 @keyframes lamp-shake {
-    0% { transform: rotate(-5deg) translateY(0); }
-    100% { transform: rotate(5deg) translateY(-5px); }
+    0% { transform: rotate(-3deg) translateY(0); }
+    100% { transform: rotate(3deg) translateY(-3px); }
 }
 
-/* Smoke scales up by 100x to swallow the entire viewport */
 @keyframes smoke-explosion {
     0% { opacity: 0; transform: scale(0.5) translateY(20px); }
-    20% { opacity: 0.9; transform: scale(5) translateY(-50px); }
+    20% { opacity: 0.8; transform: scale(5) translateY(-50px); }
     100% { opacity: 1; transform: scale(100) translateY(-150px); }
 }
 
@@ -410,101 +398,87 @@ body {
 }
 
 /* =========================================
-   PURE CSS GENIE BUTTON
-   ========================================= */
-/* =========================================
-   ULTIMATE VIP GENIE BUTTON (HEAVY & ADVANCED)
+   11. ULTIMATE VIP GENIE BUTTON
    ========================================= */
 .genie-css-btn {
     position: relative;
-    height: 36px; /* Slightly taller for a premium, heavy feel */
+    height: 34px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 24px;
+    padding: 0 20px;
     color: #ffde59 !important;
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: 800;
-    font-size: 0.95rem;
-    letter-spacing: 3px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     white-space: nowrap;
-    text-shadow: 0 0 8px rgba(255, 222, 89, 0.5);
+    text-shadow: 0 0 8px rgba(255, 222, 89, 0.3);
     border: none;
-    border-radius: 50px;
+    border-radius: 8px; /* Modernized to match app UI */
     background: transparent;
     z-index: 1;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    /* The magical outer glow cast on the dashboard */
-    box-shadow: 0 0 15px rgba(148, 0, 211, 0.6), 0 0 30px rgba(255, 222, 89, 0.2);
+    transition: var(--transition-smooth);
+    box-shadow: 0 4px 15px rgba(148, 0, 211, 0.3);
 }
 
-/* 1. The Flowing Magical Energy Border */
+/* Magical Energy Border */
 .genie-css-btn::before {
     content: '';
     position: absolute;
-    top: -2px; left: -2px; right: -2px; bottom: -2px;
-    border-radius: 50px;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    border-radius: 9px;
     background: linear-gradient(60deg, #ffde59, #ff9e00, #9400d3, #4b0082, #ffde59);
     background-size: 300% 300%;
     z-index: -2;
     animation: genie-energy-flow 4s linear infinite;
 }
 
-/* 2. The Deep Jewel Core (The physical button glass) */
+/* Deep Jewel Core */
 .genie-css-btn::after {
     content: '';
     position: absolute;
-    top: 2px; left: 2px; right: 2px; bottom: 2px;
-    border-radius: 50px;
-    background: linear-gradient(180deg, #1a0033 0%, #050014 100%);
+    top: 1px; left: 1px; right: 1px; bottom: 1px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(26, 0, 51, 0.9) 0%, rgba(5, 0, 20, 0.95) 100%);
+    backdrop-filter: blur(5px);
     z-index: -1;
-    box-shadow:
-        inset 0 0 15px rgba(255, 222, 89, 0.15), /* inner gold reflection */
-        inset 0 2px 4px rgba(255, 255, 255, 0.25); /* glass top highlight */
-    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    transition: var(--transition-smooth);
 }
 
-/* The Magic Wand Icon */
 .genie-css-btn i {
-    font-size: 1.1rem;
-    margin-right: 8px;
+    font-size: 1rem;
+    margin-right: 6px;
     color: #ff9e00;
-    text-shadow: 0 0 10px #ffde59, 0 0 20px #ff9e00;
+    text-shadow: 0 0 10px rgba(255, 222, 89, 0.5);
     animation: wand-pulse 2s infinite alternate ease-in-out;
 }
 
-/* --- HOVER STATE (Explosive Satisfaction) --- */
+/* Hover State */
 .genie-css-btn:hover {
-    transform: scale(1.08) translateY(-3px); /* Physically lifts up */
+    transform: translateY(-2px);
     color: #fff !important;
-    text-shadow: 0 0 15px #fff, 0 0 30px #ffde59;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 40px rgba(255, 158, 0, 0.6), 0 0 60px rgba(148, 0, 211, 0.4);
+    text-shadow: 0 0 10px #fff;
+    box-shadow: 0 8px 25px rgba(148, 0, 211, 0.5), 0 0 20px rgba(255, 158, 0, 0.3);
 }
 
 .genie-css-btn:hover::after {
-    background: linear-gradient(180deg, #3d0066 0%, #11001c 100%); /* Core brightens */
-    box-shadow: inset 0 0 25px rgba(255, 222, 89, 0.4), inset 0 2px 6px rgba(255, 255, 255, 0.4);
+    background: linear-gradient(180deg, rgba(61, 0, 102, 0.9) 0%, rgba(17, 0, 28, 0.95) 100%);
 }
 
 .genie-css-btn:hover::before {
-    animation: genie-energy-flow 1.5s linear infinite; /* Energy spins 3x faster! */
-    filter: blur(4px); /* Border erupts into a blazing aura */
+    animation: genie-energy-flow 1.5s linear infinite;
+    filter: blur(2px);
 }
 
-/* --- ACTIVE/CLICK STATE (Heavy Mechanical Press) --- */
+/* Active State */
 .genie-css-btn:active {
-    transform: scale(0.95) translateY(2px); /* Slams down */
-    box-shadow: 0 0 10px rgba(255, 158, 0, 0.8);
+    transform: translateY(1px) scale(0.98);
 }
 
-.genie-css-btn:active::after {
-    background: #050014;
-    box-shadow: inset 0 5px 15px rgba(0,0,0,0.9); /* Deep internal shadow for click impact */
-}
-
-/* --- ANIMATIONS --- */
 @keyframes genie-energy-flow {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -513,5 +487,5 @@ body {
 
 @keyframes wand-pulse {
     0% { transform: rotate(0deg) scale(1); }
-    100% { transform: rotate(20deg) scale(1.2); filter: brightness(1.5); }
+    100% { transform: rotate(15deg) scale(1.1); filter: brightness(1.3); }
 }

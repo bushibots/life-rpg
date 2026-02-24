@@ -4,53 +4,66 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
 <style>
     .introjs-tooltip {
-        background-color: rgba(5, 0, 20, 0.95) !important;
-        border: 1px solid #00f2ff !important;
-        box-shadow: 0 0 20px rgba(0, 242, 255, 0.4) !important;
-        color: #fff !important;
-        font-family: 'Orbitron', sans-serif;
-        border-radius: 8px !important;
+        background-color: #11141a !important;
+        border: 1px solid rgba(0, 242, 255, 0.3) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+        color: #f8f9fa !important;
+        border-radius: 12px !important;
+        font-family: system-ui, -apple-system, sans-serif;
     }
-    .introjs-arrow.top { border-bottom-color: #00f2ff !important; }
-    .introjs-arrow.bottom { border-top-color: #00f2ff !important; }
-    .introjs-arrow.left { border-right-color: #00f2ff !important; }
-    .introjs-arrow.right { border-left-color: #00f2ff !important; }
     .introjs-button {
         background-color: #0dcaf0 !important;
         color: #000 !important;
         text-shadow: none !important;
-        border-radius: 4px !important;
-        font-weight: bold;
-        border: 1px solid #00f2ff !important;
-        box-shadow: 0 0 10px rgba(0,242,255,0.4) !important;
+        border-radius: 6px !important;
+        font-weight: 600;
+        border: none !important;
+        padding: 8px 16px !important;
     }
-    .introjs-skipbutton { background-color: transparent !important; color: #dc3545 !important; border: 1px solid #dc3545 !important; }
-    .introjs-helperLayer { background-color: rgba(0, 242, 255, 0.05); border: 2px solid #00f2ff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); border-radius: 8px; }
+    .introjs-skipbutton { background-color: transparent !important; color: #a1a1aa !important; }
     
-    /* Tactical Task Items */
-    .task-item { transition: all 0.2s ease-in-out; background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, transparent 100%); }
-    .task-item:hover { background: rgba(0, 242, 255, 0.05); transform: translateX(4px); border-right: 1px solid rgba(0,242,255,0.3); }
-    .hover-danger:hover { color: #ff4444 !important; text-shadow: 0 0 8px #ff4444; }
+    /* Premium Task Items */
+    .task-item { 
+        transition: all 0.2s ease; 
+        background: rgba(255, 255, 255, 0.015); 
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+    .task-item:hover { 
+        background: rgba(255, 255, 255, 0.04); 
+    }
+    .goal-card {
+        background: #0d1117 !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .modern-input {
+        background: rgba(0,0,0,0.2) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #fff !important;
+        border-radius: 8px;
+    }
+    .modern-input:focus {
+        border-color: #0dcaf0 !important;
+        box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2) !important;
+    }
 </style>
 
 {% if not user.email %}
-<div class="alert alert-dark border-secondary fade show d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 shadow-lg" role="alert" style="border-left: 4px solid #ffc107; background: linear-gradient(90deg, #1a1a1a 0%, #0b0f14 100%);">
+<div class="alert alert-dark fade show d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 shadow-sm" role="alert" style="border: 1px solid rgba(255, 193, 7, 0.3); background: rgba(26, 26, 26, 0.8); border-radius: 12px;">
     <div class="d-flex align-items-center mb-3 mb-md-0">
         <div class="p-2 bg-warning bg-opacity-10 rounded-circle me-3">
-            <i class="bi bi-shield-exclamation text-warning fs-4"></i>
+            <i class="bi bi-shield-exclamation text-warning fs-5"></i>
         </div>
         <div>
-            <h6 class="alert-heading text-warning mb-1" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">
-                UPLINK UNSECURED
-            </h6>
+            <h6 class="alert-heading text-warning mb-1 fw-bold">Account Security Alert</h6>
             <p class="mb-0 text-muted small" style="max-width: 500px;">
-                No recovery frequency (Email) detected. If you lose your access key,
-                <span class="text-white">account recovery will be impossible.</span>
+                No recovery email detected. If you lose your password, you will permanently lose access to your data.
             </p>
         </div>
     </div>
-    <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-warning fw-bold px-3">
-        <i class="bi bi-link-45deg me-1"></i> ESTABLISH UPLINK
+    <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-warning fw-bold px-3" style="border-radius: 6px;">
+        Add Recovery Email
     </a>
 </div>
 {% endif %}
@@ -58,22 +71,22 @@
 {% if user.notifications %}
     {% for notif in user.notifications %}
         {% if not notif.is_read %}
-            <div class="alert {{ 'alert-danger border-danger' if notif.type == 'warning' else 'alert-info border-info' }} shadow-lg mb-4 d-flex justify-content-between align-items-center" role="alert" style="background: #0b0f14;">
+            <div class="alert {{ 'alert-danger border-danger' if notif.type == 'warning' else 'alert-info border-info' }} shadow-sm mb-4 d-flex justify-content-between align-items-center" role="alert" style="background: #0b0f14; border-radius: 12px;">
                 <div>
-                    <h5 class="alert-heading fw-bold {{ 'text-danger' if notif.type == 'warning' else 'text-info' }} mb-1" style="font-family: 'Orbitron', sans-serif;">
-                        <i class="bi {{ 'bi-exclamation-triangle-fill' if notif.type == 'warning' else 'bi-broadcast' }} me-2"></i>SYSTEM ALERT
-                    </h5>
-                    <p class="mb-0 text-white font-monospace">{{ notif.message }}</p>
+                    <h6 class="alert-heading fw-bold {{ 'text-danger' if notif.type == 'warning' else 'text-info' }} mb-1">
+                        <i class="bi {{ 'bi-exclamation-triangle-fill' if notif.type == 'warning' else 'bi-bell-fill' }} me-2"></i>System Notice
+                    </h6>
+                    <p class="mb-0 text-white-50 small">{{ notif.message }}</p>
                 </div>
-                <a href="{{ url_for('dismiss_notification', notif_id=notif.id) }}" class="btn btn-sm btn-outline-secondary">ACKNOWLEDGE</a>
+                <a href="{{ url_for('dismiss_notification', notif_id=notif.id) }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px;">Dismiss</a>
             </div>
         {% endif %}
     {% endfor %}
 {% endif %}
 
 {% if show_report %}
-<div class="alert alert-info border-info d-flex justify-content-between align-items-center mb-4 shadow-lg">
-    <div><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i><strong>REPORT READY</strong></div>
+<div class="alert alert-info border-info d-flex justify-content-between align-items-center mb-4 shadow-sm" style="border-radius: 12px;">
+    <div><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i><strong>Monthly Report Available</strong></div>
     <div class="d-flex gap-2">
         <a href="{{ url_for('download_report', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-outline-info">CSV</a>
         <a href="{{ url_for('download_report_pdf', year=prev_month.year, month=prev_month.month) }}" class="btn btn-sm btn-danger">PDF</a>
@@ -83,16 +96,16 @@
 
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden" style="background: linear-gradient(135deg, #0b0f14 0%, #151921 100%); border: 1px solid rgba(0, 243, 255, 0.2) !important;" data-intro="Welcome to your Life RPG! Here are your vitals. Complete tasks to gain XP and Level Up. If you miss daily habits, you lose HP!" data-step="1">
+        <div class="card bg-dark text-white shadow-sm position-relative overflow-hidden" style="border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; background: #0d1117;" data-intro="Welcome to your dashboard! Here you can track your productivity score. Completing tasks builds your momentum." data-step="1">
             <div class="card-body text-center p-4">
                 <div class="d-flex justify-content-between align-items-start">
-                    <span class="badge bg-secondary border border-secondary text-light">LIFETIME: {{ user.total_xp }}</span>
-                    <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline-secondary" style="font-size: 0.7rem;">ARCHIVES</a>
+                    <span class="badge bg-secondary bg-opacity-25 text-light fw-normal" style="border: 1px solid rgba(255,255,255,0.1);">All-Time Score: {{ user.total_xp }}</span>
+                    <a href="{{ url_for('history') }}" class="text-muted text-decoration-none small hover-info"><i class="bi bi-clock-history me-1"></i>History</a>
                 </div>
-                <p class="text-uppercase text-info mb-1 mt-2" style="font-size: 0.7rem; letter-spacing: 3px; opacity: 0.7;">SEASON PROGRESS</p>
-                <h1 class="display-4 fw-bold text-white mb-2" id="monthlyXpDisplay" style="font-family: 'Orbitron', sans-serif;">{{ monthly_xp }} XP</h1>
-                <div class="progress bg-secondary bg-opacity-10 mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-info" id="monthlyProgressBar" role="progressbar" style="width: {{ (monthly_xp / 2000) * 100 }}%; box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);"></div>
+                <p class="text-uppercase text-info mb-1 mt-2 fw-semibold" style="font-size: 0.75rem; letter-spacing: 1px;">Current Cycle Progress</p>
+                <h2 class="fw-bold text-white mb-2" id="monthlyXpDisplay">{{ monthly_xp }} XP</h2>
+                <div class="progress bg-secondary bg-opacity-25 mt-3 mx-auto" style="height: 6px; max-width: 400px; border-radius: 10px;">
+                    <div class="progress-bar bg-info" id="monthlyProgressBar" role="progressbar" style="width: {{ (monthly_xp / 2000) * 100 }}%; border-radius: 10px;"></div>
                 </div>
             </div>
         </div>
@@ -100,87 +113,83 @@
 </div>
 
 {% if overdue_count > 0 %}
-<div class="alert alert-warning border-warning d-flex align-items-center mb-4 shadow-sm" style="background: rgba(60, 40, 0, 0.4);">
-    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-warning"></i>
-    <div><strong class="text-warning font-monospace">ATTENTION:</strong> <span class="text-white">{{ overdue_count }} overdue missions.</span></div>
-    <a href="{{ url_for('audit') }}" class="alert-link text-info ms-2 fw-bold">Audit Protocol</a>
+<div class="alert alert-warning d-flex align-items-center mb-4 shadow-sm" style="background: rgba(60, 40, 0, 0.4); border: 1px solid rgba(255, 193, 7, 0.2); border-radius: 12px;">
+    <i class="bi bi-exclamation-circle-fill fs-5 me-3 text-warning"></i>
+    <div><span class="text-white">You have <strong>{{ overdue_count }} overdue tasks</strong> requiring attention.</span></div>
+    <a href="{{ url_for('audit') }}" class="alert-link text-info ms-auto fw-bold text-decoration-none">Review Tasks</a>
 </div>
 {% endif %}
 
 {% if not current_user.is_pro %}
-<div class="alert bg-dark border-info text-center mt-3 shadow-sm" style="border-width: 2px;">
-    <span class="text-white me-2">🚀 Want unlimited AI Brain Dump and 3 Genie wishes?</span>
-    <button class="btn btn-sm btn-info fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#instagramModal">
-        Unlock For Free
+<div class="alert bg-dark text-center mt-3 shadow-sm d-flex justify-content-center align-items-center gap-3" style="border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 12px;">
+    <span class="text-white-50 small">Unlock unlimited AI task generation and planning tools.</span>
+    <button class="btn btn-sm btn-info fw-semibold" data-bs-toggle="modal" data-bs-target="#instagramModal" style="border-radius: 6px;">
+        Unlock Free Upgrade
     </button>
 </div>
 {% endif %}
 
-<div class="mb-4">
-    <h4 class="text-white mb-3 text-center" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">ACTIVE PROTOCOLS</h4>
+<div class="mb-4 mt-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <h5 class="text-white mb-0 fw-bold">Workspace</h5>
+        
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button class="btn btn-sm text-muted hover-info" onclick="replayTutorial()" title="Help">
+                <i class="bi bi-question-circle fs-6"></i>
+            </button>
+            <button class="btn btn-sm text-muted hover-info" data-bs-toggle="modal" data-bs-target="#feedbackModal" title="Add Note/Log">
+                <i class="bi bi-journal-text fs-6"></i>
+            </button>
+            <a href="{{ url_for('mission_print') }}" target="_blank" class="btn btn-sm text-muted hover-info" title="Print List">
+                <i class="bi bi-printer fs-6"></i>
+            </a>
+            
+            <div class="vr bg-secondary mx-1" style="height: 24px; opacity: 0.3;"></div>
 
-    <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
-
-        <button class="btn btn-sm btn-outline-warning shadow-sm" onclick="replayTutorial()">
-            <i class="bi bi-question-circle me-1"></i> Tutorial
-        </button>
-
-        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#feedbackModal">
-            <i class="bi bi-chat-left-text me-1"></i> Log
-        </button>
-
-        <a href="{{ url_for('mission_print') }}" target="_blank" class="btn btn-sm btn-outline-light">
-            <i class="bi bi-file-earmark-text me-1"></i> Print
-        </a>
-
-        <a href="{{ url_for('import_tasks') }}" class="btn btn-sm btn-outline-info shadow-sm" data-intro="Feeling overwhelmed? Click here to paste your messy notes, and the AI will organize them into actionable quests for you." data-step="2">
-            <i class="bi bi-cpu me-1"></i> Brain Dump
-        </a>
-
-        <a href="#" onclick="triggerGenie(event)" class="genie-css-btn flex-shrink-0 text-decoration-none" data-intro="Summon the AI Genie to forge a personalized Master Quest for your biggest life goals." data-step="3">
-            <i class="bi bi-magic me-1"></i> GENIE
-        </a>
-
-        <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addGoalModal" data-intro="Click here to manually initialize a new goal category or directive." data-step="4">
-            <i class="bi bi-plus-lg me-1"></i> New Directive
-        </button>
-
+            <a href="{{ url_for('import_tasks') }}" class="btn btn-sm btn-outline-info" style="border-radius: 6px;" data-intro="Paste meeting notes or thoughts here, and the AI will instantly organize them into tasks." data-step="2">
+                <i class="bi bi-lightning-charge me-1"></i> Auto-Plan
+            </a>
+           <button onclick="triggerGenie(event)" class="genie-css-btn flex-shrink-0 mx-1" data-intro="Use the AI Genie to automatically break down massive life goals into step-by-step daily plans." data-step="3">
+             <i class="bi bi-magic"></i> AI Genie
+           </button>
+            <button class="btn btn-sm btn-info text-dark fw-bold" style="border-radius: 6px;" data-bs-toggle="modal" data-bs-target="#addGoalModal" data-intro="Create a new Project or Category to group your tasks." data-step="3">
+                <i class="bi bi-plus me-1"></i> New Project
+            </button>
+        </div>
     </div>
 </div>
 
-<div class="filter-scroll-container" data-intro="Use these tactical filters and the search bar to manage your active missions." data-step="5">
-    <button class="filter-pill active" onclick="applyFilter('all', this)">ALL SYSTEMS</button>
-    <button class="filter-pill" onclick="applyFilter('today', this)">DUE TODAY</button>
-    <button class="filter-pill" onclick="applyFilter('recurring', this)">RECURRING</button>
-    <button class="filter-pill" onclick="applyFilter('overdue', this)" style="border-color: #ff4444; color: #ff4444;">DELAYED</button>
-    <button class="filter-pill" onclick="applyFilter('completed', this)">DONE TODAY</button>
-    <button class="filter-pill" onclick="applyFilter('unscheduled', this)">BACKLOG</button>
+<div class="filter-scroll-container mb-3" data-intro="Quickly filter your view to focus only on what matters right now." data-step="4">
+    <button class="filter-pill active" onclick="applyFilter('all', this)">All Tasks</button>
+    <button class="filter-pill" onclick="applyFilter('today', this)">Due Today</button>
+    <button class="filter-pill" onclick="applyFilter('recurring', this)">Habits</button>
+    <button class="filter-pill text-danger" onclick="applyFilter('overdue', this)">Overdue</button>
+    <button class="filter-pill" onclick="applyFilter('completed', this)">Completed</button>
 </div>
 
-<div class="input-group input-group-sm shadow-sm mb-4" style="max-width: 100%;">
-    <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
-    <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Search..." onkeyup="filterTasks()">
-    <select class="form-select bg-dark text-white border-secondary font-monospace" id="sortSelect" onchange="sortTasks()" style="max-width: 80px;">
-        <option value="default">Def</option>
-        <option value="diff_high">Hard</option>
-        <option value="diff_low">Easy</option>
-        <option value="date">Date</option>
-        <option value="name">A-Z</option>
+<div class="input-group shadow-sm mb-4">
+    <span class="input-group-text bg-dark border-0 text-muted" style="border-radius: 8px 0 0 8px; border-top: 1px solid rgba(255,255,255,0.1) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; border-left: 1px solid rgba(255,255,255,0.1) !important;"><i class="bi bi-search"></i></span>
+    <input type="text" id="taskSearch" class="form-control bg-dark text-white border-0 shadow-none" placeholder="Search tasks..." onkeyup="filterTasks()" style="border-top: 1px solid rgba(255,255,255,0.1) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important;">
+    <select class="form-select bg-dark text-muted border-0 shadow-none" id="sortSelect" onchange="sortTasks()" style="max-width: 120px; border-radius: 0 8px 8px 0; border-top: 1px solid rgba(255,255,255,0.1) !important; border-bottom: 1px solid rgba(255,255,255,0.1) !important; border-right: 1px solid rgba(255,255,255,0.1) !important;">
+        <option value="default">Sort by...</option>
+        <option value="diff_high">High Priority</option>
+        <option value="diff_low">Low Priority</option>
+        <option value="date">Due Date</option>
     </select>
 </div>
 
-<div id="missionControl" class="accordion" data-intro="This is your Mission Control. Check off tasks here to earn XP and trigger your daily momentum!" data-step="6">
+<div id="missionControl" class="accordion" data-intro="Manage your tasks here. Check them off to mark as complete and build your daily progress." data-step="5">
 {% for goal in goals %}
-<div class="card mb-3 bg-dark border-secondary shadow-sm goal-card" data-category="{{ goal.name|lower }}">
-    <div class="card-header border-bottom border-secondary py-2 d-flex justify-content-between align-items-center bg-transparent">
-        <button class="btn btn-link text-white text-decoration-none fw-bold p-0 d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ goal.id }}">
-            <i class="bi bi-chevron-right me-2 text-info small"></i>
-            <span style="font-family: 'Orbitron', sans-serif; font-size: 1rem;">{{ goal.name }}</span>
-            <span class="badge bg-secondary bg-opacity-25 ms-2 rounded-pill" style="font-size: 0.7em">{{ goal.habits|length }}</span>
+<div class="mb-4 goal-card" data-category="{{ goal.name|lower }}">
+    <div class="card-header border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.02);">
+        <button class="btn btn-link text-white text-decoration-none fw-semibold p-0 d-flex align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ goal.id }}">
+            <i class="bi bi-folder2-open me-2 text-info fs-5"></i>
+            <span style="font-size: 1.1rem;">{{ goal.name }}</span>
+            <span class="badge bg-secondary bg-opacity-25 text-muted ms-3 rounded-pill fw-normal">{{ goal.habits|length }} items</span>
         </button>
-        <div class="d-flex gap-2 align-items-center">
-            <button class="btn btn-link text-secondary p-0 me-2" onclick="populateGoalEditModal('{{ goal.id }}', '{{ goal.name|replace("'", "\\'") }}')" data-bs-toggle="modal" data-bs-target="#editGoalModal"><i class="bi bi-pencil-square"></i></button>
-            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="text-secondary small text-decoration-none hover-danger" onclick="return confirm('Terminate directive?')"><i class="bi bi-x-lg"></i></a>
+        <div class="d-flex gap-3 align-items-center opacity-75">
+            <button class="btn btn-link text-muted p-0 hover-info" onclick="populateGoalEditModal('{{ goal.id }}', '{{ goal.name|replace("'", "\\'") }}')" data-bs-toggle="modal" data-bs-target="#editGoalModal"><i class="bi bi-pencil"></i></button>
+            <a href="{{ url_for('delete_goal', goal_id=goal.id) }}" class="text-muted hover-danger text-decoration-none" onclick="return confirm('Delete this project and all its tasks?')"><i class="bi bi-trash3"></i></a>
         </div>
     </div>
 
@@ -193,12 +202,12 @@
             {% set is_completed_today = habit.name in todays_completed|default([]) %}
             {% set is_backlog = habit.target_date is none %}
             
-            {% set border_color = '#0dcaf0' if habit.difficulty == 'Easy' else '#0b5ed7' if habit.difficulty == 'Medium' else '#9400d3' if habit.difficulty == 'Hard' else '#ff4444' %}
+            {% set border_color = 'rgba(13, 202, 240, 0.5)' if habit.difficulty == 'Easy' else 'rgba(11, 94, 215, 0.5)' if habit.difficulty == 'Medium' else 'rgba(148, 0, 211, 0.5)' if habit.difficulty == 'Hard' else 'rgba(255, 68, 68, 0.5)' %}
 
             {% if not habit.completed or habit.is_daily or is_completed_today %}
 
-            <div class="list-group-item bg-transparent border-secondary d-flex align-items-center justify-content-between py-3 task-item"
-                 style="border-left: 3px solid {{ border_color }};"
+            <div class="list-group-item d-flex align-items-center justify-content-between py-3 px-4 task-item border-0"
+                 style="border-left: 3px solid {{ border_color }} !important;"
                  data-name="{{ habit.name|lower }}"
                  data-difficulty="{{ 1 if habit.difficulty == 'Easy' else 2 if habit.difficulty == 'Medium' else 3 if habit.difficulty == 'Hard' else 4 }}"
                  data-date="{{ habit.target_date if habit.target_date else '9999-12-31' }}"
@@ -208,73 +217,77 @@
                  data-completed="{{ 'true' if habit.completed else 'false' }}"
                  data-backlog="{{ 'true' if is_backlog else 'false' }}">
 
-                <div class="d-flex align-items-center gap-3 w-100">
-                    <button onclick="toggleTask(this, '{{ habit.id }}')" class="btn btn-link text-decoration-none align-self-start mt-1 p-0 border-0" style="background: none; cursor: pointer;">
-                        <i class="bi bi-check-square-fill text-info fs-4 completed-icon" style="text-shadow: 0 0 10px rgba(13, 202, 240, 0.5); {{ 'display:block;' if habit.completed else 'display:none;' }}"></i>
-                        <i class="bi bi-square text-secondary fs-4 pending-icon" style="{{ 'display:none;' if habit.completed else 'display:block;' }}"></i>
+                <div class="d-flex align-items-start gap-3 w-100">
+                    <button onclick="toggleTask(this, '{{ habit.id }}')" class="btn btn-link text-decoration-none mt-1 p-0 border-0 flex-shrink-0" style="background: none; cursor: pointer;">
+                        <i class="bi bi-check-circle-fill text-info fs-5 completed-icon" style="{{ 'display:block;' if habit.completed else 'display:none;' }}"></i>
+                        <i class="bi bi-circle text-muted fs-5 pending-icon" style="{{ 'display:none;' if habit.completed else 'display:block;' }}"></i>
                     </button>
 
-                    <div class="w-100">
+                    <div class="w-100 pt-1">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0 text-white task-title {{ 'text-decoration-line-through text-muted' if habit.completed }}">{{ habit.name }}</h6>
+                            <h6 class="mb-0 text-white task-title fw-normal {{ 'text-decoration-line-through text-muted' if habit.completed }}">{{ habit.name }}</h6>
                             {% if habit.description %}
-                            <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#desc-{{ habit.id }}"><i class="bi bi-chevron-down"></i></button>
+                            <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="collapse" data-bs-target="#desc-{{ habit.id }}"><i class="bi bi-chat-text"></i></button>
                             {% endif %}
                         </div>
 
                         {% if habit.description %}
                         <div class="collapse mt-2" id="desc-{{ habit.id }}">
-                            <div class="card card-body bg-dark border-secondary p-2 small text-info bg-opacity-10 font-monospace">
-                                 <i class="bi bi-info-circle me-1"></i> {{ habit.description }}
+                            <div class="p-2 small text-white-50 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                                 {{ habit.description }}
                             </div>
                         </div>
                         {% endif %}
 
-                        <div class="d-flex gap-2 align-items-center mt-1 flex-wrap">
+                        <div class="d-flex gap-2 align-items-center mt-2 flex-wrap opacity-75">
                             {% if habit.target_date %}
-                                <span class="badge bg-transparent border {{ 'border-danger text-danger' if is_overdue else 'border-warning text-warning' }} small" style="font-size: 0.65rem;">
-                                    <i class="bi bi-calendar-event me-1"></i> {{ habit.target_date.strftime('%b %d') }}
+                                <span class="badge bg-transparent border {{ 'border-danger text-danger' if is_overdue else 'border-secondary text-light' }} fw-normal" style="font-size: 0.7rem;">
+                                    <i class="bi bi-calendar me-1"></i> {{ habit.target_date.strftime('%b %d') }}
                                 </span>
                             {% endif %}
-                            <span class="badge bg-dark border border-secondary text-secondary" style="font-size: 0.65rem;">{{ habit.stat_type }}</span>
-                            <span class="text-info" style="font-size: 0.75rem;">+{{ habit.xp_value }} XP</span>
+                            
+                            <span class="text-muted" style="font-size: 0.75rem;">{{ habit.stat_type }} • {{ habit.difficulty }}</span>
+                            
                             {% if habit.is_daily %}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" style="font-size: 0.65rem;">Recurring</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary fw-normal" style="font-size: 0.65rem;"><i class="bi bi-arrow-repeat me-1"></i>Recurring</span>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                <div class="d-flex gap-2 ms-2 align-self-start">
-                    <button class="btn btn-link text-secondary p-0" onclick="populateEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')" data-bs-toggle="modal" data-bs-target="#editHabitModal"><i class="bi bi-gear"></i></button>
-                    <a href="{{ url_for('delete_habit', habit_id=habit.id) }}" class="btn btn-link text-secondary p-0 hover-danger"><i class="bi bi-trash"></i></a>
+                <div class="d-flex gap-3 ms-3 align-self-start pt-1 opacity-50">
+                    <button class="btn btn-link text-muted p-0 hover-info" onclick="populateEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')" data-bs-toggle="modal" data-bs-target="#editHabitModal"><i class="bi bi-three-dots"></i></button>
                 </div>
             </div>
             {% endif %}
             {% endfor %}
-            <div class="card-footer bg-transparent border-0 pt-0 pb-2">
-                <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0" data-bs-toggle="modal" data-bs-target="#addHabitModal" onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'"><i class="bi bi-plus"></i> Add Task</button>
+            <div class="py-2 px-4" style="background: rgba(255, 255, 255, 0.01);">
+                <button class="btn btn-sm btn-link text-muted text-decoration-none ps-0 hover-info fw-semibold" data-bs-toggle="modal" data-bs-target="#addHabitModal" onclick="document.getElementById('goal_id_input').value='{{ goal.id }}'"><i class="bi bi-plus fs-5 align-middle"></i> Add Task</button>
             </div>
         </div>
     </div>
 </div>
 {% else %}
 <div class="text-center py-5">
-    <h4 class="text-muted" style="font-family: 'Orbitron', sans-serif;">SYSTEM IDLE</h4>
-    <button class="btn btn-outline-info mt-2" data-bs-toggle="modal" data-bs-target="#addGoalModal">Initialize New Sector</button>
+    <div class="mb-3">
+        <i class="bi bi-inbox text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+    </div>
+    <h5 class="text-white-50 fw-normal">No active projects</h5>
+    <p class="text-muted small mb-4">Create your first project to start tracking tasks.</p>
+    <button class="btn btn-outline-info" style="border-radius: 6px;" data-bs-toggle="modal" data-bs-target="#addGoalModal">Create Project</button>
 </div>
 {% endfor %}
 </div>
 
 <div class="modal fade" id="addGoalModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-white border-secondary">
+        <div class="modal-content bg-dark text-white shadow-lg" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
             <form action="{{ url_for('add_goal') }}" method="POST">
-                <div class="modal-header border-secondary"><h5 class="modal-title">Initialize Directive</h5></div>
-                <div class="modal-body">
-                    <label class="form-label text-muted small">Category Name</label>
-                    <input type="text" name="name" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Physical Training, Backend Dev" required>
+                <div class="modal-header border-bottom border-secondary bg-transparent"><h6 class="modal-title fw-bold">New Project</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
+                    <label class="form-label text-white-50 small fw-semibold">Project Name</label>
+                    <input type="text" name="name" class="form-control modern-input" placeholder="e.g. Marketing, Health, Household" required>
                 </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-info">Initialize</button></div>
+                <div class="modal-footer border-top-0 pt-0 p-4"><button type="submit" class="btn btn-info fw-semibold text-dark w-100" style="border-radius: 6px;">Create Project</button></div>
             </form>
         </div>
     </div>
@@ -282,15 +295,15 @@
 
 <div class="modal fade" id="editGoalModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-white border-secondary">
+        <div class="modal-content bg-dark text-white shadow-lg" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
             <form action="{{ url_for('edit_goal') }}" method="POST">
-                <div class="modal-header border-secondary"><h5 class="modal-title">Rename Directive</h5></div>
-                <div class="modal-body">
+                <div class="modal-header border-bottom border-secondary bg-transparent"><h6 class="modal-title fw-bold">Edit Project</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
                     <input type="hidden" name="goal_id" id="edit_goal_id">
-                    <label class="form-label text-muted small">New Category Name</label>
-                    <input type="text" name="name" id="edit_goal_name" class="form-control bg-dark text-white border-secondary" required>
+                    <label class="form-label text-white-50 small fw-semibold">Project Name</label>
+                    <input type="text" name="name" id="edit_goal_name" class="form-control modern-input" required>
                 </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-info">Save Name</button></div>
+                <div class="modal-footer border-top-0 pt-0 p-4"><button type="submit" class="btn btn-info fw-semibold text-dark w-100" style="border-radius: 6px;">Save Changes</button></div>
             </form>
         </div>
     </div>
@@ -298,58 +311,46 @@
 
 <div class="modal fade" id="addHabitModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark text-white border-secondary">
+        <div class="modal-content bg-dark text-white shadow-lg" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
             <form action="{{ url_for('add_habit') }}" method="POST">
-                <div class="modal-header border-secondary"><h5 class="modal-title">New Task Parameter</h5></div>
-                <div class="modal-body">
+                <div class="modal-header border-bottom border-secondary bg-transparent"><h6 class="modal-title fw-bold">Create Task</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
                     <input type="hidden" name="goal_id" id="goal_id_input">
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Task Name</label>
-                        <input type="text" name="name" class="form-control bg-dark text-white border-secondary" required>
+                        <label class="form-label text-white-50 small fw-semibold">Task Title</label>
+                        <input type="text" name="name" class="form-control modern-input" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Mission Briefing (Optional)</label>
-                        <textarea name="description" class="form-control bg-dark text-white border-secondary" rows="2" placeholder="Add details or sub-steps..."></textarea>
+                        <label class="form-label text-white-50 small fw-semibold">Notes (Optional)</label>
+                        <textarea name="description" class="form-control modern-input" rows="2" placeholder="Add details or sub-steps..."></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Target Date (Optional)</label>
-                        <input type="date" name="target_date" class="form-control bg-dark text-white border-secondary">
+                        <label class="form-label text-white-50 small fw-semibold">Due Date (Optional)</label>
+                        <input type="date" name="target_date" class="form-control modern-input">
                     </div>
-                    <div class="row g-2">
+                    <div class="row g-3">
                         <div class="col-6">
-                            <label class="form-label text-muted small">Complexity</label>
-                            <select name="difficulty" class="form-select bg-dark text-white border-secondary">
-                                <option value="Easy">Low (+10 XP)</option>
-                                <option value="Medium">Standard (+25 XP)</option>
-                                <option value="Hard">High (+50 XP)</option>
-                                <option value="Epic">Critical (+100 XP)</option>
+                            <label class="form-label text-white-50 small fw-semibold">Impact / Priority</label>
+                            <select name="difficulty" class="form-select modern-input">
+                                <option value="Easy">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Hard">High</option>
+                                <option value="Epic">Critical</option>
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label text-muted small">Attribute</label>
-                            <select name="stat_type" class="form-select bg-dark text-white border-secondary">
-                                <option value="INT">Intellect</option>
-                                <option value="STR">Strength</option>
-                                <option value="WIS">Wisdom</option>
-                                <option value="CON">Constitution</option>
-                                <option value="CHA">Charisma</option>
+                            <label class="form-label text-white-50 small fw-semibold">Category</label>
+                            <select name="stat_type" class="form-select modern-input">
+                                <option value="INT">Intellect / Learn</option>
+                                <option value="STR">Strength / Health</option>
+                                <option value="WIS">Wisdom / Admin</option>
+                                <option value="CON">Constitution / Chores</option>
+                                <option value="CHA">Charisma / Social</option>
                             </select>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-info">Add Task</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="feedbackModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-secondary text-white">
-            <form action="{{ url_for('submit_feedback') }}" method="POST">
-                <div class="modal-header border-secondary"><h5 class="modal-title">System Log</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body"><textarea name="message" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="Enter log entry..." required></textarea></div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-info">Submit Log</button></div>
+                <div class="modal-footer border-top-0 pt-0 p-4"><button type="submit" class="btn btn-info fw-semibold text-dark w-100" style="border-radius: 6px;">Add Task</button></div>
             </form>
         </div>
     </div>
@@ -357,24 +358,39 @@
 
 <div class="modal fade" id="editHabitModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content text-white" style="background-color: #0b0f14; border: 1px solid rgba(0, 243, 255, 0.3);">
+        <div class="modal-content bg-dark text-white shadow-lg" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;">
             <form action="{{ url_for('edit_habit') }}" method="POST">
-                <div class="modal-header border-bottom border-secondary"><h5 class="modal-title text-info"><i class="bi bi-sliders"></i> CONFIGURE</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
+                <div class="modal-header border-bottom border-secondary bg-transparent"><h6 class="modal-title fw-bold">Edit Task</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4">
                     <input type="hidden" name="habit_id" id="edit_habit_id">
-                    <div class="mb-3"><label class="small text-muted">Task Name</label><input type="text" name="name" id="edit_habit_name" class="form-control bg-dark text-white border-secondary" required></div>
-                    <div class="mb-3"><label class="small text-muted">Category</label><input type="text" class="form-control bg-dark text-white border-secondary" name="category_name" id="edit_habit_category" list="categoryOptions"><datalist id="categoryOptions">{% for goal in goals %}<option value="{{ goal.name }}">{% endfor %}</datalist></div>
-                    <div class="mb-3"><label class="small text-muted">Mission Briefing</label><textarea class="form-control bg-dark text-white border-secondary" name="description" id="edit_habit_description" rows="3"></textarea></div>
+                    <div class="mb-3"><label class="text-white-50 small fw-semibold">Task Title</label><input type="text" name="name" id="edit_habit_name" class="form-control modern-input" required></div>
+                    <div class="mb-3"><label class="text-white-50 small fw-semibold">Project</label><input type="text" class="form-control modern-input" name="category_name" id="edit_habit_category" list="categoryOptions"><datalist id="categoryOptions">{% for goal in goals %}<option value="{{ goal.name }}">{% endfor %}</datalist></div>
+                    <div class="mb-3"><label class="text-white-50 small fw-semibold">Notes</label><textarea class="form-control modern-input" name="description" id="edit_habit_description" rows="3"></textarea></div>
                     <div class="row mb-4">
-                        <div class="col-6"><label class="small text-muted">Complexity</label><select name="difficulty" id="edit_habit_difficulty" class="form-select bg-dark text-white border-secondary"><option value="Easy">Low</option><option value="Medium">Standard</option><option value="Hard">High</option><option value="Epic">Critical</option></select></div>
-                        <div class="col-6"><label class="small text-muted">Deadline</label><input type="date" name="target_date" id="edit_habit_date" class="form-control bg-dark text-white border-secondary"></div>
+                        <div class="col-6"><label class="text-white-50 small fw-semibold">Priority</label><select name="difficulty" id="edit_habit_difficulty" class="form-select modern-input"><option value="Easy">Low</option><option value="Medium">Medium</option><option value="Hard">High</option><option value="Epic">Critical</option></select></div>
+                        <div class="col-6"><label class="text-white-50 small fw-semibold">Due Date</label><input type="date" name="target_date" id="edit_habit_date" class="form-control modern-input"></div>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between p-3 rounded border border-secondary" style="background-color: #151921 !important;">
-                        <div><label class="fw-bold text-white">Recurring Protocol</label><div class="small text-muted">Resets automatically</div></div>
-                        <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" name="is_daily" id="edit_habit_daily" style="width: 3em; height: 1.5em;"></div>
+                    <div class="d-flex align-items-center justify-content-between p-3 rounded" style="background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                        <div><label class="fw-semibold text-white mb-0">Daily Habit</label><div class="small text-muted">Task repeats automatically each day</div></div>
+                        <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" name="is_daily" id="edit_habit_daily" style="width: 2.5em; height: 1.2em; cursor: pointer;"></div>
+                    </div>
+                    <div class="mt-3 text-end">
+                        <a href="#" id="delete_habit_btn" class="text-danger small text-decoration-none hover-danger" onclick="return confirm('Delete this task permanently?')"><i class="bi bi-trash3 me-1"></i>Delete Task</a>
                     </div>
                 </div>
-                <div class="modal-footer border-top border-secondary"><button type="submit" class="btn btn-sm btn-info fw-bold text-dark">Save Configuration</button></div>
+                <div class="modal-footer border-top-0 pt-0 p-4"><button type="submit" class="btn btn-info fw-semibold text-dark w-100" style="border-radius: 6px;">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="feedbackModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-secondary text-white shadow-lg" style="border-radius: 12px;">
+            <form action="{{ url_for('submit_feedback') }}" method="POST">
+                <div class="modal-header border-secondary bg-transparent"><h6 class="modal-title fw-bold">Add Note / Log</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body p-4"><textarea name="message" class="form-control modern-input" rows="4" placeholder="Enter journal entry or feedback..." required></textarea></div>
+                <div class="modal-footer border-top-0 pt-0 p-4"><button type="submit" class="btn btn-secondary w-100" style="border-radius: 6px;">Submit Log</button></div>
             </form>
         </div>
     </div>
@@ -382,17 +398,14 @@
 
 <div class="modal fade" id="instagramModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-info" style="box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title text-white" style="font-family: 'Orbitron', sans-serif;">
-                    <i class="bi bi-instagram text-info"></i> Unlock VIP AI
-                </h5>
+        <div class="modal-content bg-dark border-info shadow-lg" style="border-radius: 12px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.1) !important;">
+            <div class="modal-header border-secondary bg-transparent">
+                <h6 class="modal-title text-white fw-bold"><i class="bi bi-unlock-fill text-info me-2"></i> Unlock Features</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center p-4">
-                <p class="text-white-50 mb-4">Support the solo dev! Follow us on Instagram to instantly and permanently unlock the VIP Genie and AI Brain Dump.</p>
-
-                <button onclick="unlockAndRedirect()" class="btn btn-lg w-100 fw-bold" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; border: none;">
+                <p class="text-white-50 mb-4">Support the developer! Follow us on Instagram to instantly and permanently unlock the AI Organizer and unlimited Planning features.</p>
+                <button onclick="unlockAndRedirect()" class="btn btn-lg w-100 fw-bold shadow-sm" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; border: none; border-radius: 8px;">
                     <i class="bi bi-instagram me-2"></i> Follow @cosmotracker
                 </button>
             </div>
@@ -522,7 +535,7 @@ function unlockAndRedirect() {
             }
         } catch (error) { console.error('Sync failed', error); }
     }
-
+    
     // --- 5. MODAL HELPERS ---
     function populateEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
         document.getElementById('edit_habit_id').value = id;
@@ -533,8 +546,9 @@ function unlockAndRedirect() {
         const dateInput = document.getElementById('edit_habit_date');
         if (dateStr && dateStr !== 'None') dateInput.value = dateStr; else dateInput.value = '';
         document.getElementById('edit_habit_daily').checked = (isDaily === 'True' || isDaily === 'true');
-        const modal = new bootstrap.Modal(document.getElementById('editHabitModal'));
-        modal.show();
+        document.getElementById('delete_habit_btn').href = "/delete_habit/" + id;
+        
+        
     }
     function populateGoalEditModal(id, name) {
         document.getElementById('edit_goal_id').value = id;
@@ -547,26 +561,20 @@ function unlockAndRedirect() {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
 <script>
-// Expose tutorial function so the button can manually trigger it
 function replayTutorial() {
     introJs().setOptions({
         showProgress: true,
         showBullets: false,
         exitOnOverlayClick: false,
-        doneLabel: 'Start Playing',
+        doneLabel: 'Get Started',
         nextLabel: 'Next >',
         prevLabel: '< Back'
     }).start();
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Only run if the local storage flag is NOT "true"
     if (localStorage.getItem('cosmo_tutorial_completed') !== 'true') {
-        
-        // IMMEDIATELY set the flag. This prevents infinite loops if the user refreshes mid-tutorial!
         localStorage.setItem('cosmo_tutorial_completed', 'true');
-        
-        // Start the tour with a slight delay so the DOM is perfectly rendered
         setTimeout(() => {
             replayTutorial();
         }, 500);
