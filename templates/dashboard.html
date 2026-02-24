@@ -1,6 +1,37 @@
 {% extends "base.html" %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
+<style>
+    .introjs-tooltip {
+        background-color: rgba(5, 0, 20, 0.95) !important;
+        border: 1px solid #00f2ff !important;
+        box-shadow: 0 0 20px rgba(0, 242, 255, 0.4) !important;
+        color: #fff !important;
+        font-family: 'Orbitron', sans-serif;
+        border-radius: 8px !important;
+    }
+    .introjs-arrow.top { border-bottom-color: #00f2ff !important; }
+    .introjs-arrow.bottom { border-top-color: #00f2ff !important; }
+    .introjs-arrow.left { border-right-color: #00f2ff !important; }
+    .introjs-arrow.right { border-left-color: #00f2ff !important; }
+    .introjs-button {
+        background-color: #0dcaf0 !important;
+        color: #000 !important;
+        text-shadow: none !important;
+        border-radius: 4px !important;
+        font-weight: bold;
+        border: 1px solid #00f2ff !important;
+        box-shadow: 0 0 10px rgba(0,242,255,0.4) !important;
+    }
+    .introjs-skipbutton { background-color: transparent !important; color: #dc3545 !important; border: 1px solid #dc3545 !important; }
+    .introjs-helperLayer { background-color: rgba(0, 242, 255, 0.05); border: 2px solid #00f2ff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3); border-radius: 8px; }
+    
+    /* Tactical Task Items */
+    .task-item { transition: all 0.2s ease-in-out; background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, transparent 100%); }
+    .task-item:hover { background: rgba(0, 242, 255, 0.05); transform: translateX(4px); border-right: 1px solid rgba(0,242,255,0.3); }
+    .hover-danger:hover { color: #ff4444 !important; text-shadow: 0 0 8px #ff4444; }
+</style>
 
 {% if not user.email %}
 <div class="alert alert-dark border-secondary fade show d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 shadow-lg" role="alert" style="border-left: 4px solid #ffc107; background: linear-gradient(90deg, #1a1a1a 0%, #0b0f14 100%);">
@@ -52,7 +83,7 @@
 
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden" style="background: linear-gradient(135deg, #0b0f14 0%, #151921 100%); border: 1px solid rgba(0, 243, 255, 0.2) !important;">
+        <div class="card bg-dark text-white border-0 shadow-lg position-relative overflow-hidden" style="background: linear-gradient(135deg, #0b0f14 0%, #151921 100%); border: 1px solid rgba(0, 243, 255, 0.2) !important;" data-intro="Welcome to your Life RPG! Here are your vitals. Complete tasks to gain XP and Level Up. If you miss daily habits, you lose HP!" data-step="1">
             <div class="card-body text-center p-4">
                 <div class="d-flex justify-content-between align-items-start">
                     <span class="badge bg-secondary border border-secondary text-light">LIFETIME: {{ user.total_xp }}</span>
@@ -78,7 +109,7 @@
 
 {% if not current_user.is_pro %}
 <div class="alert bg-dark border-info text-center mt-3 shadow-sm" style="border-width: 2px;">
-    <span class="text-white me-2">🚀 Want unlimited AI Genie wishes?</span>
+    <span class="text-white me-2">🚀 Want unlimited AI Brain Dump and 3 Genie wishes?</span>
     <button class="btn btn-sm btn-info fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#instagramModal">
         Unlock For Free
     </button>
@@ -90,6 +121,10 @@
 
     <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
 
+        <button class="btn btn-sm btn-outline-warning shadow-sm" onclick="replayTutorial()">
+            <i class="bi bi-question-circle me-1"></i> Tutorial
+        </button>
+
         <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#feedbackModal">
             <i class="bi bi-chat-left-text me-1"></i> Log
         </button>
@@ -98,24 +133,22 @@
             <i class="bi bi-file-earmark-text me-1"></i> Print
         </a>
 
-        <a href="{{ url_for('import_tasks') }}" class="btn btn-sm btn-outline-info shadow-sm">
+        <a href="{{ url_for('import_tasks') }}" class="btn btn-sm btn-outline-info shadow-sm" data-intro="Feeling overwhelmed? Click here to paste your messy notes, and the AI will organize them into actionable quests for you." data-step="2">
             <i class="bi bi-cpu me-1"></i> Brain Dump
         </a>
 
-        <a href="#" onclick="triggerGenie(event)" class="genie-css-btn flex-shrink-0 text-decoration-none">
+        <a href="#" onclick="triggerGenie(event)" class="genie-css-btn flex-shrink-0 text-decoration-none" data-intro="Summon the AI Genie to forge a personalized Master Quest for your biggest life goals." data-step="3">
             <i class="bi bi-magic me-1"></i> GENIE
         </a>
 
-        <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addGoalModal">
+        <button class="btn btn-sm btn-info text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addGoalModal" data-intro="Click here to manually initialize a new goal category or directive." data-step="4">
             <i class="bi bi-plus-lg me-1"></i> New Directive
         </button>
 
     </div>
 </div>
 
-
-
-<div class="filter-scroll-container">
+<div class="filter-scroll-container" data-intro="Use these tactical filters and the search bar to manage your active missions." data-step="5">
     <button class="filter-pill active" onclick="applyFilter('all', this)">ALL SYSTEMS</button>
     <button class="filter-pill" onclick="applyFilter('today', this)">DUE TODAY</button>
     <button class="filter-pill" onclick="applyFilter('recurring', this)">RECURRING</button>
@@ -124,19 +157,19 @@
     <button class="filter-pill" onclick="applyFilter('unscheduled', this)">BACKLOG</button>
 </div>
 
-        <div class="input-group input-group-sm shadow-sm" style="max-width: 100%;">
-            <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
-            <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Search..." onkeyup="filterTasks()">
-            <select class="form-select bg-dark text-white border-secondary font-monospace" id="sortSelect" onchange="sortTasks()" style="max-width: 80px;">
-                <option value="default">Def</option>
-                <option value="diff_high">Hard</option>
-                <option value="diff_low">Easy</option>
-                <option value="date">Date</option>
-                <option value="name">A-Z</option>
-            </select>
-        </div>
+<div class="input-group input-group-sm shadow-sm mb-4" style="max-width: 100%;">
+    <span class="input-group-text bg-dark border-secondary text-info"><i class="bi bi-search"></i></span>
+    <input type="text" id="taskSearch" class="form-control bg-dark text-white border-secondary font-monospace" placeholder="Search..." onkeyup="filterTasks()">
+    <select class="form-select bg-dark text-white border-secondary font-monospace" id="sortSelect" onchange="sortTasks()" style="max-width: 80px;">
+        <option value="default">Def</option>
+        <option value="diff_high">Hard</option>
+        <option value="diff_low">Easy</option>
+        <option value="date">Date</option>
+        <option value="name">A-Z</option>
+    </select>
+</div>
 
-<div id="missionControl" class="mt-4 accordion">
+<div id="missionControl" class="accordion" data-intro="This is your Mission Control. Check off tasks here to earn XP and trigger your daily momentum!" data-step="6">
 {% for goal in goals %}
 <div class="card mb-3 bg-dark border-secondary shadow-sm goal-card" data-category="{{ goal.name|lower }}">
     <div class="card-header border-bottom border-secondary py-2 d-flex justify-content-between align-items-center bg-transparent">
@@ -159,10 +192,13 @@
             {% set is_overdue = habit.target_date and habit.target_date < user.last_check_date and not habit.completed %}
             {% set is_completed_today = habit.name in todays_completed|default([]) %}
             {% set is_backlog = habit.target_date is none %}
+            
+            {% set border_color = '#0dcaf0' if habit.difficulty == 'Easy' else '#0b5ed7' if habit.difficulty == 'Medium' else '#9400d3' if habit.difficulty == 'Hard' else '#ff4444' %}
 
             {% if not habit.completed or habit.is_daily or is_completed_today %}
 
             <div class="list-group-item bg-transparent border-secondary d-flex align-items-center justify-content-between py-3 task-item"
+                 style="border-left: 3px solid {{ border_color }};"
                  data-name="{{ habit.name|lower }}"
                  data-difficulty="{{ 1 if habit.difficulty == 'Easy' else 2 if habit.difficulty == 'Medium' else 3 if habit.difficulty == 'Hard' else 4 }}"
                  data-date="{{ habit.target_date if habit.target_date else '9999-12-31' }}"
@@ -343,6 +379,7 @@
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="instagramModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark border-info" style="box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);">
@@ -365,17 +402,10 @@
 
 <script>
 function unlockAndRedirect() {
-    // 1. Replace this with your actual Instagram handle!
     const igHandle = "cosmotracker";
-
-    // 2. Silently upgrade the user in the background via our new Python route
     fetch("{{ url_for('unlock_beta') }}", { method: 'POST' })
     .then(response => {
-        // 3. Try to force-open the actual Instagram App (Deep Link)
         window.location.href = `instagram://user?username=${igHandle}`;
-
-        // 4. Fallback: If the app doesn't open (e.g. they are on Desktop),
-        // open the web browser version after 1.5 seconds.
         setTimeout(function() {
             window.location.href = `https://www.instagram.com/${igHandle}`;
         }, 1500);
@@ -389,7 +419,6 @@ function unlockAndRedirect() {
 
     function applyFilter(filterType, btnElement) {
         currentFilter = filterType;
-        // Update Pills
         document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
         btnElement.classList.add('active');
         refreshView();
@@ -444,11 +473,9 @@ function unlockAndRedirect() {
                 }
             });
 
-            // Card Visibility & Auto-Expansion
             const collapseDiv = card.querySelector('.collapse');
             if (hasVisibleTasks) {
                 card.classList.remove('hidden-card');
-                // Auto-expand if filtering (but not for 'All' to keep it clean)
                 if (searchTerm.length > 0 || currentFilter !== 'all') {
                     if (!collapseDiv.classList.contains('show')) {
                         new bootstrap.Collapse(collapseDiv, { toggle: false }).show();
@@ -514,6 +541,37 @@ function unlockAndRedirect() {
         document.getElementById('edit_goal_name').value = name;
     }
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="{{ url_for('static', filename='effects.js') }}"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
+<script>
+// Expose tutorial function so the button can manually trigger it
+function replayTutorial() {
+    introJs().setOptions({
+        showProgress: true,
+        showBullets: false,
+        exitOnOverlayClick: false,
+        doneLabel: 'Start Playing',
+        nextLabel: 'Next >',
+        prevLabel: '< Back'
+    }).start();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Only run if the local storage flag is NOT "true"
+    if (localStorage.getItem('cosmo_tutorial_completed') !== 'true') {
+        
+        // IMMEDIATELY set the flag. This prevents infinite loops if the user refreshes mid-tutorial!
+        localStorage.setItem('cosmo_tutorial_completed', 'true');
+        
+        // Start the tour with a slight delay so the DOM is perfectly rendered
+        setTimeout(() => {
+            replayTutorial();
+        }, 500);
+    }
+});
+</script>
+
 {% endblock %}

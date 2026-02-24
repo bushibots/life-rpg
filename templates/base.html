@@ -22,6 +22,29 @@
 
   gtag('config', 'G-TRBB0S0LWQ');
 </script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
+
+    <style>
+        .introjs-tooltip {
+            background-color: rgba(5, 0, 20, 0.95) !important;
+            border: 1px solid #00f2ff !important;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3) !important;
+            color: #fff !important;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .introjs-arrow.top { border-bottom-color: #00f2ff !important; }
+        .introjs-arrow.bottom { border-top-color: #00f2ff !important; }
+        .introjs-arrow.left { border-right-color: #00f2ff !important; }
+        .introjs-arrow.right { border-left-color: #00f2ff !important; }
+        .introjs-button {
+            background-color: #0dcaf0 !important;
+            color: #000 !important;
+            text-shadow: none !important;
+            border-radius: 4px !important;
+            font-weight: bold;
+        }
+        .introjs-skipbutton { background-color: transparent !important; color: #dc3545 !important; border: 1px solid #dc3545 !important; }
+    </style>
 </head>
 <body>
 
@@ -143,7 +166,7 @@
         </svg>
     </div>
 </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/intro.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 <script src="{{ url_for('static', filename='theme.js') }}"></script>
