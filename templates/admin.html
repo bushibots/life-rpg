@@ -1,251 +1,342 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="text-danger" style="font-family: 'Orbitron', sans-serif;">
-            <i class="bi bi-shield-lock-fill me-2"></i>COMMAND CENTER
-        </h2>
-        <p class="text-muted">System Administration & User Overwatch.</p>
-    </div>
-</div>
+<style>
+    /* =========================================
+       FLAGSHIP ADMIN STYLES
+       ========================================= */
+    .premium-card {
+        background: var(--glass-bg) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
 
-<div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="card bg-dark border-secondary text-center p-3">
-            <h1 class="display-4 text-white fw-bold mb-0">{{ user_count }}</h1>
-            <span class="text-uppercase text-muted small">Active Agents</span>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-dark border-secondary text-center p-3">
-            <h1 class="display-4 text-info fw-bold mb-0">{{ quests }}</h1>
-            <span class="text-uppercase text-muted small">Total Missions</span>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-dark border-secondary text-center p-3">
-            <h1 class="display-4 text-warning fw-bold mb-0">{{ feedbacks|length }}</h1>
-            <span class="text-uppercase text-muted small">Transmissions</span>
-        </div>
-    </div>
-</div>
+    .metric-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        transition: transform 0.3s ease, background 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        background: rgba(255, 255, 255, 0.05);
+    }
 
-<div class="card bg-dark border-info shadow-sm mb-4">
-    <div class="card-header border-info bg-transparent">
-        <h5 class="mb-0 text-info" style="font-family: 'Orbitron', sans-serif;">
-            <i class="bi bi-broadcast me-2"></i>GLOBAL BROADCAST SYSTEM
-        </h5>
+    .modern-input {
+        background: rgba(0,0,0,0.2) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #fff !important;
+        border-radius: 8px;
+    }
+    .modern-input:focus {
+        border-color: #0dcaf0 !important;
+        box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2) !important;
+    }
+
+    /* Unified Table Styles */
+    .admin-table { border-collapse: separate; border-spacing: 0 4px; width: 100%; }
+    .admin-row {
+        background: rgba(255, 255, 255, 0.015);
+        transition: all 0.2s;
+    }
+    .admin-row td {
+        padding: 12px 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        vertical-align: middle;
+    }
+    .admin-row td:first-child { border-left: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px 0 0 8px; }
+    .admin-row td:last-child { border-right: 1px solid rgba(255, 255, 255, 0.05); border-radius: 0 8px 8px 0; }
+    .admin-row:hover { background: rgba(255, 255, 255, 0.05); }
+
+    /* Sortable Headers */
+    .sortable { cursor: pointer; user-select: none; transition: color 0.2s; }
+    .sortable:hover { color: #0dcaf0 !important; }
+    .sortable::after { content: '\21D5'; margin-left: 5px; opacity: 0.3; font-size: 0.8em; }
+
+    /* Copy to clipboard */
+    .copyable { cursor: pointer; transition: color 0.2s; }
+    .copyable:hover { color: #0dcaf0 !important; text-decoration: underline; }
+    
+    .toast-notification {
+        position: fixed; top: 20px; right: 20px; z-index: 9999;
+        background: #0dcaf0; color: #000; padding: 10px 20px;
+        border-radius: 8px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        opacity: 0; transform: translateY(-20px); transition: all 0.3s; pointer-events: none;
+    }
+    .toast-notification.show { opacity: 1; transform: translateY(0); }
+</style>
+
+<div id="copyToast" class="toast-notification">Copied to clipboard!</div>
+
+<div class="container-fluid px-0">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="text-white fw-bold mb-0" style="font-family: 'Inter', sans-serif; letter-spacing: -1px;">
+                <i class="bi bi-shield-lock-fill text-info me-2"></i>System Overwatch
+            </h2>
+            <p class="text-white-50 mb-0">Global Administration & Metrics</p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin_mailer') }}" class="btn btn-info fw-bold text-dark shadow-sm" style="border-radius: 8px;">
+                <i class="bi bi-broadcast me-1"></i> Open Comms Hub
+            </a>
+        </div>
     </div>
-    <div class="card-body">
-        <form action="{{ url_for('admin_broadcast') }}" method="POST">
-            <label class="text-muted small mb-2">Send a system-wide announcement (Blue Banner):</label>
-            <div class="input-group">
-                <span class="input-group-text bg-dark border-info text-info fw-bold">MSG</span>
-                <input type="text" name="broadcast_message" class="form-control bg-dark text-white border-info"
-                       placeholder="e.g., SYSTEM UPGRADE: Daily task limits increased. Hydra Protocol Active." required>
-                <button type="submit" class="btn btn-info fw-bold text-dark"
-                        onclick="return confirm('Send this announcement to ALL users?')">
-                    <i class="bi bi-send-fill me-2"></i>TRANSMIT
-                </button>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="metric-card">
+                <h1 class="display-4 text-white fw-bold mb-0">{{ user_count }}</h1>
+                <span class="text-uppercase text-white-50 small fw-semibold" style="letter-spacing: 1px;">Active Users</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card">
+                <h1 class="display-4 text-info fw-bold mb-0">{{ quests }}</h1>
+                <span class="text-uppercase text-white-50 small fw-semibold" style="letter-spacing: 1px;">Global Tasks</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card">
+                <h1 class="display-4 text-warning fw-bold mb-0">{{ feedbacks|length }}</h1>
+                <span class="text-uppercase text-white-50 small fw-semibold" style="letter-spacing: 1px;">Messages in Inbox</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card premium-card mb-4" style="border-color: rgba(13, 202, 240, 0.3);">
+        <div class="card-body p-4">
+            <h6 class="text-info fw-bold text-uppercase mb-3" style="letter-spacing: 1px;"><i class="bi bi-megaphone-fill me-2"></i>Global Broadcast</h6>
+            <form action="{{ url_for('admin_broadcast') }}" method="POST">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark border-info text-info fw-bold" style="border-radius: 8px 0 0 8px;">SYS_MSG</span>
+                    <input type="text" name="broadcast_message" class="form-control modern-input border-info" style="border-radius: 0;" placeholder="Deploy a server-wide banner message..." required>
+                    <button type="submit" class="btn btn-info fw-bold text-dark" style="border-radius: 0 8px 8px 0;" onclick="return confirm('Transmit this announcement to ALL users instantly?')">
+                        TRANSMIT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card premium-card mb-4">
+        <div class="card-header border-bottom border-secondary bg-transparent p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h5 class="mb-0 text-white fw-bold"><i class="bi bi-people-fill me-2 text-info"></i>Unified User Roster</h5>
+            <div class="input-group" style="max-width: 300px;">
+                <span class="input-group-text bg-dark border-secondary text-muted" style="border-radius: 8px 0 0 8px;"><i class="bi bi-search"></i></span>
+                <input type="text" id="userSearch" class="form-control modern-input" style="border-radius: 0 8px 8px 0;" placeholder="Search users or emails..." onkeyup="filterUsers()">
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive px-4 pb-4 pt-2" style="max-height: 500px; overflow-y: auto;">
+                <table class="admin-table" id="userTable">
+                    <thead class="sticky-top" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);">
+                        <tr class="text-white-50 small text-uppercase fw-semibold" style="letter-spacing: 1px;">
+                            <th class="pb-2 sortable" onclick="sortTable(0, 'num')">ID</th>
+                            <th class="pb-2 sortable" onclick="sortTable(1, 'str')">Identity</th>
+                            <th class="pb-2 sortable" onclick="sortTable(2, 'num')">Level</th>
+                            <th class="pb-2 sortable text-center" onclick="sortTable(3, 'str')">Status</th>
+                            <th class="pb-2 text-end pe-4">Command Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr class="admin-row">
+                            <td class="text-white-50 small copyable" title="Click to copy ID" onclick="copyText('{{ user.id }}')">#{{ user.id }}</td>
+                            <td>
+                                <div class="fw-bold text-white fs-6">{{ user.username }}</div>
+                                <div class="small font-monospace text-info copyable" title="Click to copy email" onclick="copyText('{{ user.email }}')">
+                                    {{ user.email if user.email else 'NO EMAIL' }}
+                                </div>
+                            </td>
+                            <td class="text-white-50 fw-semibold">Lvl {{ user.level }}</td>
+                            <td class="text-center">
+                                {% if user.is_admin %}
+                                    <span class="badge border border-danger text-danger bg-danger bg-opacity-10 me-1">ADMIN</span>
+                                {% endif %}
+                                {% if user.is_banned %}
+                                    <span class="badge bg-danger">BANNED</span>
+                                {% endif %}
+                                {% if user.is_pro %}
+                                    <span class="badge bg-info text-dark"><i class="bi bi-cpu-fill me-1"></i>PRO</span>
+                                {% else %}
+                                    <span class="badge bg-secondary bg-opacity-25 text-white-50">STD</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group shadow-sm">
+                                    <a href="{{ url_for('admin_inspect', user_id=user.id) }}" class="btn btn-sm btn-outline-info" title="Inspect Missions"><i class="bi bi-eye"></i></a>
+                                    
+                                    <a href="{{ url_for('toggle_pro', user_id=user.id) }}" class="btn btn-sm {{ 'btn-info text-dark' if not user.is_pro else 'btn-outline-secondary' }}" title="Toggle AI Pro Status"><i class="bi bi-cpu"></i></a>
+                                    
+                                    <a href="{{ url_for('ban_user', user_id=user.id) }}" class="btn btn-sm {{ 'btn-danger' if user.is_banned else 'btn-outline-warning' }}" title="Toggle Ban" onclick="return confirm('Toggle Ban status for {{ user.username }}?')"><i class="bi bi-slash-circle"></i></a>
+                                    
+                                    {% if user.id != current_user.id %}
+                                    <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('WARNING: This will permanently eradicate {{ user.username }}. Proceed?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eradicate User" style="border-radius: 0 4px 4px 0;"><i class="bi bi-trash3"></i></button>
+                                    </form>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary disabled" title="Cannot delete yourself" style="border-radius: 0 4px 4px 0;"><i class="bi bi-shield-lock"></i></button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card premium-card">
+        <form action="{{ url_for('delete_feedback') }}" method="POST">
+            <div class="card-header border-bottom border-secondary bg-transparent p-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <h5 class="mb-0 text-white fw-bold"><i class="bi bi-inbox-fill me-2 text-warning"></i>Comms Inbox</h5>
+                
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="btn-group me-md-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary active" onclick="filterFeedback('all', this)">All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="filterFeedback('unread', this)">Unread</button>
+                    </div>
+
+                    <button type="submit" name="action" value="delete_selected" class="btn btn-sm btn-outline-secondary" style="border-radius: 6px;">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                    <button type="submit" name="action" value="delete_all" class="btn btn-sm btn-danger fw-bold shadow-sm" style="border-radius: 6px;" onclick="return confirm('Wipe ALL transmission logs? This is irreversible.');">
+                        <i class="bi bi-radioactive me-1"></i> PURGE ALL
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="feedbackList">
+                    {% for msg in feedbacks %}
+                    <div class="list-group-item bg-transparent border-secondary text-white p-4 feedback-item" data-status="{{ 'read' if msg.is_read else 'unread' }}">
+                        <div class="d-flex gap-3">
+                            <div class="pt-1">
+                                <input class="form-check-input premium-check" type="checkbox" name="feedback_ids" value="{{ msg.id }}">
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <strong class="{{ 'text-white-50' if msg.is_read else 'text-info fs-6' }}">
+                                            {{ msg.user.username if msg.user else 'Deleted Agent' }}
+                                        </strong>
+                                        <span class="text-muted small ms-2"><i class="bi bi-clock me-1"></i>{{ msg.timestamp.strftime('%b %d, %H:%M') }}</span>
+                                        {% if msg.user and msg.user.is_banned %}
+                                        <span class="badge bg-danger ms-2">BANNED</span>
+                                        {% endif %}
+                                        {% if not msg.is_read %}
+                                        <span class="badge bg-warning text-dark ms-2">NEW</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2 mt-2 mt-sm-0">
+                                        {% if msg.user %}
+                                        <a href="{{ url_for('ban_user', user_id=msg.user.id) }}" class="btn btn-sm btn-outline-danger" title="Ban User" onclick="return confirm('Toggle Ban status for this user?')"><i class="bi bi-slash-circle"></i></a>
+                                        {% endif %}
+                                        <a href="{{ url_for('mark_read', feedback_id=msg.id) }}" class="btn btn-sm {{ 'btn-outline-secondary' if msg.is_read else 'btn-success text-dark fw-bold shadow-sm' }}" title="Toggle Read Status">
+                                            <i class="bi bi-check2-all"></i> {{ 'Mark Unread' if msg.is_read else 'Mark Read' }}
+                                        </a>
+                                    </div>
+                                </div>
+                                <p class="mb-0 {{ 'text-white-50' if msg.is_read else 'text-white' }} p-3 rounded" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem;">
+                                    {{ msg.message }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-5 text-center text-white-50">
+                        <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
+                        No transmissions in the inbox.
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </form>
     </div>
 </div>
 
-<div class="card bg-dark border-secondary shadow-lg">
-    <div class="card-header border-secondary">
-        <h4 class="text-danger" style="font-family: 'Orbitron', sans-serif;">USER DATABASE</h4>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-dark table-hover mb-0">
-                <thead>
-                    <tr class="text-secondary small text-uppercase">
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Email (Confidential)</th>
-                        <th>Level</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <td>{{ user.id }}</td>
-                        <td class="fw-bold text-white">{{ user.username }}</td>
-                        <td class="text-info font-monospace small">
-                            {{ user.email if user.email else 'NO EMAIL' }}
-                        </td>
-                        <td>Lvl {{ user.level }}</td>
-                        <td>
-                            {% if user.id != current_user.id %}
-                            <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('WARNING: This will permanently delete {{ user.username }}. Proceed?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    ERADICATE
-                                </button>
-                            </form>
-                            {% else %}
-                            <span class="badge bg-secondary">ADMIN (YOU)</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<div class="card bg-dark border-secondary shadow-sm mb-4">
-    <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 text-white"><i class="bi bi-people-fill me-2"></i>Agent Roster</h5>
-
-        <div class="input-group input-group-sm" style="max-width: 250px;">
-            <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" id="agentSearch" class="form-control bg-dark border-secondary text-white"
-                   placeholder="Find Agent..." onkeyup="filterAgents()">
-        </div>
-    </div>
-
-    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-        <table class="table table-dark table-hover mb-0 align-middle" id="agentTable">
-            <thead class="sticky-top bg-dark">
-                <tr class="text-muted small text-uppercase">
-                    <th>Codename</th>
-                    <th>Clearance Level</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for agent in users %}
-                <tr>
-                    <td class="fw-bold text-white agent-name">
-                        {{ agent.username }}
-                        {% if agent.is_banned %}
-                        <span class="badge bg-danger ms-2">BANNED</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if agent.is_admin %}
-                            <span class="badge border border-danger text-danger me-1">ADMIN</span>
-                        {% endif %}
-
-                        {% if agent.is_pro %}
-                            <span class="badge bg-info text-dark"><i class="bi bi-cpu-fill me-1"></i>AI CLASS</span>
-                        {% else %}
-                            <span class="badge bg-secondary bg-opacity-25 text-muted">STANDARD</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <div class="btn-group">
-                            <a href="{{ url_for('admin_inspect', user_id=agent.id) }}"
-                               class="btn btn-sm btn-outline-warning"
-                               title="Inspect Missions">
-                                <i class="bi bi-eye"></i>
-                            </a>
-
-                            <a href="{{ url_for('toggle_pro', user_id=agent.id) }}"
-                               class="btn btn-sm {{ 'btn-info' if not agent.is_pro else 'btn-outline-secondary' }}"
-                               title="Toggle AI Features">
-                                <i class="bi bi-cpu"></i>
-                            </a>
-
-                            <a href="{{ url_for('ban_user', user_id=agent.id) }}"
-                               class="btn btn-sm btn-outline-danger"
-                               title="Ban User"
-                               onclick="return confirm('Are you sure you want to ban this user?')">
-                                <i class="bi bi-slash-circle"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card bg-dark border-secondary shadow-sm">
-    <form action="{{ url_for('delete_feedback') }}" method="POST">
-        <div class="card-header border-secondary bg-transparent d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-white">Incoming Transmissions</h5>
-
-            <div class="d-flex gap-2">
-                <button type="submit" name="action" value="delete_selected" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-trash"></i> Delete Selected
-                </button>
-
-                <button type="submit" name="action" value="delete_all" class="btn btn-sm btn-danger fw-bold"
-                        onclick="return confirm('WARNING: This will wipe ALL transmission logs permanently. Confirm nuclear launch?');">
-                    <i class="bi bi-radioactive"></i> NUKE ALL
-                </button>
-            </div>
-        </div>
-
-        <div class="list-group list-group-flush">
-            {% for msg in feedbacks %}
-            <div class="list-group-item bg-transparent border-secondary text-white">
-                <div class="d-flex gap-3">
-                    <div class="pt-1">
-                        <input class="form-check-input bg-dark border-secondary" type="checkbox" name="feedback_ids" value="{{ msg.id }}">
-                    </div>
-
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <strong class="{{ 'text-muted' if msg.is_read else 'text-white' }}">
-                                    {{ msg.user.username if msg.user else 'Deleted Agent' }}
-                                </strong>
-                                <span class="text-muted small ms-2">{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
-
-                                {% if msg.user and msg.user.is_banned %}
-                                <span class="badge bg-danger ms-2">BANNED</span>
-                                {% endif %}
-                            </div>
-                            <div class="d-flex gap-2">
-                                {% if msg.user %}
-                                <a href="{{ url_for('ban_user', user_id=msg.user.id) }}"
-                                   class="btn btn-sm btn-outline-danger"
-                                   onclick="return confirm('Toggle Ban status for this user?')">
-                                    <i class="bi bi-slash-circle"></i> Ban
-                                </a>
-                                {% endif %}
-                                <a href="{{ url_for('mark_read', feedback_id=msg.id) }}"
-                                   class="btn btn-sm {{ 'btn-secondary' if msg.is_read else 'btn-success' }}">
-                                    <i class="bi bi-check-lg"></i>
-                                </a>
-                            </div>
-                        </div>
-                        <p class="mt-2 mb-0 {{ 'text-muted' if msg.is_read else '' }}">{{ msg.message }}</p>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="p-4 text-center text-muted">No transmissions received.</div>
-            {% endfor %}
-        </div>
-    </form>
-</div>
-
 <script>
-function filterAgents() {
-    var input = document.getElementById("agentSearch");
-    var filter = input.value.toUpperCase();
-    var table = document.getElementById("agentTable");
-    var tr = table.getElementsByTagName("tr");
+    // --- 1. LIVE SEARCH FILTER ---
+    function filterUsers() {
+        let input = document.getElementById("userSearch").value.toUpperCase();
+        let table = document.getElementById("userTable");
+        let tr = table.getElementsByTagName("tr");
 
-    for (var i = 0; i < tr.length; i++) {
-        var td = tr[i].getElementsByClassName("agent-name")[0];
-        if (td) {
-            var txtValue = td.textContent || td.innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        for (let i = 1; i < tr.length; i++) { // Skip header
+            let tdText = tr[i].innerText || tr[i].textContent;
+            if (tdText.toUpperCase().indexOf(input) > -1) {
                 tr[i].style.display = "";
             } else {
                 tr[i].style.display = "none";
             }
         }
     }
-}
+
+    // --- 2. QUICK COPY TO CLIPBOARD ---
+    function copyText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = document.getElementById('copyToast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        });
+    }
+
+    // --- 3. TABLE SORTING ENGINE ---
+    let sortDirection = {};
+    function sortTable(columnIndex, type) {
+        let table = document.getElementById("userTable");
+        let tbody = table.querySelector("tbody");
+        let rows = Array.from(tbody.querySelectorAll("tr"));
+        
+        // Toggle direction
+        let dir = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+        sortDirection[columnIndex] = dir;
+
+        rows.sort((a, b) => {
+            let valA = a.querySelectorAll("td")[columnIndex].innerText.trim();
+            let valB = b.querySelectorAll("td")[columnIndex].innerText.trim();
+
+            if (type === 'num') {
+                // Strip out text like "Lvl" or "#" to just get the number
+                valA = parseFloat(valA.replace(/[^0-9.-]+/g,"")) || 0;
+                valB = parseFloat(valB.replace(/[^0-9.-]+/g,"")) || 0;
+                return dir === 'asc' ? valA - valB : valB - valA;
+            } else {
+                return dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            }
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // --- 4. INBOX FILTERING ---
+    function filterFeedback(status, btnElement) {
+        // Update active button state
+        let buttons = btnElement.parentElement.querySelectorAll('.btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        // Filter items
+        let items = document.querySelectorAll('.feedback-item');
+        items.forEach(item => {
+            if (status === 'all' || item.getAttribute('data-status') === status) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
 </script>
 {% endblock %}

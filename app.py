@@ -1212,6 +1212,47 @@ def unlock_beta():
     db.session.commit()
     return {"status": "success", "message": "Unlocked!"}, 200
 
+@app.route('/admin/mailer', methods=['GET', 'POST'])
+@login_required
+def admin_mailer():
+    # FIXED: Replaced the missing decorator with your standard admin check
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        user_ids = request.form.getlist('user_ids')
+        subject = request.form.get('subject')
+        body = request.form.get('body')
+
+        if not user_ids or not subject or not body:
+            flash('Please select targets and provide a subject/body.', 'warning')
+            return redirect(url_for('admin_mailer'))
+
+        users = User.query.filter(User.id.in_(user_ids)).all()
+        sent_count = 0
+
+        for u in users:
+            if u.email:
+                try:
+                    # Automatically personalize the email
+                    personalized_body = body.replace('[USERNAME]', u.username)
+
+                    msg = Message(subject,
+                                  sender=app.config.get('MAIL_USERNAME'),
+                                  recipients=[u.email])
+                    msg.body = personalized_body
+                    mail.send(msg)
+                    sent_count += 1
+                except Exception as e:
+                    print(f"Failed to send to {u.email}: {e}")
+
+        flash(f'Uplink successfully transmitted to {sent_count} users.', 'success')
+        return redirect(url_for('admin_mailer'))
+
+    # Only load users who have an email address linked
+    users = User.query.filter(User.email != None, User.email != '').all()
+    return render_template('admin_mailer.html', users=users)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

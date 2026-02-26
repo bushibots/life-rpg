@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .premium-card {
+        background: var(--glass-bg) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+    .modern-input {
+        background: rgba(0,0,0,0.2) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #fff !important;
+        border-radius: 8px;
+    }
+    .modern-input:focus {
+        border-color: #0dcaf0 !important;
+        box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2) !important;
+    }
+    .user-list-box {
+        max-height: 400px;
+        overflow-y: auto;
+        background: rgba(0,0,0,0.3);
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="text-white fw-bold mb-0"><i class="bi bi-broadcast text-info me-2"></i>Comms Hub</h3>
+            <p class="text-white-50 small mb-0">Broadcast messages to your active user base.</p>
+        </div>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-outline-secondary btn-sm">Back to Admin</a>
+    </div>
+
+    <form action="{{ url_for('admin_mailer') }}" method="POST">
+        <div class="row g-4">
+
+            <div class="col-lg-4">
+                <div class="card premium-card h-100">
+                    <div class="card-header border-bottom border-secondary bg-transparent py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-white fw-bold">Target Audience</h6>
+                        <span class="badge bg-info text-dark rounded-pill">{{ users|length }} Total</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom border-secondary" style="background: rgba(255,255,255,0.02);">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="selectAll" onclick="toggleAll(this)">
+                                <label class="form-check-label text-white fw-semibold" for="selectAll">Select All Users</label>
+                            </div>
+                        </div>
+                        <div class="user-list-box m-3 p-2">
+                            {% for u in users %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input user-check" type="checkbox" name="user_ids" value="{{ u.id }}" id="user_{{ u.id }}">
+                                <label class="form-check-label text-white-50" for="user_{{ u.id }}">
+                                    <span class="text-white">{{ u.username }}</span> <small>({{ u.email }})</small>
+                                </label>
+                            </div>
+                            {% else %}
+                            <p class="text-muted small p-2">No users with registered emails.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card premium-card h-100">
+                    <div class="card-header border-bottom border-secondary bg-transparent py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 text-white fw-bold">Message Composer</h6>
+                            <select class="form-select form-select-sm w-auto modern-input" id="templateSelect" onchange="loadTemplate()">
+                                <option value="">-- Quick Presets --</option>
+                                <option value="overdue">Overdue Tasks Warning</option>
+                                <option value="update">New Feature Drop</option>
+                                <option value="welcome">Check-in / Welcome</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="alert alert-info py-2 px-3 small mb-4" style="background: rgba(13, 202, 240, 0.1); border: 1px solid rgba(13, 202, 240, 0.2);">
+                            <i class="bi bi-info-circle me-1"></i> Use <strong>[USERNAME]</strong> in your message and the system will auto-replace it with their actual name.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-white-50 small fw-semibold mb-1">Subject Line</label>
+                            <input type="text" name="subject" id="mailSubject" class="form-control modern-input fw-bold text-white" placeholder="Enter subject..." required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="text-white-50 small fw-semibold mb-1">Email Body</label>
+                            <textarea name="body" id="mailBody" class="form-control modern-input" rows="8" placeholder="Write your transmission here..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-info w-100 fw-bold text-dark" onclick="return confirm('Transmit this broadcast to all selected users?')">
+                            <i class="bi bi-send-fill me-2"></i> Transmit Broadcast
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleAll(source) {
+        const checkboxes = document.querySelectorAll('.user-check');
+        checkboxes.forEach(cb => cb.checked = source.checked);
+    }
+
+    function loadTemplate() {
+        const template = document.getElementById('templateSelect').value;
+        const subject = document.getElementById('mailSubject');
+        const body = document.getElementById('mailBody');
+
+        const templates = {
+            'overdue': {
+                subject: 'Action Required: Clear Your Backlog',
+                body: "Hello [USERNAME],\n\nWe noticed you have some overdue tasks piling up in your workspace.\n\nLog in now to use the AI Auto-Plan or the Backlog Neutralizer to get your momentum back on track.\n\nKeep pushing forward,\nCosmo Team"
+            },
+            'update': {
+                subject: '🔥 Unlock the New Cosmo AI Genie',
+                body: "Hello [USERNAME],\n\nWe just dropped a massive update to your workspace.\n\nYou can now use the 'AI Genie' to automatically break down your biggest life goals into daily actionable steps.\n\nLog in to initialize your first project.\n\n- Cosmo Team"
+            },
+            'welcome': {
+                subject: 'Checking in on your progress',
+                body: "Hey [USERNAME],\n\nJust checking in to see how you are liking the platform so far. If you have any feedback or feature requests, feel free to reply directly to this email!\n\n- Cosmo Creator"
+            }
+        };
+
+        if (templates[template]) {
+            subject.value = templates[template].subject;
+            body.value = templates[template].body;
+        }
+    }
+</script>
+{% endblock %}
