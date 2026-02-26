@@ -1220,17 +1220,37 @@ def admin_mailer():
 
     if request.method == 'POST':
         user_ids = request.form.getlist('user_ids')
+        custom_emails_raw = request.form.get('custom_emails', '')
         subject = request.form.get('subject')
         body = request.form.get('body')
 
-        if not user_ids or not subject or not body:
-            flash('Please select targets and provide a subject/body.', 'warning')
+        # Parse any custom emails typed in by the admin
+        custom_emails = [e.strip() for e in custom_emails_raw.split(',') if e.strip()]
+
+        # Require AT LEAST a selected user OR a custom email
+        if not user_ids and not custom_emails:
+            flash('Please select targets or enter a custom email address.', 'warning')
+            return redirect(url_for('admin_mailer'))
+
+        if not subject or not body:
+            flash('Please provide a subject and body.', 'warning')
             return redirect(url_for('admin_mailer'))
 
         users = User.query.filter(User.id.in_(user_ids)).all()
+
+        # 1. Build a unified list of targets
+        targets = []
+        for u in users:
+            if u.email:
+                targets.append({"email": u.email, "username": u.username})
+
+        # 2. Add the custom emails (Defaulting username to "Agent")
+        for ce in custom_emails:
+            targets.append({"email": ce, "username": "Agent"})
+
         sent_count = 0
 
-        # --- USE BREVO HTTP API (Matches your working password reset) ---
+        # --- USE BREVO HTTP API (Guaranteed Delivery) ---
         url = "https://api.brevo.com/v3/smtp/email"
         headers = {
             "accept": "application/json",
@@ -1238,44 +1258,43 @@ def admin_mailer():
             "content-type": "application/json"
         }
 
-        for u in users:
-            if u.email:
-                try:
-                    # Automatically personalize the email
-                    personalized_body = body.replace('[USERNAME]', u.username)
+        for t in targets:
+            try:
+                # Personalize email
+                personalized_body = body.replace('[USERNAME]', t['username'])
+                html_body = personalized_body.replace('\n', '<br>')
 
-                    # Convert line breaks to HTML breaks so it formats correctly in email
-                    html_body = personalized_body.replace('\n', '<br>')
+                payload = {
+                    "sender": {"name": "Cosmo Command", "email": os.getenv('MAIL_USERNAME')},
+                    "to": [{"email": t['email']}],
+                    "subject": subject,
+                    "htmlContent": f"<html><body style='font-family: sans-serif;'><p>{html_body}</p></body></html>"
+                }
 
-                    payload = {
-                        # Change this line inside app.py:
-                        "sender": {"name": "Cosmo Command", "email": "bushibots@gmail.com"}, # You can change this to your verified sender email
-                        "to": [{"email": u.email}],
-                        "subject": subject,
-                        "htmlContent": f"<html><body style='font-family: sans-serif;'><p>{html_body}</p></body></html>"
-                    }
+                response = requests.post(url, json=payload, headers=headers)
 
-                    response = requests.post(url, json=payload, headers=headers)
+                if response.status_code in [200, 201, 202]:
+                    sent_count += 1
+                else:
+                    print(f"Brevo API Error for {t['email']}: {response.text}")
+                    flash(f"Failed to send to {t['email']}. Brevo Error: {response.text}", 'danger')
 
-                    if response.status_code in [200, 201, 202]:
-                        sent_count += 1
-                    else:
-                        print(f"Brevo API Error for {u.email}: {response.text}")
-                        flash(f'Failed to send to {u.email}. API Error.', 'danger')
-
-                except Exception as e:
-                    print(f"Failed to send to {u.email}: {e}")
-                    flash(f'System error sending to {u.email}.', 'danger')
+            except Exception as e:
+                print(f"Failed to send to {t['email']}: {e}")
+                flash(f"System error sending to {t['email']}.", 'danger')
 
         if sent_count > 0:
-            flash(f'Uplink successfully transmitted to {sent_count} users.', 'success')
+            flash(f'Uplink successfully transmitted to {sent_count} addresses.', 'success')
 
         return redirect(url_for('admin_mailer'))
 
-    # Only load users who have an email address linked
     users = User.query.filter(User.email != None, User.email != '').all()
     return render_template('admin_mailer.html', users=users)
 
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
