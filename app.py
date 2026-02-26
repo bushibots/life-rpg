@@ -1215,7 +1215,6 @@ def unlock_beta():
 @app.route('/admin/mailer', methods=['GET', 'POST'])
 @login_required
 def admin_mailer():
-    # FIXED: Replaced the missing decorator with your standard admin check
     if not current_user.is_admin:
         return redirect(url_for('dashboard'))
 
@@ -1231,22 +1230,46 @@ def admin_mailer():
         users = User.query.filter(User.id.in_(user_ids)).all()
         sent_count = 0
 
+        # --- USE BREVO HTTP API (Matches your working password reset) ---
+        url = "https://api.brevo.com/v3/smtp/email"
+        headers = {
+            "accept": "application/json",
+            "api-key": os.getenv('BREVO_API_KEY'),
+            "content-type": "application/json"
+        }
+
         for u in users:
             if u.email:
                 try:
                     # Automatically personalize the email
                     personalized_body = body.replace('[USERNAME]', u.username)
 
-                    msg = Message(subject,
-                                  sender=app.config.get('MAIL_USERNAME'),
-                                  recipients=[u.email])
-                    msg.body = personalized_body
-                    mail.send(msg)
-                    sent_count += 1
+                    # Convert line breaks to HTML breaks so it formats correctly in email
+                    html_body = personalized_body.replace('\n', '<br>')
+
+                    payload = {
+                        # Change this line inside app.py:
+                        "sender": {"name": "Cosmo Command", "email": "bushibots@gmail.com"}, # You can change this to your verified sender email
+                        "to": [{"email": u.email}],
+                        "subject": subject,
+                        "htmlContent": f"<html><body style='font-family: sans-serif;'><p>{html_body}</p></body></html>"
+                    }
+
+                    response = requests.post(url, json=payload, headers=headers)
+
+                    if response.status_code in [200, 201, 202]:
+                        sent_count += 1
+                    else:
+                        print(f"Brevo API Error for {u.email}: {response.text}")
+                        flash(f'Failed to send to {u.email}. API Error.', 'danger')
+
                 except Exception as e:
                     print(f"Failed to send to {u.email}: {e}")
+                    flash(f'System error sending to {u.email}.', 'danger')
 
-        flash(f'Uplink successfully transmitted to {sent_count} users.', 'success')
+        if sent_count > 0:
+            flash(f'Uplink successfully transmitted to {sent_count} users.', 'success')
+
         return redirect(url_for('admin_mailer'))
 
     # Only load users who have an email address linked
