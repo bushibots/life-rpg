@@ -21,15 +21,15 @@
         padding: 8px 16px !important;
     }
     .introjs-skipbutton { background-color: transparent !important; color: #a1a1aa !important; }
-    
+
     /* Premium Task Items */
-    .task-item { 
-        transition: all 0.2s ease; 
-        background: rgba(255, 255, 255, 0.015); 
+    .task-item {
+        transition: all 0.2s ease;
+        background: rgba(255, 255, 255, 0.015);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
-    .task-item:hover { 
-        background: rgba(255, 255, 255, 0.04); 
+    .task-item:hover {
+        background: rgba(255, 255, 255, 0.04);
     }
     .goal-card {
         background: #0d1117 !important;
@@ -99,8 +99,26 @@
         <div class="card bg-dark text-white shadow-sm position-relative overflow-hidden" style="border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; background: #0d1117;" data-intro="Welcome to your dashboard! Here you can track your productivity score. Completing tasks builds your momentum." data-step="1">
             <div class="card-body text-center p-4">
                 <div class="d-flex justify-content-between align-items-start">
-                    <span class="badge bg-secondary bg-opacity-25 text-light fw-normal" style="border: 1px solid rgba(255,255,255,0.1);">All-Time Score: {{ user.total_xp }}</span>
-                    <a href="{{ url_for('history') }}" class="text-muted text-decoration-none small hover-info"><i class="bi bi-clock-history me-1"></i>History</a>
+
+                    {% set lvl = user.total_xp // 100 %}
+                    {% if current_user.theme == 'solo' %}
+                        {% if lvl < 10 %}{% set rank = 'E-RANK' %}{% set b_color = 'secondary' %}
+                        {% elif lvl < 20 %}{% set rank = 'D-RANK' %}{% set b_color = 'success' %}
+                        {% elif lvl < 30 %}{% set rank = 'C-RANK' %}{% set b_color = 'info' %}
+                        {% elif lvl < 40 %}{% set rank = 'B-RANK' %}{% set b_color = 'primary' %}
+                        {% elif lvl < 50 %}{% set rank = 'A-RANK' %}{% set b_color = 'warning text-dark' %}
+                        {% elif lvl < 100 %}{% set rank = 'S-RANK' %}{% set b_color = 'danger' %}
+                        {% else %}{% set rank = 'NATIONAL LEVEL' %}{% set b_color = 'dark border border-danger text-danger' %}
+                        {% endif %}
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-{{ b_color }} fw-bold shadow-sm" style="border-radius: 0; box-shadow: 0 0 10px rgba(13, 202, 240, 0.3); border: 1px solid rgba(13, 202, 240, 0.5);"><i class="bi bi-stars me-1"></i>{{ rank }}</span>
+                            <span class="badge bg-secondary bg-opacity-25 text-light fw-normal" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 0;">XP: {{ user.total_xp }}</span>
+                        </div>
+                    {% else %}
+                        <span class="badge bg-secondary bg-opacity-25 text-light fw-normal" style="border: 1px solid rgba(255,255,255,0.1);">All-Time Score: {{ user.total_xp }}</span>
+                    {% endif %}
+
+                    <a href="{{ url_for('history') }}" class="text-muted text-decoration-none small hover-info fw-bold"><i class="bi bi-clock-history me-1"></i>{% if current_user.theme == 'solo' %}ARCHIVE{% else %}History{% endif %}</a>
                 </div>
                 <p class="text-uppercase text-info mb-1 mt-2 fw-semibold" style="font-size: 0.75rem; letter-spacing: 1px;">Current Cycle Progress</p>
                 <h2 class="fw-bold text-white mb-2" id="monthlyXpDisplay">{{ monthly_xp }} XP</h2>
@@ -111,7 +129,6 @@
         </div>
     </div>
 </div>
-
 {% if overdue_count > 0 %}
 <div class="alert alert-warning d-flex align-items-center mb-4 shadow-sm" style="background: rgba(60, 40, 0, 0.4); border: 1px solid rgba(255, 193, 7, 0.2); border-radius: 12px;">
     <i class="bi bi-exclamation-circle-fill fs-5 me-3 text-warning"></i>
@@ -132,7 +149,7 @@
 <div class="mb-4 mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
         <h5 class="text-white mb-0 fw-bold">Workspace</h5>
-        
+
         <div class="d-flex flex-wrap align-items-center gap-2">
             <button class="btn btn-sm text-muted hover-info" onclick="replayTutorial()" title="Help">
                 <i class="bi bi-question-circle fs-6"></i>
@@ -143,13 +160,13 @@
             <a href="{{ url_for('mission_print') }}" target="_blank" class="btn btn-sm text-muted hover-info" title="Print List">
                 <i class="bi bi-printer fs-6"></i>
             </a>
-            
+
             <div class="vr bg-secondary mx-1" style="height: 24px; opacity: 0.3;"></div>
 
             <a href="{{ url_for('import_tasks') }}" class="btn btn-sm btn-outline-info" style="border-radius: 6px;" data-intro="Paste meeting notes or thoughts here, and the AI will instantly organize them into tasks." data-step="2">
                 <i class="bi bi-lightning-charge me-1"></i> Auto-Plan
             </a>
-            
+
             <a href="#" onclick="triggerGenie(event)" class="genie-css-btn flex-shrink-0 mx-1 text-decoration-none" data-intro="Use the AI Genie to automatically break down massive life goals into step-by-step daily plans." data-step="3">
                 <i class="bi bi-magic me-1"></i> AI Genie
             </a>
@@ -203,7 +220,7 @@
             {% set is_overdue = habit.target_date and habit.target_date < user.last_check_date and not habit.completed %}
             {% set is_completed_today = habit.name in todays_completed|default([]) %}
             {% set is_backlog = habit.target_date is none %}
-            
+
             {% set border_color = 'rgba(13, 202, 240, 0.5)' if habit.difficulty == 'Easy' else 'rgba(11, 94, 215, 0.5)' if habit.difficulty == 'Medium' else 'rgba(148, 0, 211, 0.5)' if habit.difficulty == 'Hard' else 'rgba(255, 68, 68, 0.5)' %}
 
             {% if not habit.completed or habit.is_daily or is_completed_today %}
@@ -247,9 +264,9 @@
                                     <i class="bi bi-calendar me-1"></i> {{ habit.target_date.strftime('%b %d') }}
                                 </span>
                             {% endif %}
-                            
+
                             <span class="text-muted" style="font-size: 0.75rem;">{{ habit.stat_type }} • {{ habit.difficulty }}</span>
-                            
+
                             {% if habit.is_daily %}
                                 <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary fw-normal" style="font-size: 0.65rem;"><i class="bi bi-arrow-repeat me-1"></i>Recurring</span>
                             {% endif %}
@@ -257,7 +274,7 @@
                     </div>
                 </div>
                 <div class="d-flex gap-3 ms-3 align-self-start pt-1 opacity-50">
-                    <button type="button" class="btn btn-link text-muted p-0 hover-info" onclick="openEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')"><i class="bi bi-three-dots"></i></button>
+                    <button type="button" class="btn btn-link text-muted p-0 hover-info" onclick="openEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')"></i></button>
                 </div>
             </div>
             {% endif %}
@@ -537,32 +554,32 @@ function unlockAndRedirect() {
             }
         } catch (error) { console.error('Sync failed', error); }
     }
-    
+
     // --- 5. BULLETPROOF JAVASCRIPT MODAL HELPERS ---
-    
+
     function openEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
         document.getElementById('edit_habit_id').value = id;
         document.getElementById('edit_habit_name').value = name;
         document.getElementById('edit_habit_difficulty').value = difficulty;
         document.getElementById('edit_habit_category').value = catName;
         document.getElementById('edit_habit_description').value = desc;
-        
+
         const dateInput = document.getElementById('edit_habit_date');
         if (dateStr && dateStr !== 'None') dateInput.value = dateStr; else dateInput.value = '';
-        
+
         document.getElementById('edit_habit_daily').checked = (isDaily === 'True' || isDaily === 'true');
         document.getElementById('delete_habit_btn').href = "/delete_habit/" + id;
-        
+
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('editHabitModal');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.show();
     }
-    
+
     function openGoalEditModal(id, name) {
         document.getElementById('edit_goal_id').value = id;
         document.getElementById('edit_goal_name').value = name;
-        
+
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('editGoalModal');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
@@ -571,7 +588,7 @@ function unlockAndRedirect() {
 
     function openAddHabitModal(goalId) {
         document.getElementById('goal_id_input').value = goalId;
-        
+
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('addHabitModal');
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);

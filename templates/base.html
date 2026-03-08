@@ -15,15 +15,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
     <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-TRBB0S0LWQ');
+    </script>
 
-  gtag('config', 'G-TRBB0S0LWQ');
-</script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
     <style>
         .introjs-tooltip {
             background-color: rgba(5, 0, 20, 0.95) !important;
@@ -45,6 +45,118 @@
         }
         .introjs-skipbutton { background-color: transparent !important; color: #dc3545 !important; border: 1px solid #dc3545 !important; }
     </style>
+
+    {% if current_user.is_authenticated and current_user.theme == 'solo' %}
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #02040a !important;
+            background-image: 
+                linear-gradient(rgba(13, 202, 240, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(13, 202, 240, 0.05) 1px, transparent 1px) !important;
+            background-size: 30px 30px !important;
+            font-family: 'Rajdhani', sans-serif !important;
+            color: #e0f2fe !important;
+        }
+
+        /* Override the normal theme colors instantly */
+        :root {
+            --glass-bg: rgba(4, 9, 18, 0.9) !important;
+            --glass-border: rgba(13, 202, 240, 0.6) !important;
+        }
+
+        .card, .premium-card, .goal-card, .modal-content, .accordion-item {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: 0 0 20px rgba(13, 202, 240, 0.15), inset 0 0 10px rgba(13, 202, 240, 0.05) !important;
+            border-radius: 0px !important; /* Sharp System Edges */
+        }
+
+        h1, h2, h3, h4, h5, h6, .card-header, .navbar-brand {
+            font-family: 'Rajdhani', sans-serif !important;
+            text-transform: uppercase !important;
+            letter-spacing: 2px !important;
+            color: #0dcaf0 !important;
+            text-shadow: 0 0 12px rgba(13, 202, 240, 0.6) !important;
+            border-color: rgba(13, 202, 240, 0.3) !important;
+            font-weight: 700 !important;
+        }
+
+        .navbar {
+            background: rgba(2, 4, 10, 0.95) !important;
+            border-bottom: 2px solid rgba(13, 202, 240, 0.6) !important;
+            box-shadow: 0 5px 30px rgba(13, 202, 240, 0.2) !important;
+        }
+
+        .btn-info, .btn-outline-info, .btn-primary, .genie-css-btn {
+            background: rgba(13, 202, 240, 0.1) !important;
+            border: 1px solid #0dcaf0 !important;
+            color: #0dcaf0 !important;
+            box-shadow: 0 0 10px rgba(13, 202, 240, 0.2) !important;
+            border-radius: 0px !important;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            transition: all 0.2s ease !important;
+        }
+        
+        .btn-info:hover, .btn-outline-info:hover, .btn-primary:hover, .genie-css-btn:hover {
+            background: #0dcaf0 !important;
+            color: #000 !important;
+            box-shadow: 0 0 25px rgba(13, 202, 240, 0.8) !important;
+        }
+
+        .modern-input, .form-control, .form-select {
+            background: rgba(0, 0, 0, 0.8) !important;
+            border: 1px solid rgba(13, 202, 240, 0.4) !important;
+            color: #0dcaf0 !important;
+            border-radius: 0 !important;
+            font-family: 'Rajdhani', sans-serif !important;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .modern-input:focus, .form-control:focus {
+            box-shadow: 0 0 15px rgba(13, 202, 240, 0.5) !important;
+            border-color: #0dcaf0 !important;
+        }
+
+        .list-group-item, .task-item, .audit-row, .preset-row {
+            background: transparent !important;
+            border-bottom: 1px solid rgba(13, 202, 240, 0.2) !important;
+        }
+
+        .text-muted, .text-white-50, p, .small {
+            color: rgba(13, 202, 240, 0.8) !important;
+        }
+
+        .progress {
+            background: rgba(13, 202, 240, 0.1) !important;
+            border: 1px solid rgba(13, 202, 240, 0.4) !important;
+            border-radius: 0 !important;
+        }
+        
+        .progress-bar {
+            background: #0dcaf0 !important;
+            box-shadow: 0 0 15px #0dcaf0 !important;
+        }
+
+        .badge.bg-info {
+            background: rgba(13, 202, 240, 0.1) !important;
+            border: 1px solid #0dcaf0 !important;
+            color: #0dcaf0 !important;
+            border-radius: 0 !important;
+            box-shadow: 0 0 10px rgba(13, 202, 240, 0.3) !important;
+        }
+        
+        /* Hide theme toggle in solo mode as it forces dark-system anyway */
+        #theme-toggle {
+            display: none !important;
+        }
+    </style>
+    {% endif %}
 </head>
 <body>
 
@@ -52,7 +164,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark mb-4 sticky-top" style="background: rgba(5, 7, 10, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
   <div class="container-fluid px-3">
     <a class="navbar-brand text-info fw-bold" href="{{ url_for('dashboard') }}" style="font-family: 'Orbitron', sans-serif; letter-spacing: 2px;">
-       <i class="bi bi-cpu-fill me-2"></i>COSMO
+       <i class="bi bi-cpu-fill me-2"></i>{% if current_user.theme == 'solo' %}SYSTEM{% else %}COSMO{% endif %}
     </a>
 
     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -62,42 +174,42 @@
     <div class="collapse navbar-collapse" id="navbarNav">
         <div class="navbar-nav ms-auto align-items-center">
 
-            <a class="nav-link py-2 px-3" href="{{ url_for('dashboard') }}">
-                <i class="bi bi-grid me-1"></i> Dashboard
+            <a class="nav-link py-2 px-3 fw-semibold" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-grid me-1"></i> {% if current_user.theme == 'solo' %}Status Window{% else %}Dashboard{% endif %}
             </a>
 
             <div class="nav-item dropdown px-2">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-sliders me-1"></i> Operations
+                <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-sliders me-1"></i> {% if current_user.theme == 'solo' %}Dungeons{% else %}Operations{% endif %}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark border-secondary shadow-lg">
-                    <li><a class="dropdown-item text-warning" href="{{ url_for('audit') }}"><i class="bi bi-clipboard-check me-2"></i>Audit</a></li>
-                      <a class="dropdown-item text-info" href="{{ url_for('backlog_calculator') }}"><i class="bi bi-calculator me-2"></i>Backlog Calculator</a>
-                      <a class="dropdown-item" href="{{ url_for('planning') }}"><i class="bi bi-map me-2"></i>Planning</a>
+                    <li><a class="dropdown-item text-warning" href="{{ url_for('audit') }}"><i class="bi bi-clipboard-check me-2"></i>{% if current_user.theme == 'solo' %}Penalty Logs{% else %}Audit{% endif %}</a></li>
+                    <li><a class="dropdown-item text-info" href="{{ url_for('backlog_calculator') }}"><i class="bi bi-calculator me-2"></i>Backlog Calculator</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('planning') }}"><i class="bi bi-map me-2"></i>{% if current_user.theme == 'solo' %}Quest Board{% else %}Planning{% endif %}</a></li>
                     <li><hr class="dropdown-divider border-secondary"></li>
-                    <li><a class="dropdown-item" href="{{ url_for('focus_hub') }}"><i class="bi bi-stopwatch me-2"></i>Focus Hub</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('focus_hub') }}"><i class="bi bi-stopwatch me-2"></i>{% if current_user.theme == 'solo' %}Time Dilation{% else %}Focus Hub{% endif %}</a></li>
                 </ul>
             </div>
 
             <div class="nav-item dropdown px-2">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                    <i class="bi bi-graph-up me-1"></i> Insights
+                <a class="nav-link dropdown-toggle fw-semibold" href="#" data-bs-toggle="dropdown">
+                    <i class="bi bi-graph-up me-1"></i> {% if current_user.theme == 'solo' %}System Logs{% else %}Insights{% endif %}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark border-secondary shadow-lg">
                     <li><a class="dropdown-item" href="{{ url_for('analytics') }}"><i class="bi bi-pie-chart me-2"></i>Analytics</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('history') }}"><i class="bi bi-clock-history me-2"></i>Logs</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('history') }}"><i class="bi bi-clock-history me-2"></i>{% if current_user.theme == 'solo' %}Archive{% else %}Logs{% endif %}</a></li>
                 </ul>
             </div>
 
             <div class="nav-item dropdown px-2">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                <a class="nav-link dropdown-toggle fw-semibold" href="#" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle me-1"></i> System
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end border-secondary shadow-lg">
                     <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person-badge me-2"></i>Profile</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="bi bi-sliders me-2"></i>Config</a></li>
                     {% if current_user.is_admin %}
-                    <li><a class="dropdown-item text-danger" href="{{ url_for('admin_panel') }}"><i class="bi bi-shield-lock me-2"></i>Admin</a></li>
+                    <li><a class="dropdown-item text-danger" href="{{ url_for('admin_panel') }}"><i class="bi bi-shield-lock me-2"></i>Admin Base</a></li>
                     {% endif %}
                     <li><hr class="dropdown-divider border-secondary"></li>
                     <li><a class="dropdown-item text-muted" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
@@ -107,13 +219,14 @@
             <div class="nav-item px-3 d-none d-lg-block border-start border-secondary ms-2 ps-3">
                 <div class="d-flex flex-column align-items-end" style="line-height: 1;">
                     <span id="system-clock" class="text-info fw-bold font-monospace" style="letter-spacing: 1px;">00:00:00</span>
-                    <span id="system-date" class="text-muted small" style="font-size: 0.65rem;">INITIALIZING...</span>
+                    <span id="system-date" class="text-muted small" style="font-size: 0.65rem;">{% if current_user.theme == 'solo' %}SYSTEM ACTIVE{% else %}INITIALIZING...{% endif %}</span>
                 </div>
             </div>
 
             <button id="theme-toggle" class="btn btn-sm btn-outline-light ms-lg-3 mt-2 mt-lg-0">
               <i class="bi bi-moon-stars"></i>
             </button>
+
         </div>
     </div>
   </div>
@@ -144,7 +257,6 @@
 </div>
 
 <div id="genie-overlay" class="d-none">
-
     <div class="smoke-container">
         <div class="smoke-cloud cloud-1"></div>
         <div class="smoke-cloud cloud-2"></div>
@@ -166,6 +278,7 @@
         </svg>
     </div>
 </div>
+
 <script>
 // 1. Disable Right-Click (Context Menu)
 document.addEventListener('contextmenu', event => event.preventDefault());

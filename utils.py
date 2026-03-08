@@ -45,6 +45,9 @@ FEEDBACK_FALLBACKS = [
 # ---------------------------------------------------------
 # 1. SIMPLE KEYWORD PARSER (Fallback Logic)
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 1. SIMPLE KEYWORD PARSER (Fallback Logic)
+# ---------------------------------------------------------
 def guess_category(text):
     text = text.lower()
     strength_keywords = ['gym', 'run', 'walk', 'exercise', 'pushup', 'sport', 'workout', 'lift']
@@ -53,10 +56,20 @@ def guess_category(text):
     creativity_keywords = ['draw', 'paint', 'write', 'design', 'idea', 'music', 'video', 'edit']
 
     category = "General"
-    if any(word in text for word in strength_keywords): category = "Strength"
-    elif any(word in text for word in intel_keywords): category = "Intelligence"
-    elif any(word in text for word in charisma_keywords): category = "Charisma"
-    elif any(word in text for word in creativity_keywords): category = "Creativity"
+    stat_type = "CON"
+
+    if any(word in text for word in strength_keywords):
+        category = "Strength"
+        stat_type = "STR"
+    elif any(word in text for word in intel_keywords):
+        category = "Intelligence"
+        stat_type = "INT"
+    elif any(word in text for word in charisma_keywords):
+        category = "Charisma"
+        stat_type = "CHA"
+    elif any(word in text for word in creativity_keywords):
+        category = "Creativity"
+        stat_type = "WIS"
 
     difficulty = 1
     if "hour" in text or "finish" in text or "complete" in text: difficulty = 2
@@ -65,8 +78,8 @@ def guess_category(text):
     return {
         "name": text.capitalize(),
         "category": category,
+        "stat_type": stat_type,
         "difficulty": difficulty,
-        # ADDED THESE TWO LINES TO PREVENT CRASHES IN APP.PY
         "description": "",
         "target_date": None
     }
@@ -75,12 +88,10 @@ def guess_category(text):
 # 2. SMART BRAIN DUMP PARSER (Gemini)
 # ---------------------------------------------------------
 def smart_ai_parse(text_input, primary_api_key):
-    # Proxy Setup for PythonAnywhere
     if 'PYTHONANYWHERE_DOMAIN' in os.environ:
         os.environ["http_proxy"] = "http://proxy.server:3128"
         os.environ["https_proxy"] = "http://proxy.server:3128"
 
-    # Load & Shuffle Keys
     available_keys = [primary_api_key]
     if os.getenv('GEMINI_API_KEY_2'): available_keys.append(os.getenv('GEMINI_API_KEY_2'))
     if os.getenv('GEMINI_API_KEY_3'): available_keys.append(os.getenv('GEMINI_API_KEY_3'))
@@ -88,7 +99,6 @@ def smart_ai_parse(text_input, primary_api_key):
 
     today_str = date.today().strftime("%Y-%m-%d")
 
-    # PROMPT: Updated to allow Custom Categories & Date Extraction
     prompt = f"""
     You are a logic-based task extraction engine.
     Current Date: {today_str}
@@ -97,29 +107,24 @@ def smart_ai_parse(text_input, primary_api_key):
     CORE OBJECTIVE:
     Analyze the input and convert it into a structured JSON list of actionable tasks.
 
-    OPERATIONAL MODES:
-    1. IF USER ASKS FOR A PLAN (e.g., "How to get fit", "Learn Python"):
-       - Break the goal into 5-10 logical, sequential steps.
-       - Assign realistic dates starting from today.
-       - Description: Write one clear, simple instruction on how to execute the step.
-
-    2. IF USER PROVIDES A LIST (e.g., "Buy milk, gym, email boss"):
-       - Extract distinct tasks.
-       - Target Date: Today (unless specific dates are mentioned like "tomorrow").
-       - Description: Keep it empty or very brief.
-
     STYLE GUIDELINES:
     - Task Names: Simple and direct (e.g., "Read Chapter 1").
-    - Language: Serious, easy to understand. No slang, no roleplay.
-    - Category: Use standard tags (Strength, Intelligence, Charisma, Creativity, General) UNLESS the user specifies a new category or the task fits a specific project (e.g., "Finance", "Coding", "Housework").
-    - Difficulty: 1 (Easy) to 4 (Epic/Hard).
+    - Category: The Project name grouping (e.g. "Fitness", "Finance", "Housework").
+    - stat_type: YOU MUST ASSIGN ONE OF THESE EXACT STRINGS based on the task type:
+      * "STR" : Physical, Health, Exercise, Gym
+      * "INT" : Learning, Deep Work, Coding, Studying
+      * "WIS" : Admin, Planning, Meditation, Strategy, Finance
+      * "CON" : Chores, Routine, Errands, Cleaning
+      * "CHA" : Social, Meetings, Emails, Calls
+    - Difficulty: 1 (Easy) to 4 (Epic).
 
     OUTPUT FORMAT:
-    Return ONLY raw JSON. No markdown.
+    Return ONLY raw JSON. Do not include markdown formatting like ```json.
     [
         {{
             "name": "Task Name",
             "category": "CategoryString",
+            "stat_type": "STR",
             "difficulty": 1,
             "target_date": "YYYY-MM-DD",
             "description": "Simple guide."
@@ -131,7 +136,6 @@ def smart_ai_parse(text_input, primary_api_key):
         if not current_key: continue
         try:
             genai.configure(api_key=current_key)
-            # Try specific models in the exact order requested
             for model_name in MODEL_LIST:
                 try:
                     model = genai.GenerativeModel(model_name)
@@ -149,7 +153,6 @@ def smart_ai_parse(text_input, primary_api_key):
         except Exception:
             continue
 
-    # Fallback to local logic if AI fails
     return [guess_category(line) for line in text_input.split('\n') if line.strip()]
 
 # ---------------------------------------------------------

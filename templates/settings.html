@@ -1,31 +1,118 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    /* =========================================
+       FLAGSHIP SETTINGS & LIBRARY STYLES
+       ========================================= */
+    .premium-card {
+        background: var(--glass-bg) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+
+    .modern-input {
+        background: rgba(0,0,0,0.2) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #fff !important;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .modern-input:focus {
+        border-color: #0dcaf0 !important;
+        box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2) !important;
+    }
+
+    /* Danger Zone */
+    .danger-card {
+        background: radial-gradient(circle at top right, rgba(255, 68, 68, 0.1), transparent);
+        border: 1px solid rgba(255, 68, 68, 0.3);
+    }
+
+    /* Accordion Customization */
+    .premium-accordion .accordion-item {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px !important;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    .premium-accordion .accordion-button {
+        background: rgba(0, 0, 0, 0.2);
+        color: #fff;
+        box-shadow: none !important;
+        padding: 16px 20px;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }
+    .premium-accordion .accordion-button:not(.collapsed) {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .premium-accordion .accordion-button::after {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    /* Library Table Rows */
+    .preset-row {
+        background: rgba(255, 255, 255, 0.01);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.2s ease;
+    }
+    .preset-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Auto-Submit Toggle Switch */
+    .theme-switch {
+        width: 3em !important;
+        height: 1.5em !important;
+        cursor: pointer;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    .theme-switch:checked {
+        background-color: #0dcaf0;
+        border-color: #0dcaf0;
+        box-shadow: 0 0 15px rgba(13, 202, 240, 0.4);
+    }
+</style>
+
 {% macro render_preset_table(all_presets, stat) %}
-<div class="table-responsive">
-    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+<div class="table-responsive m-0">
+    <table class="table table-borderless table-hover mb-0 align-middle">
         <tbody>
             {% for preset in all_presets if preset.attribute == stat %}
-            <tr>
-                <td class="ps-4 align-middle w-50">
-                    <div class="fw-bold text-white">{{ preset.name }}</div>
-                    <div class="small text-muted">{{ preset.category }}</div>
+            <tr class="preset-row">
+                <td class="ps-4 py-3 w-50">
+                    <div class="fw-bold text-white fs-6">{{ preset.name }}</div>
+                    <div class="small text-white-50"><i class="bi bi-folder2 me-1"></i>{{ preset.category }}</div>
                 </td>
-                <td class="align-middle text-center">
-                    <span class="badge border bg-transparent opacity-75
-                        {% if preset.difficulty == 'Easy' %}border-success text-success
-                        {% elif preset.difficulty == 'Medium' %}border-warning text-warning
-                        {% else %}border-danger text-danger{% endif %}">
+                <td class="text-center py-3">
+                    <span class="badge rounded-pill fw-semibold
+                        {% if preset.difficulty == 'Easy' %}text-info border border-info bg-info bg-opacity-10
+                        {% elif preset.difficulty == 'Medium' %}text-primary border border-primary bg-primary bg-opacity-10
+                        {% else %}text-danger border border-danger bg-danger bg-opacity-10{% endif %}">
                         {{ preset.difficulty }}
                     </span>
                     {% if preset.is_daily %}
-                    <i class="bi bi-arrow-repeat text-info ms-2" title="Daily Loop"></i>
+                    <i class="bi bi-arrow-repeat text-info ms-2 opacity-75" title="Daily Loop" style="font-size: 1.1rem;"></i>
                     {% endif %}
                 </td>
-                <td class="text-end pe-4 align-middle">
-                    <a href="{{ url_for('restore_preset', preset_id=preset.id) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-plus-lg"></i> Restore
+                <td class="text-end pe-4 py-3">
+                    <a href="{{ url_for('restore_preset', preset_id=preset.id) }}" class="btn btn-sm btn-outline-info" style="border-radius: 6px;">
+                        <i class="bi bi-download me-1"></i> Restore
                     </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center py-4 text-white-50 small">
+                    No presets archived for this attribute.
                 </td>
             </tr>
             {% endfor %}
@@ -34,195 +121,229 @@
 </div>
 {% endmacro %}
 
-<div class="row g-4">
-
-    <div class="col-md-5">
-        <h4 class="mb-3 text-info"><i class="bi bi-person-gear me-2"></i>Account Config</h4>
-
-        <div class="card mb-4 border-secondary bg-dark shadow-sm">
-            <div class="card-header border-bottom border-secondary bg-transparent">
-                <h5 class="m-0 text-white">Identity & Security</h5>
-            </div>
-            <div class="card-body">
-                <form action="{{ url_for('update_profile') }}" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Codename</label>
-                        <input type="text" name="username" class="form-control bg-dark text-white border-secondary" value="{{ current_user.username }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">New Password</label>
-                        <input type="password" name="password" class="form-control bg-dark text-white border-secondary" placeholder="Leave blank to keep current">
-                    </div>
-                    <button type="submit" class="btn btn-outline-info w-100">Update Credentials</button>
-                </form>
-            </div>
-        </div>
-
-<div class="card bg-dark border-secondary mb-4">
-<div class="card-header border-secondary bg-transparent py-3">
-        <h5 class="mb-0 text-info" style="font-family: 'Orbitron', sans-serif;">
-            <i class="bi bi-shield-lock me-2"></i>SECURITY PROTOCOLS
-        </h5>
+<div class="container-fluid px-0">
+    
+    <div class="mb-5">
+        <h2 class="text-white fw-bold mb-1" style="font-family: 'Inter', sans-serif; letter-spacing: -1px;">
+            <i class="bi bi-sliders text-info me-2"></i>System Configuration
+        </h2>
+        <p class="text-white-50">Manage your identity, security protocols, and archived presets.</p>
     </div>
-    <div class="card-body">
-        <form action="{{ url_for('settings') }}" method="POST">
-            <div class="mb-3">
-                <label class="form-label text-muted small">Recovery Comms Channel (Email)</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-dark border-secondary text-secondary">
-                        <i class="bi bi-envelope"></i>
-                    </span>
-                    <input type="email" name="email" class="form-control bg-dark text-white border-secondary"
-                           value="{{ user.email if user.email else '' }}"
-                           placeholder="Enter secure email address...">
-                    <button class="btn btn-outline-info" type="submit">
-                        <i class="bi bi-save me-1"></i> SAVE
-                    </button>
-                </div>
 
-                {% if user.email %}
-                    <div class="form-text text-success mt-2 small">
-                        <i class="bi bi-check-circle-fill me-1"></i> Uplink Active. Recovery protocols enabled.
-                    </div>
-                {% else %}
-                    <div class="form-text text-warning mt-2 small">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>CRITICAL:</strong> Uplink required for password reset.
-                    </div>
-                {% endif %}
-            </div>
-        </form>
-    </div>
-</div>
+    <div class="row g-4">
+        <div class="col-lg-5">
 
-        <div class="card border-danger bg-dark shadow-sm" style="border: 1px solid rgba(220, 53, 69, 0.5);">
-            <div class="card-header border-bottom border-danger bg-transparent">
-                <h5 class="m-0 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Danger Zone</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="card premium-card mb-4 position-relative overflow-hidden" style="border-color: rgba(13, 202, 240, 0.4); box-shadow: 0 0 30px rgba(13, 202, 240, 0.1);">
+                <div class="position-absolute top-50 start-50 translate-middle w-100 h-100" style="background: radial-gradient(circle, rgba(13,202,240,0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                
+                <div class="card-body p-4 position-relative z-1 d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white mb-0">Factory Reset</h6>
-                        <p class="text-muted small m-0">Wipes XP & Stats.</p>
+                        <h5 class="text-info fw-bold mb-1" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">
+                            <i class="bi bi-cpu-fill me-2"></i>AWAKEN SYSTEM
+                        </h5>
+                        <p class="text-white-50 small mb-0">Activate the 'Solo Leveling' interface. Your reality will change.</p>
                     </div>
-                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#resetModal">Reset</button>
+                    <form action="{{ url_for('settings') }}" method="POST" class="m-0 p-0">
+                        <div class="form-check form-switch m-0 p-0 d-flex align-items-center">
+                            <input class="form-check-input theme-switch m-0" type="checkbox" name="theme_toggle" id="themeToggle" 
+                                   onchange="this.form.submit()" 
+                                   {% if current_user.theme == 'solo' %}checked{% endif %}>
+                        </div>
+                    </form>
                 </div>
-                <hr class="border-secondary">
-                <div class="card bg-danger bg-opacity-10 border-danger mt-5">
-                 <div class="card-body text-center">
-                   <h5 class="text-danger">DANGER ZONE</h5>
-                     <p class="text-muted small">Once you delete your account, there is no going back. All XP and items will be lost.</p>
+            </div>
 
-                       <form action="{{ url_for('delete_account') }}" method="POST" onsubmit="return confirm('Are you absolutely sure? This cannot be undone.');">
-                        <button type="submit" class="btn btn-danger fw-bold">
-                         <i class="fas fa-radiation-alt me-2"></i>DELETE ACCOUNT
+            <div class="card premium-card mb-4">
+                <div class="card-header border-bottom border-secondary bg-transparent py-3">
+                    <h6 class="m-0 text-white fw-bold">Identity & Credentials</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{{ url_for('update_profile') }}" method="POST">
+                        <div class="mb-4">
+                            <label class="form-label text-white-50 small fw-semibold">Agent Codename</label>
+                            <input type="text" name="username" class="form-control modern-input" value="{{ current_user.username }}" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-white-50 small fw-semibold">New Password</label>
+                            <input type="password" name="password" class="form-control modern-input" placeholder="Leave blank to keep current">
+                        </div>
+                        <button type="submit" class="btn btn-info fw-bold text-dark w-100 shadow-sm" style="border-radius: 8px;">
+                            Update Credentials
                         </button>
-                       </form>
-                 </div>
+                    </form>
                 </div>
             </div>
+
+            <div class="card premium-card mb-4">
+                <div class="card-header border-bottom border-secondary bg-transparent py-3">
+                    <h6 class="m-0 text-white fw-bold"><i class="bi bi-envelope-check me-2 text-success"></i>Recovery Protocols</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{{ url_for('settings') }}" method="POST">
+                        <label class="form-label text-white-50 small fw-semibold">Secure Email Address</label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-dark border-secondary text-muted">@</span>
+                            <input type="email" name="email" class="form-control modern-input" value="{{ user.email if user.email else '' }}" placeholder="Enter recovery email...">
+                            <button class="btn btn-outline-success fw-bold" type="submit" style="border-radius: 0 8px 8px 0;">SAVE</button>
+                        </div>
+                        
+                        {% if user.email %}
+                            <div class="text-success small fw-semibold mt-2">
+                                <i class="bi bi-shield-check me-1"></i> Uplink Active. Password recovery enabled.
+                            </div>
+                        {% else %}
+                            <div class="text-warning small fw-semibold mt-2">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>CRITICAL:</strong> No email set. Account unrecoverable if password is lost.
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <div class="card premium-card danger-card mb-4 mb-lg-0">
+                <div class="card-header border-bottom border-danger bg-transparent py-3">
+                    <h6 class="m-0 text-danger fw-bold"><i class="bi bi-radioactive me-2"></i>Danger Zone</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-4 border-bottom" style="border-color: rgba(255, 68, 68, 0.2) !important;">
+                        <div>
+                            <h6 class="text-white mb-1">Factory Reset</h6>
+                            <p class="text-white-50 small m-0" style="max-width: 200px;">Wipes Level, XP, and Stats back to zero.</p>
+                        </div>
+                        <button class="btn btn-outline-warning btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#resetModal" style="border-radius: 6px;">Reset Stats</button>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-danger mb-1 fw-bold">Eradicate Account</h6>
+                            <p class="text-white-50 small m-0" style="max-width: 200px;">Permanent deletion. No recovery possible.</p>
+                        </div>
+                        <button class="btn btn-danger btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal" style="border-radius: 6px;">
+                            <i class="bi bi-trash3 me-1"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </div>
 
-    <div class="col-md-7">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="text-success m-0"><i class="bi bi-archive me-2"></i>Quest Library</h4>
-            <span class="badge bg-dark border border-secondary">{{ presets|length }} Presets</span>
-        </div>
+        <div class="col-lg-7">
+            <div class="card premium-card h-100">
+                <div class="card-header border-bottom border-secondary bg-transparent p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="text-white fw-bold mb-1"><i class="bi bi-archive-fill text-info me-2"></i>Quest Library</h5>
+                        <p class="text-white-50 small mb-0">Restore deleted or completed presets back into your active workspace.</p>
+                    </div>
+                    <span class="badge bg-dark border border-secondary text-muted rounded-pill fs-6 px-3 py-2">{{ presets|length }} Archived</span>
+                </div>
+                
+                <div class="card-body p-4">
+                    <div class="accordion premium-accordion" id="questAccordion">
 
-        <div class="accordion" id="questAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed text-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSTR">
+                                    <i class="bi bi-fire me-3 fs-5"></i> STRENGTH PROTOCOLS (STR)
+                                </button>
+                            </h2>
+                            <div id="collapseSTR" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
+                                <div class="accordion-body p-0">
+                                    {{ render_preset_table(presets, 'STR') }}
+                                </div>
+                            </div>
+                        </div>
 
-            <div class="accordion-item bg-dark border-secondary">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed bg-dark text-danger fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSTR">
-                        <i class="bi bi-fire me-2"></i> STRENGTH PROTOCOLS (STR)
-                    </button>
-                </h2>
-                <div id="collapseSTR" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
-                    <div class="accordion-body p-0">
-                        {{ render_preset_table(presets, 'STR') }}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseINT">
+                                    <i class="bi bi-cpu me-3 fs-5"></i> INTELLECT PROTOCOLS (INT)
+                                </button>
+                            </h2>
+                            <div id="collapseINT" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
+                                <div class="accordion-body p-0">
+                                    {{ render_preset_table(presets, 'INT') }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed text-info" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWIS">
+                                    <i class="bi bi-eye me-3 fs-5"></i> WISDOM PROTOCOLS (WIS)
+                                </button>
+                            </h2>
+                            <div id="collapseWIS" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
+                                <div class="accordion-body p-0">
+                                    {{ render_preset_table(presets, 'WIS') }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed text-success" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCON">
+                                    <i class="bi bi-heart-pulse me-3 fs-5"></i> VITALITY PROTOCOLS (CON)
+                                </button>
+                            </h2>
+                            <div id="collapseCON" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
+                                <div class="accordion-body p-0">
+                                    {{ render_preset_table(presets, 'CON') }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed text-warning" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCHA">
+                                    <i class="bi bi-chat-quote me-3 fs-5"></i> CHARISMA PROTOCOLS (CHA)
+                                </button>
+                            </h2>
+                            <div id="collapseCHA" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
+                                <div class="accordion-body p-0">
+                                    {{ render_preset_table(presets, 'CHA') }}
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
-
-            <div class="accordion-item bg-dark border-secondary">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed bg-dark text-primary fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseINT">
-                        <i class="bi bi-cpu me-2"></i> INTELLECT PROTOCOLS (INT)
-                    </button>
-                </h2>
-                <div id="collapseINT" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
-                    <div class="accordion-body p-0">
-                        {{ render_preset_table(presets, 'INT') }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item bg-dark border-secondary">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed bg-dark text-info fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWIS">
-                        <i class="bi bi-eye me-2"></i> WISDOM PROTOCOLS (WIS)
-                    </button>
-                </h2>
-                <div id="collapseWIS" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
-                    <div class="accordion-body p-0">
-                        {{ render_preset_table(presets, 'WIS') }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item bg-dark border-secondary">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed bg-dark text-success fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCON">
-                        <i class="bi bi-heart-pulse me-2"></i> VITALITY PROTOCOLS (CON)
-                    </button>
-                </h2>
-                <div id="collapseCON" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
-                    <div class="accordion-body p-0">
-                        {{ render_preset_table(presets, 'CON') }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item bg-dark border-secondary">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed bg-dark text-warning fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCHA">
-                        <i class="bi bi-chat-quote me-2"></i> CHARISMA PROTOCOLS (CHA)
-                    </button>
-                </h2>
-                <div id="collapseCHA" class="accordion-collapse collapse" data-bs-parent="#questAccordion">
-                    <div class="accordion-body p-0">
-                        {{ render_preset_table(presets, 'CHA') }}
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 </div>
 
 <div class="modal fade" id="resetModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-warning">
-            <div class="modal-header border-0"><h5 class="modal-title text-warning">Confirm Factory Reset</h5></div>
-            <div class="modal-body text-white">Are you sure? Your Level, XP, and Stats will drop to zero. This cannot be undone.</div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="{{ url_for('reset_progress') }}" class="btn btn-warning">Confirm Reset</a>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-warning shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom border-secondary"><h5 class="modal-title text-warning fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Reset</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-4 text-white-50">
+                Are you sure? Your <strong class="text-white">Level, XP, and Stats</strong> will drop to zero. Your tasks will remain, but your progress will be wiped. This cannot be undone.
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('reset_progress') }}" method="POST" class="m-0">
+                    <button type="submit" class="btn btn-warning fw-bold text-dark">Confirm Reset</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
 <div class="modal fade" id="deleteAccountModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-danger">
-            <div class="modal-header border-0"><h5 class="modal-title text-danger">Confirm Self Destruct</h5></div>
-            <div class="modal-body text-white">This will permanently erase <b>{{ current_user.username }}</b> from the database.</div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="{{ url_for('delete_account') }}" class="btn btn-danger">Delete Everything</a>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-danger shadow-lg" style="border-radius: 12px; box-shadow: 0 0 30px rgba(255, 68, 68, 0.2) !important;">
+            <div class="modal-header border-bottom border-secondary"><h5 class="modal-title text-danger fw-bold"><i class="bi bi-radioactive me-2"></i>Self Destruct</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-4 text-white-50">
+                This will permanently erase the agent <b class="text-white">{{ current_user.username }}</b> from the database. All tasks, presets, and progress will be eradicated.
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abort</button>
+                <form action="{{ url_for('delete_account') }}" method="POST" class="m-0">
+                    <button type="submit" class="btn btn-danger fw-bold">Eradicate Account</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}

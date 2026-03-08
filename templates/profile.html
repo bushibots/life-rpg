@@ -1,40 +1,167 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    /* =========================================
+       SYSTEM AWAKENING ANIMATIONS & FEEL
+       ========================================= */
+    /* 1. Window Initial Reveal */
+    @keyframes systemReveal {
+        0% { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); }
+        100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .system-reveal {
+        animation: systemReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* 2. Holographic Avatar Pulse */
+    @keyframes holoPulse {
+        0% { box-shadow: 0 0 15px rgba(13, 202, 240, 0.2), inset 0 0 10px rgba(13, 202, 240, 0.1); border-color: rgba(13, 202, 240, 0.5); }
+        50% { box-shadow: 0 0 40px rgba(13, 202, 240, 0.7), inset 0 0 20px rgba(13, 202, 240, 0.4); border-color: #fff; }
+        100% { box-shadow: 0 0 15px rgba(13, 202, 240, 0.2), inset 0 0 10px rgba(13, 202, 240, 0.1); border-color: rgba(13, 202, 240, 0.5); }
+    }
+    .holo-avatar {
+        animation: holoPulse 4s infinite ease-in-out;
+        transition: all 0.3s ease;
+    }
+    .holo-avatar:hover {
+        transform: scale(1.05);
+        animation: none;
+        box-shadow: 0 0 50px rgba(13, 202, 240, 1), inset 0 0 30px rgba(13, 202, 240, 0.8);
+        border-color: #fff;
+    }
+
+    /* 3. Scanline CRT Overlay */
+    .scanline-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(13, 202, 240, 0.05) 50%, rgba(13, 202, 240, 0.05));
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 1;
+        opacity: 0.7;
+    }
+
+    /* 4. Threat Level Pulse (For National Level / S-Rank) */
+    @keyframes threatPulse {
+        0% { box-shadow: 0 0 15px rgba(220, 53, 69, 0.4); text-shadow: 0 0 10px rgba(220, 53, 69, 0.5); border-color: rgba(220, 53, 69, 0.6); }
+        50% { box-shadow: 0 0 35px rgba(220, 53, 69, 1); text-shadow: 0 0 15px rgba(255, 255, 255, 1); border-color: #ff4444; }
+        100% { box-shadow: 0 0 15px rgba(220, 53, 69, 0.4); text-shadow: 0 0 10px rgba(220, 53, 69, 0.5); border-color: rgba(220, 53, 69, 0.6); }
+    }
+    .threat-level-max {
+        animation: threatPulse 2s infinite ease-in-out !important;
+        background: rgba(20, 0, 0, 0.8) !important;
+        border: 1px solid #ff4444 !important;
+        color: #ff4444 !important;
+    }
+
+    /* 5. Data Float Effect */
+    @keyframes dataFloat {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+        100% { transform: translateY(0); }
+    }
+    .data-float {
+        display: inline-block;
+        animation: dataFloat 5s infinite ease-in-out;
+    }
+</style>
+
+{% set lvl = user.total_xp // 100 %}
+
+{# --- 1. CALCULATE JOB CLASS BASED ON HIGHEST STAT --- #}
+{% set stats_map = {
+    'Fighter': user.str_xp|default(0),
+    'Mage': user.int_xp|default(0),
+    'Healer': user.wis_xp|default(0),
+    'Tanker': user.con_xp|default(0),
+    'Assassin': user.cha_xp|default(0)
+} %}
+
+{% set highest_val = -1 %}
+{# Lore Accurate: Before a job change, the System displays 'None' #}
+{% set job_class = 'None' %}
+
+{% for job, val in stats_map.items() %}
+    {% if val > highest_val %}
+        {% set highest_val = val %}
+        {% set job_class = job %}
+    {% endif %}
+{% endfor %}
+
+{# If the user has 0 XP, they haven't awakened a specialty yet #}
+{% if highest_val == 0 %}
+    {% set job_class = 'None' %}
+{% endif %}
+
+{# Optional Lore Easter Egg: If they hit the max level, they transcend standard classes #}
+{% if lvl >= 100 %}
+    {% set job_class = 'Shadow Monarch' %}
+{% endif %}
+
+{# --- 2. ASSIGN RANK & VISUALS --- #}
+{% if current_user.theme == 'solo' %}
+    {% if lvl < 10 %}{% set rank = 'E-Rank' %}{% set badge_color = 'secondary' %}
+    {% elif lvl < 20 %}{% set rank = 'D-Rank' %}{% set badge_color = 'success text-dark' %}
+    {% elif lvl < 30 %}{% set rank = 'C-Rank' %}{% set badge_color = 'info text-dark' %}
+    {% elif lvl < 40 %}{% set rank = 'B-Rank' %}{% set badge_color = 'primary' %}
+    {% elif lvl < 50 %}{% set rank = 'A-Rank' %}{% set badge_color = 'warning text-dark' %}
+    {% elif lvl < 100 %}{% set rank = 'S-Rank' %}{% set badge_color = 'danger' %}
+    {% else %}{% set rank = 'National' %}{% set badge_color = 'threat-level-max' %}
+    {% endif %}
+    {% set display_title = job_class %}
+{% else %}
+    {% set rank = 'LEVEL ' ~ lvl %}
+    {% set badge_color = 'secondary' %}
+    {% set display_title = 'Tier ' ~ ((user.total_xp // 500) + 1) %}
+{% endif %}
+
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card bg-dark border-secondary shadow-lg text-center p-5">
-                <div class="mb-4">
-                    <div class="rounded-circle bg-dark d-inline-flex align-items-center justify-content-center shadow" 
-                         style="width: 150px; height: 150px; border: 3px solid #0dcaf0; box-shadow: 0 0 20px rgba(13, 202, 240, 0.3);">
-                        <i class="bi bi-person-fill text-white" style="font-size: 80px;"></i>
-                    </div>
-                </div>
-
-                <h2 class="text-white mb-1" style="font-family: 'Orbitron', sans-serif;">{{ user.username }}</h2>
-                <span class="badge bg-secondary border border-secondary mb-4">LEVEL {{ user.total_xp // 100 }}</span>
+        <div class="col-md-6 col-lg-5">
+            <div class="card bg-dark border-secondary shadow-lg text-center p-5 position-relative overflow-hidden {% if current_user.theme == 'solo' %}system-reveal{% endif %}" 
+                 style="{% if current_user.theme == 'solo' %}border: 1px solid rgba(13, 202, 240, 0.4) !important; box-shadow: 0 0 40px rgba(13, 202, 240, 0.15) !important; border-radius: 0;{% else %}border-radius: 12px;{% endif %}">
                 
-                <hr class="border-secondary mb-4 opacity-25">
+                {% if current_user.theme == 'solo' %}
+                <div class="scanline-overlay"></div>
+                {% endif %}
 
-                <div class="row text-center mb-4">
-                    <div class="col-6 border-end border-secondary">
-                        <h5 class="text-info fw-bold mb-0">{{ user.total_xp }}</h5>
-                        <small class="text-muted text-uppercase">Total XP</small>
+                <div class="position-relative" style="z-index: 2;">
+                    
+                    <div class="mb-4">
+                        <div class="rounded-circle bg-dark d-inline-flex align-items-center justify-content-center shadow {% if current_user.theme == 'solo' %}holo-avatar{% endif %}" 
+                             style="width: 150px; height: 150px; border: 3px solid #0dcaf0;">
+                            <i class="bi bi-person-fill text-white" style="font-size: 80px; text-shadow: 0 0 15px rgba(255,255,255,0.5);"></i>
+                        </div>
                     </div>
-                    <div class="col-6">
-                        <h5 class="text-warning fw-bold mb-0">Tier {{ (user.total_xp // 500) + 1 }}</h5>
-                        <small class="text-muted text-uppercase">Clearance</small>
-                    </div>
-                </div>
 
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="{{ url_for('settings') }}" class="btn btn-outline-info btn-sm px-4">
-                        <i class="bi bi-gear me-1"></i> Edit Details
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm px-4">
-                        Logout
-                    </a>
+                    <h2 class="text-white mb-2 fw-bold text-uppercase" style="letter-spacing: 2px;">{{ user.username }}</h2>
+                    
+                    <span class="badge bg-{{ badge_color }} mb-4 fs-6 py-2 px-4 fw-bold shadow-sm" style="{% if current_user.theme == 'solo' %}border-radius: 0; letter-spacing: 2px;{% else %}border-radius: 8px; letter-spacing: 1px;{% endif %} transition: all 0.3s ease;">
+                        {% if current_user.theme == 'solo' %}<i class="bi bi-heptagon-half me-2"></i>{% endif %}{{ rank }}
+                    </span>
+                    
+                    <hr class="border-secondary mb-4 opacity-25">
+
+                    <div class="row text-center mb-4">
+                        <div class="col-6 border-end border-secondary data-float">
+                            <h5 class="text-info fw-bold mb-0" style="font-size: 1.6rem; text-shadow: 0 0 10px rgba(13, 202, 240, 0.3);">{{ user.total_xp }}</h5>
+                            <small class="text-muted text-uppercase fw-semibold" style="letter-spacing: 2px; font-size: 0.7rem;">Total XP</small>
+                        </div>
+                        <div class="col-6 data-float" style="animation-delay: 0.5s;">
+                            <h5 class="{% if current_user.theme == 'solo' %}text-danger{% else %}text-warning{% endif %} fw-bold mb-0 text-uppercase" style="font-size: 1.3rem; text-shadow: 0 0 10px rgba(220, 53, 69, 0.3);">{{ display_title }}</h5>
+                            <small class="text-muted text-uppercase fw-semibold" style="letter-spacing: 2px; font-size: 0.7rem;">{% if current_user.theme == 'solo' %}Class{% else %}Clearance{% endif %}</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-center mt-4">
+                        <a href="{{ url_for('settings') }}" class="btn btn-outline-info fw-bold px-4" style="{% if current_user.theme == 'solo' %}border-radius: 0;{% else %}border-radius: 6px;{% endif %} text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="bi bi-sliders me-1"></i> {% if current_user.theme == 'solo' %}System Config{% else %}Edit Details{% endif %}
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger fw-bold px-4" style="{% if current_user.theme == 'solo' %}border-radius: 0;{% else %}border-radius: 6px;{% endif %} text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

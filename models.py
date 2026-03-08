@@ -51,6 +51,8 @@ class User(UserMixin, db.Model):
     is_pro = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     is_banned = db.Column(db.Boolean, default=False)
+    # Leveling
+    theme = db.Column(db.String(20), default='default')
 
     # Stats & RPG Elements
     gold = db.Column(db.Integer, default=0)

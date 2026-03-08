@@ -522,6 +522,14 @@ def edit_habit():
 @login_required
 def settings():
     if request.method == 'POST':
+        if request.form.get('theme_toggle') == 'on':
+            current_user.theme = 'solo'
+        else:
+            current_user.theme = 'default'
+
+        db.session.commit()
+        flash('System settings updated.', 'success')
+        return redirect(url_for('settings'))
         new_email = request.form.get('email')
         if new_email:
             existing = User.query.filter_by(email=new_email).first()
@@ -777,8 +785,9 @@ def import_tasks():
                 difficulty=diff_name,
                 xp_value=10 * (t.get('difficulty', 1) if isinstance(t.get('difficulty', 1), int) else 1),
                 completed=False,
-                description=t.get('description', ''), # <--- ADDED DESCRIPTION
-                target_date=date_obj                 # <--- ADDED DATE
+                description=t.get('description', ''),
+                target_date=date_obj,
+                stat_type=t.get('stat_type', 'INT')  # <--- THIS IS THE FIX
             )
             db.session.add(h)
 
