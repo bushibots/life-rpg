@@ -841,7 +841,34 @@ def process_audit():
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', user=current_user)
+    today = date.today()
+
+    # 1. Query the database for the current month's stat totals
+    monthly_stats_raw = db.session.query(
+        QuestHistory.stat_type,
+        func.sum(QuestHistory.xp_gained)
+    ).filter(
+        QuestHistory.user_id == current_user.id,
+        extract('year', QuestHistory.date_completed) == today.year,
+        extract('month', QuestHistory.date_completed) == today.month
+    ).group_by(QuestHistory.stat_type).all()
+
+    # 2. ENHANCEMENT: Pre-fill base dictionary with 0s to guarantee the template never crashes
+    monthly_stats = {
+        'STR': 0,
+        'INT': 0,
+        'WIS': 0,
+        'CON': 0,
+        'CHA': 0
+    }
+
+    # 3. Populate with actual database data (Safely handling None values)
+    for stat_type, xp in monthly_stats_raw:
+        if stat_type in monthly_stats and xp is not None:
+            monthly_stats[stat_type] = int(xp)
+
+    # 4. Render the template and pass the data
+    return render_template('profile.html', user=current_user, monthly_stats=monthly_stats)
 
 @app.route('/edit_goal', methods=['POST'])
 @login_required

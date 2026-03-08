@@ -69,17 +69,16 @@
 
 {% set lvl = user.total_xp // 100 %}
 
-{# --- 1. CALCULATE JOB CLASS BASED ON HIGHEST STAT --- #}
+{# --- 1. DYNAMIC JOB CLASS CALCULATION (MONTHLY) --- #}
 {% set stats_map = {
-    'Fighter': user.str_xp|default(0),
-    'Mage': user.int_xp|default(0),
-    'Healer': user.wis_xp|default(0),
-    'Tanker': user.con_xp|default(0),
-    'Assassin': user.cha_xp|default(0)
+    'Fighter': monthly_stats.get('STR', 0),
+    'Mage': monthly_stats.get('INT', 0),
+    'Healer': monthly_stats.get('WIS', 0),
+    'Tanker': monthly_stats.get('CON', 0),
+    'Assassin': monthly_stats.get('CHA', 0)
 } %}
 
-{% set highest_val = -1 %}
-{# Lore Accurate: Before a job change, the System displays 'None' #}
+{% set highest_val = 0 %}
 {% set job_class = 'None' %}
 
 {% for job, val in stats_map.items() %}
@@ -89,12 +88,7 @@
     {% endif %}
 {% endfor %}
 
-{# If the user has 0 XP, they haven't awakened a specialty yet #}
-{% if highest_val == 0 %}
-    {% set job_class = 'None' %}
-{% endif %}
-
-{# Optional Lore Easter Egg: If they hit the max level, they transcend standard classes #}
+{# Lore Check: Overwrite if they have achieved Monarch status #}
 {% if lvl >= 100 %}
     {% set job_class = 'Shadow Monarch' %}
 {% endif %}
@@ -119,28 +113,28 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            <div class="card bg-dark border-secondary shadow-lg text-center p-5 position-relative overflow-hidden {% if current_user.theme == 'solo' %}system-reveal{% endif %}" 
+            <div class="card bg-dark border-secondary shadow-lg text-center p-5 position-relative overflow-hidden {% if current_user.theme == 'solo' %}system-reveal{% endif %}"
                  style="{% if current_user.theme == 'solo' %}border: 1px solid rgba(13, 202, 240, 0.4) !important; box-shadow: 0 0 40px rgba(13, 202, 240, 0.15) !important; border-radius: 0;{% else %}border-radius: 12px;{% endif %}">
-                
+
                 {% if current_user.theme == 'solo' %}
                 <div class="scanline-overlay"></div>
                 {% endif %}
 
                 <div class="position-relative" style="z-index: 2;">
-                    
+
                     <div class="mb-4">
-                        <div class="rounded-circle bg-dark d-inline-flex align-items-center justify-content-center shadow {% if current_user.theme == 'solo' %}holo-avatar{% endif %}" 
+                        <div class="rounded-circle bg-dark d-inline-flex align-items-center justify-content-center shadow {% if current_user.theme == 'solo' %}holo-avatar{% endif %}"
                              style="width: 150px; height: 150px; border: 3px solid #0dcaf0;">
                             <i class="bi bi-person-fill text-white" style="font-size: 80px; text-shadow: 0 0 15px rgba(255,255,255,0.5);"></i>
                         </div>
                     </div>
 
                     <h2 class="text-white mb-2 fw-bold text-uppercase" style="letter-spacing: 2px;">{{ user.username }}</h2>
-                    
+
                     <span class="badge bg-{{ badge_color }} mb-4 fs-6 py-2 px-4 fw-bold shadow-sm" style="{% if current_user.theme == 'solo' %}border-radius: 0; letter-spacing: 2px;{% else %}border-radius: 8px; letter-spacing: 1px;{% endif %} transition: all 0.3s ease;">
                         {% if current_user.theme == 'solo' %}<i class="bi bi-heptagon-half me-2"></i>{% endif %}{{ rank }}
                     </span>
-                    
+
                     <hr class="border-secondary mb-4 opacity-25">
 
                     <div class="row text-center mb-4">
