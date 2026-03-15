@@ -47,6 +47,11 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(150), unique=True, nullable=True)
     password = db.Column(db.String(150), nullable=False)
 
+    # --- SOLO LEVELING SYSTEM: PENALTY ZONE ---
+    in_penalty_zone = db.Column(db.Boolean, default=False)
+    penalty_task = db.Column(db.String(255), nullable=True)  # e.g., "Do 50 Push-ups"
+    penalty_proof_path = db.Column(db.String(255), nullable=True) # Path to the uploaded image
+
     # Permissions
     is_pro = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)

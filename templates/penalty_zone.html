@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    /* HIDE THE NAVBAR - NO ESCAPE */
+    .navbar { display: none !important; }
+    
+    body {
+        background-color: #1a0000;
+        background-image: repeating-linear-gradient(
+            45deg,
+            rgba(255, 0, 0, 0.05) 0px,
+            rgba(255, 0, 0, 0.05) 2px,
+            transparent 2px,
+            transparent 4px
+        );
+    }
+    
+    @keyframes sirenPulse {
+        0% { box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.2); }
+        50% { box-shadow: inset 0 0 150px rgba(255, 0, 0, 0.8); }
+        100% { box-shadow: inset 0 0 50px rgba(255, 0, 0, 0.2); }
+    }
+    
+    .penalty-container {
+        animation: sirenPulse 2s infinite ease-in-out;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border: 5px solid red;
+    }
+
+    .flicker-text {
+        color: #ff3333;
+        text-shadow: 0 0 10px red;
+        font-family: 'Rajdhani', monospace;
+        letter-spacing: 3px;
+    }
+</style>
+
+<div class="penalty-container p-4 text-center">
+    <h1 class="flicker-text fw-bold mb-1" style="font-size: 4rem;">[WARNING]</h1>
+    <h2 class="text-white fw-bold mb-4">YOU HAVE ENTERED THE PENALTY ZONE</h2>
+    
+    <div class="card bg-dark border-danger shadow-lg p-4 mb-4" style="max-width: 600px; width: 100%;">
+        <p class="text-white-50 fs-5">You failed to complete your assigned Quests. To survive and restore system access, you must complete the following penalty task immediately.</p>
+        
+        <div class="bg-danger text-white py-3 px-4 fw-bold fs-3 mb-4 rounded" style="letter-spacing: 2px;">
+            <i class="bi bi-crosshair me-2"></i> {{ user.penalty_task }}
+        </div>
+        
+        {% if user.penalty_proof_path %}
+            <div class="alert alert-info border-info bg-dark text-info fw-bold">
+                <i class="bi bi-hourglass-split me-2"></i> Proof submitted. The System Administrator is evaluating your survival.
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary w-100">LOGOUT</a>
+        {% else %}
+            <form action="{{ url_for('penalty_zone') }}" method="POST" enctype="multipart/form-data">
+                <div class="mb-3 text-start">
+                    <label class="form-label text-danger fw-bold"><i class="bi bi-camera"></i> UPLOAD PHOTOGRAPHIC PROOF</label>
+                    <input class="form-control bg-dark text-white border-danger" type="file" name="proof_image" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-danger btn-lg w-100 fw-bold shadow-sm" style="letter-spacing: 2px;">SUBMIT PROOF</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
