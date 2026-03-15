@@ -1,5 +1,6 @@
 import os
 import time
+import random
 import io  # <--- FIXED: Added missing import
 import csv # <--- FIXED: Added missing import
 from collections import Counter # <--- FIXED: Added missing import
@@ -18,6 +19,7 @@ from flask_bcrypt import Bcrypt
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from itsdangerous import URLSafeTimedSerializer
+from werkzeug.utils import secure_filename
 from sqlalchemy import func, extract
 import google.generativeai as genai
 from weasyprint import HTML # <--- FIXED: Added missing import
@@ -522,6 +524,14 @@ def edit_habit():
 @login_required
 def settings():
     if request.method == 'POST':
+        new_email = request.form.get('email')
+        if new_email:
+            existing = User.query.filter_by(email=new_email).first()
+            if existing and existing.id != current_user.id:
+                flash('Email already in use.', 'danger')
+                return redirect(url_for('settings'))
+            current_user.email = new_email
+
         if request.form.get('theme_toggle') == 'on':
             current_user.theme = 'solo'
         else:
@@ -530,15 +540,6 @@ def settings():
         db.session.commit()
         flash('System settings updated.', 'success')
         return redirect(url_for('settings'))
-        new_email = request.form.get('email')
-        if new_email:
-            existing = User.query.filter_by(email=new_email).first()
-            if existing and existing.id != current_user.id:
-                flash('Email already in use.', 'danger')
-            else:
-                current_user.email = new_email
-                db.session.commit()
-                flash('Settings updated.', 'success')
     return render_template('settings.html', user=current_user, presets=PRESETS)
 
 @app.route('/update_profile', methods=['POST'])
@@ -1327,10 +1328,6 @@ def admin_mailer():
     users = User.query.filter(User.email != None, User.email != '').all()
     return render_template('admin_mailer.html', users=users)
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

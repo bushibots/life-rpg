@@ -30,6 +30,29 @@
     }
     .task-item:hover {
         background: rgba(255, 255, 255, 0.04);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(13, 202, 240, 0.08);
+    }
+    .task-edit-btn {
+        border: 1px solid rgba(13, 202, 240, 0.3);
+        border-radius: 999px;
+        font-size: 0.72rem;
+        line-height: 1;
+        padding: 0.35rem 0.6rem;
+        transition: all 0.2s ease;
+    }
+    .task-edit-btn:hover {
+        border-color: rgba(13, 202, 240, 0.8);
+        color: #9ee7ff !important;
+        box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.15);
+    }
+    .task-title.task-just-completed {
+        animation: completedPulse 420ms ease-out;
+    }
+    @keyframes completedPulse {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.03); }
+        100% { transform: scale(1); }
     }
     .goal-card {
         background: #0d1117 !important;
@@ -273,8 +296,20 @@
                         </div>
                     </div>
                 </div>
-                <div class="d-flex gap-3 ms-3 align-self-start pt-1 opacity-50">
-                    <button type="button" class="btn btn-link text-muted p-0 hover-info" onclick="openEditModal('{{ habit.id }}', '{{ habit.name|replace("'", "\\'") }}', '{{ habit.difficulty }}', '{{ 'true' if habit.is_daily else 'false' }}', '{{ habit.target_date }}', '{{ goal.name|replace("'", "\\'") }}', '{{ habit.description|default('')|replace("'", "\\'")|replace('\n', ' ') }}')"></i></button>
+                <div class="d-flex gap-2 ms-3 align-self-start pt-1 opacity-75">
+                    <button
+                        type="button"
+                        class="btn btn-link text-muted p-0 hover-info task-edit-btn"
+                        data-habit-id="{{ habit.id }}"
+                        data-habit-name="{{ habit.name }}"
+                        data-habit-difficulty="{{ habit.difficulty }}"
+                        data-habit-daily="{{ 'true' if habit.is_daily else 'false' }}"
+                        data-habit-date="{{ habit.target_date if habit.target_date else '' }}"
+                        data-goal-name="{{ goal.name }}"
+                        data-habit-description="{{ habit.description|default('', true) }}"
+                        onclick="openEditModalFromButton(this)">
+                        <i class="bi bi-pencil-square me-1"></i>Edit Task
+                    </button>
                 </div>
             </div>
             {% endif %}
@@ -524,11 +559,14 @@ function unlockAndRedirect() {
         const filledIcon = btn.querySelector('.completed-icon');
         const emptyIcon = btn.querySelector('.pending-icon');
         const taskTitle = btn.closest('.task-item').querySelector('.task-title');
+        const wasPending = emptyIcon.style.display !== 'none';
 
-        if (emptyIcon.style.display !== 'none') {
+        if (wasPending) {
             emptyIcon.style.display = 'none';
             filledIcon.style.display = 'block';
             taskTitle.classList.add('text-decoration-line-through', 'text-muted');
+            taskTitle.classList.add('task-just-completed');
+            setTimeout(() => taskTitle.classList.remove('task-just-completed'), 450);
             if (typeof confetti === 'function') confetti({ particleCount: 40, spread: 50, origin: { y: 0.7, x: 0.5 } });
             try { new Audio("{{ url_for('static', filename='sounds/complete.mp3') }}").play(); } catch(e){}
         } else {
@@ -552,10 +590,45 @@ function unlockAndRedirect() {
                     progBar.style.width = pct + '%';
                 }
             }
-        } catch (error) { console.error('Sync failed', error); }
+        } catch (error) {
+            console.error('Sync failed', error);
+            if (wasPending) {
+                emptyIcon.style.display = 'block';
+                filledIcon.style.display = 'none';
+                taskTitle.classList.remove('text-decoration-line-through', 'text-muted', 'task-just-completed');
+            } else {
+                emptyIcon.style.display = 'none';
+                filledIcon.style.display = 'block';
+                taskTitle.classList.add('text-decoration-line-through', 'text-muted');
+            }
+        }
     }
 
     // --- 5. BULLETPROOF JAVASCRIPT MODAL HELPERS ---
+
+    function normalizeModalState() {
+        document.querySelectorAll('.modal-backdrop').forEach((backdrop, idx, arr) => {
+            if (idx < arr.length - 1) backdrop.remove();
+        });
+        if (!document.querySelector('.modal.show')) {
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
+    }
+
+    function openEditModalFromButton(buttonEl) {
+        const data = buttonEl.dataset;
+        openEditModal(
+            data.habitId,
+            data.habitName,
+            data.habitDifficulty,
+            data.habitDaily,
+            data.habitDate,
+            data.goalName,
+            data.habitDescription
+        );
+    }
 
     function openEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
         document.getElementById('edit_habit_id').value = id;
@@ -565,13 +638,18 @@ function unlockAndRedirect() {
         document.getElementById('edit_habit_description').value = desc;
 
         const dateInput = document.getElementById('edit_habit_date');
-        if (dateStr && dateStr !== 'None') dateInput.value = dateStr; else dateInput.value = '';
+        if (dateStr && dateStr !== 'None') {
+            dateInput.value = dateStr.substring(0, 10);
+        } else {
+            dateInput.value = '';
+        }
 
         document.getElementById('edit_habit_daily').checked = (isDaily === 'True' || isDaily === 'true');
         document.getElementById('delete_habit_btn').href = "/delete_habit/" + id;
 
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('editHabitModal');
+        normalizeModalState();
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.show();
     }
@@ -582,6 +660,7 @@ function unlockAndRedirect() {
 
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('editGoalModal');
+        normalizeModalState();
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.show();
     }
@@ -591,9 +670,14 @@ function unlockAndRedirect() {
 
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('addHabitModal');
+        normalizeModalState();
         const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
         modal.show();
     }
+
+    document.querySelectorAll('.modal').forEach((modalEl) => {
+        modalEl.addEventListener('hidden.bs.modal', normalizeModalState);
+    });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
