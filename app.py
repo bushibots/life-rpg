@@ -163,6 +163,23 @@ def check_penalty_zone():
     if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
         return redirect(url_for('penalty_zone'))
 
+    if not current_user.is_authenticated:
+        return None
+
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if not unlock_at:
+        return None
+
+    now = datetime.utcnow()
+    if now >= unlock_at:
+        _clear_penalty_session()
+        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
+        return None
+
+    endpoint = request.endpoint or ""
+    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
+        return redirect(url_for('penalty_zone_page'))
+
 def get_monthly_xp(user_id):
     today = date.today()
     total = db.session.query(func.sum(QuestHistory.xp_gained)).filter(
