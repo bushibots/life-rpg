@@ -89,12 +89,54 @@ PRESETS = [
     {"id": 41, "name": "Call Family", "category": "Social", "attribute": "CHA", "difficulty": "Medium", "is_daily": False},
 ]
 
+PENALTY_LOCK_HOURS = 10
+PENALTY_ALLOWED_ENDPOINTS = {"penalty_zone", "logout", "static"}
+PENALTY_TASKS = [
+    "Run 5 Kilometers",
+    "Deep Clean your primary workspace",
+    "No social media for 12 hours",
+    "Complete a 60-minute focused study sprint",
+]
+
 # ========================================================
 # 5. HELPER FUNCTIONS
 # ========================================================
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+
+def _parse_session_datetime(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+def _clear_penalty_session():
+    for key in [
+        "penalty_unlock_at",
+        "penalty_task",
+        "penalty_proof_submitted",
+        "penalty_proof_path",
+        "penalty_minimized",
+        "penalty_notice_shown",
+    ]:
+        session.pop(key, None)
+
+def _ensure_penalty_window():
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if unlock_at:
+        return unlock_at
+
+    unlock_at = datetime.utcnow() + timedelta(hours=PENALTY_LOCK_HOURS)
+    session["penalty_unlock_at"] = unlock_at.isoformat()
+    session["penalty_task"] = session.get("penalty_task") or random.choice(PENALTY_TASKS)
+    session["penalty_proof_submitted"] = False
+    session["penalty_minimized"] = False
+    session["penalty_notice_shown"] = False
+    return unlock_at
 
 @app.before_request
 def check_penalty_zone():
@@ -103,6 +145,23 @@ def check_penalty_zone():
         allowed_endpoints = ['penalty_zone', 'logout', 'static']
         if request.endpoint not in allowed_endpoints:
             return redirect(url_for('penalty_zone'))
+
+    if not current_user.is_authenticated:
+        return None
+
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if not unlock_at:
+        return None
+
+    now = datetime.utcnow()
+    if now >= unlock_at:
+        _clear_penalty_session()
+        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
+        return None
+
+    endpoint = request.endpoint or ""
+    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
+        return redirect(url_for('penalty_zone'))
 
 def get_monthly_xp(user_id):
     today = date.today()
@@ -1299,6 +1358,58 @@ def genie_generate_quest():
 
     flash(f"The Genie has forged your Master Quest! Check your Active Protocols.", "success")
     return redirect(url_for('dashboard'))
+
+
+@app.route('/penalty_zone', methods=['GET', 'POST'])
+@login_required
+def penalty_zone():
+    unlock_at = _ensure_penalty_window()
+
+    if request.method == 'POST':
+        action = request.form.get('action', '').strip()
+
+        if action == 'submit_proof':
+            file = request.files.get('proof_file')
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                stamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+                final_name = f"{current_user.id}_{stamp}_{filename}"
+                upload_dir = os.path.join(app.root_path, 'static', 'penalty_proofs')
+                os.makedirs(upload_dir, exist_ok=True)
+                file.save(os.path.join(upload_dir, final_name))
+
+                session['penalty_proof_submitted'] = True
+                session['penalty_proof_path'] = f'penalty_proofs/{final_name}'
+                flash('Proof uploaded. Awaiting Administrator review.', 'info')
+            else:
+                flash('Upload failed. Please attach a valid file.', 'warning')
+
+        elif action == 'toggle_minimize' and current_user.is_admin:
+            is_minimized = bool(session.get('penalty_minimized', False))
+            session['penalty_minimized'] = not is_minimized
+
+        elif action == 'admin_release' and current_user.is_admin:
+            _clear_penalty_session()
+            flash('Administrator override executed. Penalty window unlocked.', 'success')
+            return redirect(url_for('dashboard'))
+
+        return redirect(url_for('penalty_zone'))
+
+    remaining_seconds = max(0, int((unlock_at - datetime.utcnow()).total_seconds()))
+    if remaining_seconds <= 0:
+        _clear_penalty_session()
+        flash('Penalty timer expired. System lockdown lifted automatically after 10 hours.', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template(
+        'penalty_zone.html',
+        penalty_task=session.get('penalty_task', random.choice(PENALTY_TASKS)),
+        proof_submitted=bool(session.get('penalty_proof_submitted', False)),
+        penalty_minimized=bool(session.get('penalty_minimized', False)),
+        is_admin=current_user.is_admin,
+        remaining_seconds=remaining_seconds,
+        unlock_at_iso=unlock_at.isoformat()
+    )
 
 # --- VIRAL GROWTH: INSTAGRAM UNLOCK ---
 @app.route('/unlock_beta', methods=['POST'])
