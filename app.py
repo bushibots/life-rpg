@@ -139,11 +139,12 @@ def _ensure_penalty_window():
     return unlock_at
 
 @app.before_request
-def check_ban():
-    if current_user.is_authenticated and hasattr(current_user, 'is_banned') and current_user.is_banned:
-        logout_user()
-        flash("Access Denied: Account suspended.", "danger")
-        return redirect(url_for('login'))
+def check_penalty_zone():
+    if current_user.is_authenticated and current_user.in_penalty_zone:
+        # Endpoints they are STILL allowed to access while trapped
+        allowed_endpoints = ['penalty_zone', 'logout', 'static']
+        if request.endpoint not in allowed_endpoints:
+            return redirect(url_for('penalty_zone'))
 
     if not current_user.is_authenticated:
         return None
@@ -183,6 +184,9 @@ class LoginForm(FlaskForm):
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
+
+
+
 # ========================================================
 # 6. ROUTES
 # ========================================================
@@ -193,16 +197,56 @@ class LoginForm(FlaskForm):
 def dashboard():
     today = date.today()
 
-    # 1. DAILY RESET CHECK
+    # 1. DAILY RESET & PENALTY SYSTEM CHECK
     if current_user.last_check_date != today:
         user_goals = Goal.query.filter_by(user_id=current_user.id).all()
+
+        # Calculate total penalty points for a notification
+        total_penalty_taken = 0
+
         for goal in user_goals:
             for habit in goal.habits:
+                # Handle Daily Repeating Tasks Reset
                 if habit.is_daily and habit.completed:
                     habit.completed = False
+
+                # --- THE SOLO LEVELING PENALTY LOGIC ---
+# --- THE SOLO LEVELING PENALTY LOGIC ---
+                if habit.target_date and habit.target_date < today and not habit.completed:
+                    if current_user.theme == 'solo':
+                        penalty_points = habit.xp_value
+                        current_user.total_xp -= penalty_points
+                        if current_user.total_xp < 0:
+                            current_user.total_xp = 0
+
+                        total_penalty_taken += penalty_points
+                        habit.target_date = today
+
+                        # ---> NEW: TRAP THEM IN THE PENALTY ZONE <---
+                        current_user.in_penalty_zone = True
+                        if not current_user.penalty_task:
+                            penalty_tasks_list = [
+                                "Complete 100 Push-ups",
+                                "Run 5 Kilometers",
+                                "Survive: Hold a Plank for 3 Minutes",
+                                "Complete 100 Squats"
+                            ]
+                            current_user.penalty_task = random.choice(penalty_tasks_list)
+
+        # If they lost points, spawn an unavoidable System Notification!
+        if total_penalty_taken > 0 and current_user.theme == 'solo':
+            penalty_alert = Notification(
+                user_id=current_user.id,
+                message=f"[PENALTY APPLIED] You failed to complete your assigned Quests. The System has deducted {total_penalty_taken} XP from your status.",
+                type='warning',
+                is_read=False
+            )
+            db.session.add(penalty_alert)
+
         current_user.last_check_date = today
         db.session.commit()
 
+    # ---> THIS WAS THE MISSING LINE! <---
     goals = Goal.query.filter_by(user_id=current_user.id).all()
 
     # 2. GET COMPLETED TASKS
@@ -227,6 +271,21 @@ def dashboard():
         ).first()
         if has_data: show_report = True
 
+    # 4. SCAN CURRENT MONTHLY STATS FOR JOB CLASS
+    monthly_stats_raw = db.session.query(
+        QuestHistory.stat_type,
+        func.sum(QuestHistory.xp_gained)
+    ).filter(
+        QuestHistory.user_id == current_user.id,
+        extract('year', QuestHistory.date_completed) == today.year,
+        extract('month', QuestHistory.date_completed) == today.month
+    ).group_by(QuestHistory.stat_type).all()
+
+    monthly_stats = {'STR': 0, 'INT': 0, 'WIS': 0, 'CON': 0, 'CHA': 0}
+    for stat_type, xp in monthly_stats_raw:
+        if stat_type in monthly_stats and xp is not None:
+            monthly_stats[stat_type] = int(xp)
+
     return render_template('dashboard.html',
                            user=current_user,
                            goals=goals,
@@ -234,6 +293,7 @@ def dashboard():
                            monthly_xp=monthly_xp,
                            show_report=show_report,
                            prev_month=prev_month_date,
+                           monthly_stats=monthly_stats,
                            todays_completed=todays_completed)
 
 @app.route('/guest_login')
@@ -1439,6 +1499,42 @@ def admin_mailer():
     users = User.query.filter(User.email != None, User.email != '').all()
     return render_template('admin_mailer.html', users=users)
 
+@app.route('/penalty_zone', methods=['GET', 'POST'])
+@login_required
+def penalty_zone():
+    # If they aren't trapped, send them away
+    if not current_user.in_penalty_zone:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        if 'proof_image' not in request.files:
+            flash('System Error: No proof detected.', 'danger')
+            return redirect(request.url)
+
+        file = request.files['proof_image']
+        if file.filename == '':
+            flash('System Error: No file selected.', 'danger')
+            return redirect(request.url)
+
+        if file:
+            filename = secure_filename(file.filename)
+            # Save the file to a static uploads folder
+            upload_folder = os.path.join(app.root_path, 'static', 'uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            filepath = os.path.join(upload_folder, filename)
+            file.save(filepath)
+
+            # Record the proof in the database
+            current_user.penalty_proof_path = filename
+            db.session.commit()
+            flash('Proof submitted. Awaiting System Administrator verification.', 'info')
+
+    return render_template('penalty_zone.html', user=current_user)
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
