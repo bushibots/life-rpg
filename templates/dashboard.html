@@ -70,6 +70,25 @@
         border-color: #0dcaf0 !important;
         box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2) !important;
     }
+    /* SYSTEM CLASS BADGE ANIMATION */
+    @keyframes classPulse {
+        0% { box-shadow: 0 0 5px rgba(13, 202, 240, 0.2); border-color: rgba(13, 202, 240, 0.4); text-shadow: none; }
+        50% { box-shadow: 0 0 20px rgba(13, 202, 240, 0.8), inset 0 0 5px rgba(13, 202, 240, 0.3); border-color: #0dcaf0; text-shadow: 0 0 8px rgba(13, 202, 240, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(13, 202, 240, 0.2); border-color: rgba(13, 202, 240, 0.4); text-shadow: none; }
+    }
+    .system-class-badge {
+        animation: classPulse 2.5s infinite ease-in-out;
+        border-radius: 0;
+        cursor: default;
+        transition: all 0.2s ease;
+    }
+    .system-class-badge:hover {
+        animation: none;
+        box-shadow: 0 0 30px rgba(13, 202, 240, 1), inset 0 0 15px rgba(13, 202, 240, 0.6);
+        border-color: #fff !important;
+        color: #fff !important;
+        transform: scale(1.05);
+    }
 </style>
 
 {% if not user.email %}
@@ -124,26 +143,53 @@
                 <div class="d-flex justify-content-between align-items-start">
 
                     {% set lvl = user.total_xp // 100 %}
+
                     {% if current_user.theme == 'solo' %}
+                        {# 1. CALCULATE JOB CLASS #}
+                        {% set stats_map = {
+                            'FIGHTER': monthly_stats.get('STR', 0),
+                            'MAGE': monthly_stats.get('INT', 0),
+                            'HEALER': monthly_stats.get('WIS', 0),
+                            'TANKER': monthly_stats.get('CON', 0),
+                            'ASSASSIN': monthly_stats.get('CHA', 0)
+                        } %}
+
+                        {% set ns = namespace(highest_val=0, job_class='NONE') %}
+                        {% for job, val in stats_map.items() %}
+                            {% if val > ns.highest_val %}
+                                {% set ns.highest_val = val %}
+                                {% set ns.job_class = job %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% set job_class = ns.job_class %}
+                        {% if lvl >= 100 %}{% set job_class = 'SHADOW MONARCH' %}{% endif %}
+
+                        {# 2. CALCULATE HUNTER RANK #}
                         {% if lvl < 10 %}{% set rank = 'E-RANK' %}{% set b_color = 'secondary' %}
-                        {% elif lvl < 20 %}{% set rank = 'D-RANK' %}{% set b_color = 'success' %}
-                        {% elif lvl < 30 %}{% set rank = 'C-RANK' %}{% set b_color = 'info' %}
+                        {% elif lvl < 20 %}{% set rank = 'D-RANK' %}{% set b_color = 'success text-dark' %}
+                        {% elif lvl < 30 %}{% set rank = 'C-RANK' %}{% set b_color = 'info text-dark' %}
                         {% elif lvl < 40 %}{% set rank = 'B-RANK' %}{% set b_color = 'primary' %}
                         {% elif lvl < 50 %}{% set rank = 'A-RANK' %}{% set b_color = 'warning text-dark' %}
                         {% elif lvl < 100 %}{% set rank = 'S-RANK' %}{% set b_color = 'danger' %}
                         {% else %}{% set rank = 'NATIONAL LEVEL' %}{% set b_color = 'dark border border-danger text-danger' %}
                         {% endif %}
-                        <div class="d-flex gap-2">
-                            <span class="badge bg-{{ b_color }} fw-bold shadow-sm" style="border-radius: 0; box-shadow: 0 0 10px rgba(13, 202, 240, 0.3); border: 1px solid rgba(13, 202, 240, 0.5);"><i class="bi bi-stars me-1"></i>{{ rank }}</span>
-                            <span class="badge bg-secondary bg-opacity-25 text-light fw-normal" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 0;">XP: {{ user.total_xp }}</span>
+
+                        {# 3. DISPLAY BADGES #}
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge bg-{{ b_color }} fw-bold shadow-sm" style="border-radius: 0; box-shadow: 0 0 10px rgba(13, 202, 240, 0.3); border: 1px solid rgba(13, 202, 240, 0.5); letter-spacing: 1px;"><i class="bi bi-heptagon-half me-1"></i>{{ rank }}</span>
+
+                            <span class="badge bg-dark text-info border border-info fw-bold shadow-sm system-class-badge" style="letter-spacing: 1px;">CLASS: {{ job_class }}</span>
+
+                            <span class="badge bg-secondary bg-opacity-25 text-light fw-normal" style="border: 1px solid rgba(255,255,255,0.1); border-radius: 0; letter-spacing: 1px;">XP: {{ user.total_xp }}</span>
                         </div>
                     {% else %}
                         <span class="badge bg-secondary bg-opacity-25 text-light fw-normal" style="border: 1px solid rgba(255,255,255,0.1);">All-Time Score: {{ user.total_xp }}</span>
                     {% endif %}
 
-                    <a href="{{ url_for('history') }}" class="text-muted text-decoration-none small hover-info fw-bold"><i class="bi bi-clock-history me-1"></i>{% if current_user.theme == 'solo' %}ARCHIVE{% else %}History{% endif %}</a>
+                    <a href="{{ url_for('history') }}" class="text-muted text-decoration-none small hover-info fw-bold mt-1"><i class="bi bi-clock-history me-1"></i>{% if current_user.theme == 'solo' %}ARCHIVE{% else %}History{% endif %}</a>
                 </div>
-                <p class="text-uppercase text-info mb-1 mt-2 fw-semibold" style="font-size: 0.75rem; letter-spacing: 1px;">Current Cycle Progress</p>
+                <p class="text-uppercase text-info mb-1 mt-3 fw-semibold" style="font-size: 0.75rem; letter-spacing: 1px;">Current Cycle Progress</p>
                 <h2 class="fw-bold text-white mb-2" id="monthlyXpDisplay">{{ monthly_xp }} XP</h2>
                 <div class="progress bg-secondary bg-opacity-25 mt-3 mx-auto" style="height: 6px; max-width: 400px; border-radius: 10px;">
                     <div class="progress-bar bg-info" id="monthlyProgressBar" role="progressbar" style="width: {{ (monthly_xp / 2000) * 100 }}%; border-radius: 10px;"></div>
@@ -675,8 +721,30 @@ function unlockAndRedirect() {
         modal.show();
     }
 
+    document.querySelectorAll('.js-edit-task').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            openEditModal(
+                btn.dataset.habitId,
+                btn.dataset.habitName || '',
+                btn.dataset.habitDifficulty || 'Medium',
+                btn.dataset.habitDaily || 'false',
+                btn.dataset.habitDate || '',
+                btn.dataset.habitCategory || '',
+                btn.dataset.habitDescription || ''
+            );
+        });
+    });
+
+    // Cleanup safety: prevent stuck backdrop / locked page scroll after closing modals.
     document.querySelectorAll('.modal').forEach((modalEl) => {
-        modalEl.addEventListener('hidden.bs.modal', normalizeModalState);
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            if (!document.querySelector('.modal.show')) {
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+                document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+            }
+        });
     });
 </script>
 
