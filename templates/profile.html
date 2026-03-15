@@ -78,15 +78,18 @@
     'Assassin': monthly_stats.get('CHA', 0)
 } %}
 
-{% set highest_val = 0 %}
-{% set job_class = 'None' %}
+{# THE FIX: Use a namespace so variables survive the loop #}
+{% set ns = namespace(highest_val=0, job_class='None') %}
 
 {% for job, val in stats_map.items() %}
-    {% if val > highest_val %}
-        {% set highest_val = val %}
-        {% set job_class = job %}
+    {% if val > ns.highest_val %}
+        {% set ns.highest_val = val %}
+        {% set ns.job_class = job %}
     {% endif %}
 {% endfor %}
+
+{# Extract the final calculated class #}
+{% set job_class = ns.job_class %}
 
 {# Lore Check: Overwrite if they have achieved Monarch status #}
 {% if lvl >= 100 %}
