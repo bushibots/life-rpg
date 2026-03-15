@@ -42,25 +42,6 @@ except AttributeError:
 
 app = Flask(__name__)
 
-
-# Guard against duplicate endpoint registrations during deployment drift/reloads.
-_original_add_url_rule = app.add_url_rule
-
-def _safe_add_url_rule(rule, endpoint=None, view_func=None, **options):
-    resolved_endpoint = endpoint or (getattr(view_func, '__name__', None) if view_func else None)
-
-    if resolved_endpoint and resolved_endpoint in app.view_functions:
-        existing_view = app.view_functions.get(resolved_endpoint)
-        if view_func is None or existing_view == view_func:
-            return
-
-        print(f"[RouteGuard] Skipping duplicate endpoint registration: {resolved_endpoint} -> {rule}")
-        return
-
-    return _original_add_url_rule(rule, endpoint=endpoint, view_func=view_func, **options)
-
-app.add_url_rule = _safe_add_url_rule
-
 # ========================================================
 # 1. CONFIGURATION
 # ========================================================
@@ -181,57 +162,6 @@ def check_penalty_zone():
     endpoint = request.endpoint or ""
     if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
         return redirect(url_for('penalty_zone'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
 
     if not current_user.is_authenticated:
         return None
@@ -1490,12 +1420,10 @@ def penalty_zone():
 
     return render_template(
         'penalty_zone.html',
-        penalty_task=session.get('penalty_task', random.choice(PENALTY_TASKS)),
-        proof_submitted=bool(session.get('penalty_proof_submitted', False)),
-        penalty_minimized=bool(session.get('penalty_minimized', False)),
-        is_admin=current_user.is_admin,
-        remaining_seconds=remaining_seconds,
-        unlock_at_iso=unlock_at.isoformat()
+        task=current_user.penalty_task,
+        proof_path=current_user.penalty_proof_path,
+        time_remaining = 14400,
+        user=current_user
     )
 
 # --- VIRAL GROWTH: INSTAGRAM UNLOCK ---
@@ -1586,37 +1514,6 @@ def admin_mailer():
     users = User.query.filter(User.email != None, User.email != '').all()
     return render_template('admin_mailer.html', users=users)
 
-@app.route('/penalty_zone', methods=['GET', 'POST'])
-@login_required
-def penalty_zone():
-    # If they aren't trapped, send them away
-    if not current_user.in_penalty_zone:
-        return redirect(url_for('dashboard'))
-
-    if request.method == 'POST':
-        if 'proof_image' not in request.files:
-            flash('System Error: No proof detected.', 'danger')
-            return redirect(request.url)
-
-        file = request.files['proof_image']
-        if file.filename == '':
-            flash('System Error: No file selected.', 'danger')
-            return redirect(request.url)
-
-        if file:
-            filename = secure_filename(file.filename)
-            # Save the file to a static uploads folder
-            upload_folder = os.path.join(app.root_path, 'static', 'uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            filepath = os.path.join(upload_folder, filename)
-            file.save(filepath)
-
-            # Record the proof in the database
-            current_user.penalty_proof_path = filename
-            db.session.commit()
-            flash('Proof submitted. Awaiting System Administrator verification.', 'info')
-
-    return render_template('penalty_zone.html', user=current_user)
 
 if __name__ == '__main__':
     with app.app_context():
