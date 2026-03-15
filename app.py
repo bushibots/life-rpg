@@ -109,14 +109,13 @@ PRESETS = [
 ]
 
 PENALTY_LOCK_HOURS = 10
-PENALTY_ALLOWED_ENDPOINTS = {"penalty_zone_page", "logout", "static"}
+PENALTY_ALLOWED_ENDPOINTS = {"penalty_zone", "logout", "static"}
 PENALTY_TASKS = [
     "Run 5 Kilometers",
     "Deep Clean your primary workspace",
     "No social media for 12 hours",
     "Complete a 60-minute focused study sprint",
 ]
-PENALTY_ADMIN_BYPASS_SESSION_KEY = "penalty_admin_bypass"
 
 # ========================================================
 # 5. HELPER FUNCTIONS
@@ -142,12 +141,8 @@ def _clear_penalty_session():
         "penalty_proof_path",
         "penalty_minimized",
         "penalty_notice_shown",
-        PENALTY_ADMIN_BYPASS_SESSION_KEY,
     ]:
         session.pop(key, None)
-
-def _admin_penalty_bypass_enabled():
-    return bool(session.get(PENALTY_ADMIN_BYPASS_SESSION_KEY, False)) and bool(getattr(current_user, 'is_admin', False))
 
 def _ensure_penalty_window():
     unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
@@ -163,11 +158,46 @@ def _ensure_penalty_window():
     return unlock_at
 
 @app.before_request
-def check_ban():
-    if current_user.is_authenticated and hasattr(current_user, 'is_banned') and current_user.is_banned:
-        logout_user()
-        flash("Access Denied: Account suspended.", "danger")
-        return redirect(url_for('login'))
+def check_penalty_zone():
+    if current_user.is_authenticated and current_user.in_penalty_zone:
+        # Endpoints they are STILL allowed to access while trapped
+        allowed_endpoints = ['penalty_zone', 'logout', 'static']
+        if request.endpoint not in allowed_endpoints:
+            return redirect(url_for('penalty_zone'))
+
+    if not current_user.is_authenticated:
+        return None
+
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if not unlock_at:
+        return None
+
+    now = datetime.utcnow()
+    if now >= unlock_at:
+        _clear_penalty_session()
+        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
+        return None
+
+    endpoint = request.endpoint or ""
+    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
+        return redirect(url_for('penalty_zone'))
+
+    if not current_user.is_authenticated:
+        return None
+
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if not unlock_at:
+        return None
+
+    now = datetime.utcnow()
+    if now >= unlock_at:
+        _clear_penalty_session()
+        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
+        return None
+
+    endpoint = request.endpoint or ""
+    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
+        return redirect(url_for('penalty_zone_page'))
 
     if not current_user.is_authenticated:
         return None
@@ -212,6 +242,9 @@ class LoginForm(FlaskForm):
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
+
+
+
 # ========================================================
 # 6. ROUTES
 # ========================================================
@@ -222,16 +255,56 @@ class LoginForm(FlaskForm):
 def dashboard():
     today = date.today()
 
-    # 1. DAILY RESET CHECK
+    # 1. DAILY RESET & PENALTY SYSTEM CHECK
     if current_user.last_check_date != today:
         user_goals = Goal.query.filter_by(user_id=current_user.id).all()
+
+        # Calculate total penalty points for a notification
+        total_penalty_taken = 0
+
         for goal in user_goals:
             for habit in goal.habits:
+                # Handle Daily Repeating Tasks Reset
                 if habit.is_daily and habit.completed:
                     habit.completed = False
+
+                # --- THE SOLO LEVELING PENALTY LOGIC ---
+# --- THE SOLO LEVELING PENALTY LOGIC ---
+                if habit.target_date and habit.target_date < today and not habit.completed:
+                    if current_user.theme == 'solo':
+                        penalty_points = habit.xp_value
+                        current_user.total_xp -= penalty_points
+                        if current_user.total_xp < 0:
+                            current_user.total_xp = 0
+
+                        total_penalty_taken += penalty_points
+                        habit.target_date = today
+
+                        # ---> NEW: TRAP THEM IN THE PENALTY ZONE <---
+                        current_user.in_penalty_zone = True
+                        if not current_user.penalty_task:
+                            penalty_tasks_list = [
+                                "Complete 100 Push-ups",
+                                "Run 5 Kilometers",
+                                "Survive: Hold a Plank for 3 Minutes",
+                                "Complete 100 Squats"
+                            ]
+                            current_user.penalty_task = random.choice(penalty_tasks_list)
+
+        # If they lost points, spawn an unavoidable System Notification!
+        if total_penalty_taken > 0 and current_user.theme == 'solo':
+            penalty_alert = Notification(
+                user_id=current_user.id,
+                message=f"[PENALTY APPLIED] You failed to complete your assigned Quests. The System has deducted {total_penalty_taken} XP from your status.",
+                type='warning',
+                is_read=False
+            )
+            db.session.add(penalty_alert)
+
         current_user.last_check_date = today
         db.session.commit()
 
+    # ---> THIS WAS THE MISSING LINE! <---
     goals = Goal.query.filter_by(user_id=current_user.id).all()
 
     # 2. GET COMPLETED TASKS
@@ -256,6 +329,21 @@ def dashboard():
         ).first()
         if has_data: show_report = True
 
+    # 4. SCAN CURRENT MONTHLY STATS FOR JOB CLASS
+    monthly_stats_raw = db.session.query(
+        QuestHistory.stat_type,
+        func.sum(QuestHistory.xp_gained)
+    ).filter(
+        QuestHistory.user_id == current_user.id,
+        extract('year', QuestHistory.date_completed) == today.year,
+        extract('month', QuestHistory.date_completed) == today.month
+    ).group_by(QuestHistory.stat_type).all()
+
+    monthly_stats = {'STR': 0, 'INT': 0, 'WIS': 0, 'CON': 0, 'CHA': 0}
+    for stat_type, xp in monthly_stats_raw:
+        if stat_type in monthly_stats and xp is not None:
+            monthly_stats[stat_type] = int(xp)
+
     return render_template('dashboard.html',
                            user=current_user,
                            goals=goals,
@@ -263,6 +351,7 @@ def dashboard():
                            monthly_xp=monthly_xp,
                            show_report=show_report,
                            prev_month=prev_month_date,
+                           monthly_stats=monthly_stats,
                            todays_completed=todays_completed)
 
 @app.route('/guest_login')
@@ -1329,19 +1418,13 @@ def genie_generate_quest():
     return redirect(url_for('dashboard'))
 
 
-def penalty_zone_page():
+@app.route('/penalty_zone', methods=['GET', 'POST'])
+@login_required
+def penalty_zone():
     unlock_at = _ensure_penalty_window()
 
-    action = ''
     if request.method == 'POST':
         action = request.form.get('action', '').strip()
-    elif request.args.get('action'):
-        action = request.args.get('action', '').strip()
-
-    if action:
-        if action in {'toggle_minimize', 'admin_release'} and not current_user.is_admin:
-            flash('Administrator clearance required for this control.', 'danger')
-            return redirect(url_for('penalty_zone_page'))
 
         if action == 'submit_proof':
             file = request.files.get('proof_file')
@@ -1368,15 +1451,7 @@ def penalty_zone_page():
             flash('Administrator override executed. Penalty window unlocked.', 'success')
             return redirect(url_for('dashboard'))
 
-        elif action == 'admin_bypass_on' and current_user.is_admin:
-            session[PENALTY_ADMIN_BYPASS_SESSION_KEY] = True
-            flash('Admin bypass enabled. Lock remains active, but admin navigation is now permitted.', 'info')
-
-        elif action == 'admin_bypass_off' and current_user.is_admin:
-            session[PENALTY_ADMIN_BYPASS_SESSION_KEY] = False
-            flash('Admin bypass disabled. Penalty lock enforcement restored.', 'info')
-
-        return redirect(url_for('penalty_zone_page'))
+        return redirect(url_for('penalty_zone'))
 
     remaining_seconds = max(0, int((unlock_at - datetime.utcnow()).total_seconds()))
     if remaining_seconds <= 0:
@@ -1384,29 +1459,12 @@ def penalty_zone_page():
         flash('Penalty timer expired. System lockdown lifted automatically after 10 hours.', 'success')
         return redirect(url_for('dashboard'))
 
-    penalty_task_text = session.get('penalty_task', random.choice(PENALTY_TASKS))
-    # Compatibility: some deployed templates reference `user.penalty_task` directly.
-    setattr(current_user, 'penalty_task', penalty_task_text)
-
     return render_template(
         'penalty_zone.html',
-        user=current_user,
-        penalty_task=penalty_task_text,
-        proof_submitted=bool(session.get('penalty_proof_submitted', False)),
-        penalty_minimized=bool(session.get('penalty_minimized', False)),
-        is_admin=current_user.is_admin,
-        admin_bypass_enabled=_admin_penalty_bypass_enabled(),
-        remaining_seconds=remaining_seconds,
-        unlock_at_iso=unlock_at.isoformat()
-    )
-
-# Idempotent route registration to prevent endpoint-collision crashes during deployment drift.
-if 'penalty_zone_page' not in app.view_functions:
-    app.add_url_rule(
-        '/penalty_zone',
-        endpoint='penalty_zone_page',
-        view_func=login_required(penalty_zone_page),
-        methods=['GET', 'POST']
+        task=current_user.penalty_task,
+        proof_path=current_user.penalty_proof_path,
+        time_remaining = 14400,
+        user=current_user
     )
 
 # --- VIRAL GROWTH: INSTAGRAM UNLOCK ---
@@ -1497,6 +1555,11 @@ def admin_mailer():
     users = User.query.filter(User.email != None, User.email != '').all()
     return render_template('admin_mailer.html', users=users)
 
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
