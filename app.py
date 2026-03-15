@@ -19,6 +19,7 @@ from flask_bcrypt import Bcrypt
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from itsdangerous import URLSafeTimedSerializer
+from werkzeug.utils import secure_filename
 from sqlalchemy import func, extract
 import google.generativeai as genai
 from weasyprint import HTML # <--- FIXED: Added missing import
