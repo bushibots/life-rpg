@@ -675,8 +675,30 @@ function unlockAndRedirect() {
         modal.show();
     }
 
+    document.querySelectorAll('.js-edit-task').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            openEditModal(
+                btn.dataset.habitId,
+                btn.dataset.habitName || '',
+                btn.dataset.habitDifficulty || 'Medium',
+                btn.dataset.habitDaily || 'false',
+                btn.dataset.habitDate || '',
+                btn.dataset.habitCategory || '',
+                btn.dataset.habitDescription || ''
+            );
+        });
+    });
+
+    // Cleanup safety: prevent stuck backdrop / locked page scroll after closing modals.
     document.querySelectorAll('.modal').forEach((modalEl) => {
-        modalEl.addEventListener('hidden.bs.modal', normalizeModalState);
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            if (!document.querySelector('.modal.show')) {
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+                document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+            }
+        });
     });
 </script>
 
