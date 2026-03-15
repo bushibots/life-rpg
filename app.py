@@ -42,25 +42,6 @@ except AttributeError:
 
 app = Flask(__name__)
 
-
-# Guard against duplicate endpoint registrations during deployment drift/reloads.
-_original_add_url_rule = app.add_url_rule
-
-def _safe_add_url_rule(rule, endpoint=None, view_func=None, **options):
-    resolved_endpoint = endpoint or (getattr(view_func, '__name__', None) if view_func else None)
-
-    if resolved_endpoint and resolved_endpoint in app.view_functions:
-        existing_view = app.view_functions.get(resolved_endpoint)
-        if view_func is None or existing_view == view_func:
-            return
-
-        print(f"[RouteGuard] Skipping duplicate endpoint registration: {resolved_endpoint} -> {rule}")
-        return
-
-    return _original_add_url_rule(rule, endpoint=endpoint, view_func=view_func, **options)
-
-app.add_url_rule = _safe_add_url_rule
-
 # ========================================================
 # 1. CONFIGURATION
 # ========================================================
@@ -181,23 +162,6 @@ def check_penalty_zone():
     endpoint = request.endpoint or ""
     if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
         return redirect(url_for('penalty_zone'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
 
     if not current_user.is_authenticated:
         return None
