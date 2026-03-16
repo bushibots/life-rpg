@@ -1,5 +1,6 @@
 import os
 import time
+import random
 import io  # <--- FIXED: Added missing import
 import csv # <--- FIXED: Added missing import
 from collections import Counter # <--- FIXED: Added missing import
@@ -18,6 +19,7 @@ from flask_bcrypt import Bcrypt
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from itsdangerous import URLSafeTimedSerializer
+from werkzeug.utils import secure_filename
 from sqlalchemy import func, extract
 import google.generativeai as genai
 from weasyprint import HTML # <--- FIXED: Added missing import
@@ -39,6 +41,25 @@ except AttributeError:
     pass
 
 app = Flask(__name__)
+
+
+# Guard against duplicate endpoint registrations during deployment drift/reloads.
+_original_add_url_rule = app.add_url_rule
+
+def _safe_add_url_rule(rule, endpoint=None, view_func=None, **options):
+    resolved_endpoint = endpoint or (getattr(view_func, '__name__', None) if view_func else None)
+
+    if resolved_endpoint and resolved_endpoint in app.view_functions:
+        existing_view = app.view_functions.get(resolved_endpoint)
+        if view_func is None or existing_view == view_func:
+            return
+
+        print(f"[RouteGuard] Skipping duplicate endpoint registration: {resolved_endpoint} -> {rule}")
+        return
+
+    return _original_add_url_rule(rule, endpoint=endpoint, view_func=view_func, **options)
+
+app.add_url_rule = _safe_add_url_rule
 
 # ========================================================
 # 1. CONFIGURATION
@@ -87,6 +108,16 @@ PRESETS = [
     {"id": 41, "name": "Call Family", "category": "Social", "attribute": "CHA", "difficulty": "Medium", "is_daily": False},
 ]
 
+PENALTY_LOCK_HOURS = 10
+PENALTY_ALLOWED_ENDPOINTS = {"penalty_zone_page", "logout", "static"}
+PENALTY_TASKS = [
+    "Run 5 Kilometers",
+    "Deep Clean your primary workspace",
+    "No social media for 12 hours",
+    "Complete a 60-minute focused study sprint",
+]
+PENALTY_ADMIN_BYPASS_SESSION_KEY = "penalty_admin_bypass"
+
 # ========================================================
 # 5. HELPER FUNCTIONS
 # ========================================================
@@ -94,12 +125,76 @@ PRESETS = [
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+
+def _parse_session_datetime(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+
+def _clear_penalty_session():
+    for key in [
+        "penalty_unlock_at",
+        "penalty_task",
+        "penalty_proof_submitted",
+        "penalty_proof_path",
+        "penalty_minimized",
+        "penalty_notice_shown",
+        PENALTY_ADMIN_BYPASS_SESSION_KEY,
+    ]:
+        session.pop(key, None)
+
+def _admin_penalty_bypass_enabled():
+    return bool(getattr(current_user, 'is_admin', False)) and (
+        bool(session.get(PENALTY_ADMIN_BYPASS_SESSION_KEY, False)) or bool(session.get('penalty_minimized', False))
+    )
+
+def _ensure_penalty_window():
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if unlock_at:
+        return unlock_at
+
+    unlock_at = datetime.utcnow() + timedelta(hours=PENALTY_LOCK_HOURS)
+    session["penalty_unlock_at"] = unlock_at.isoformat()
+    session["penalty_task"] = session.get("penalty_task") or random.choice(PENALTY_TASKS)
+    session["penalty_proof_submitted"] = False
+    session["penalty_minimized"] = False
+    session["penalty_notice_shown"] = False
+    return unlock_at
+
 @app.before_request
 def check_ban():
     if current_user.is_authenticated and hasattr(current_user, 'is_banned') and current_user.is_banned:
         logout_user()
         flash("Access Denied: Account suspended.", "danger")
         return redirect(url_for('login'))
+
+    if not current_user.is_authenticated:
+        return None
+
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if not unlock_at:
+        return None
+
+    now = datetime.utcnow()
+    if now >= unlock_at:
+        _clear_penalty_session()
+        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
+        return None
+
+    endpoint = request.endpoint or ""
+
+    # Admin bypass (testing/maintenance mode): allow admin navigation while lock stays active for users.
+    admin_bypass_active = bool(getattr(current_user, 'is_admin', False)) and (
+        bool(session.get(PENALTY_ADMIN_BYPASS_SESSION_KEY, False)) or bool(session.get('penalty_minimized', False))
+    )
+    if admin_bypass_active and endpoint != 'penalty_zone_page':
+        return None
+
+    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
+        return redirect(url_for('penalty_zone_page'))
 
 def get_monthly_xp(user_id):
     today = date.today()
@@ -522,6 +617,14 @@ def edit_habit():
 @login_required
 def settings():
     if request.method == 'POST':
+        new_email = request.form.get('email')
+        if new_email:
+            existing = User.query.filter_by(email=new_email).first()
+            if existing and existing.id != current_user.id:
+                flash('Email already in use.', 'danger')
+                return redirect(url_for('settings'))
+            current_user.email = new_email
+
         if request.form.get('theme_toggle') == 'on':
             current_user.theme = 'solo'
         else:
@@ -530,15 +633,6 @@ def settings():
         db.session.commit()
         flash('System settings updated.', 'success')
         return redirect(url_for('settings'))
-        new_email = request.form.get('email')
-        if new_email:
-            existing = User.query.filter_by(email=new_email).first()
-            if existing and existing.id != current_user.id:
-                flash('Email already in use.', 'danger')
-            else:
-                current_user.email = new_email
-                db.session.commit()
-                flash('Settings updated.', 'success')
     return render_template('settings.html', user=current_user, presets=PRESETS)
 
 @app.route('/update_profile', methods=['POST'])
@@ -1239,6 +1333,87 @@ def genie_generate_quest():
     flash(f"The Genie has forged your Master Quest! Check your Active Protocols.", "success")
     return redirect(url_for('dashboard'))
 
+
+def penalty_zone_page():
+    unlock_at = _ensure_penalty_window()
+
+    action = ''
+    if request.method == 'POST':
+        action = request.form.get('action', '').strip()
+    elif request.args.get('action'):
+        action = request.args.get('action', '').strip()
+
+    if action:
+        if action in {'toggle_minimize', 'admin_release'} and not current_user.is_admin:
+            flash('Administrator clearance required for this control.', 'danger')
+            return redirect(url_for('penalty_zone_page'))
+
+        if action == 'submit_proof':
+            file = request.files.get('proof_file')
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                stamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+                final_name = f"{current_user.id}_{stamp}_{filename}"
+                upload_dir = os.path.join(app.root_path, 'static', 'penalty_proofs')
+                os.makedirs(upload_dir, exist_ok=True)
+                file.save(os.path.join(upload_dir, final_name))
+
+                session['penalty_proof_submitted'] = True
+                session['penalty_proof_path'] = f'penalty_proofs/{final_name}'
+                flash('Proof uploaded. Awaiting Administrator review.', 'info')
+            else:
+                flash('Upload failed. Please attach a valid file.', 'warning')
+
+        elif action == 'toggle_minimize' and current_user.is_admin:
+            is_minimized = bool(session.get('penalty_minimized', False))
+            session['penalty_minimized'] = not is_minimized
+
+        elif action == 'admin_release' and current_user.is_admin:
+            _clear_penalty_session()
+            flash('Administrator override executed. Penalty window unlocked.', 'success')
+            return redirect(url_for('dashboard'))
+
+        elif action == 'admin_bypass_on' and current_user.is_admin:
+            session[PENALTY_ADMIN_BYPASS_SESSION_KEY] = True
+            flash('Admin bypass enabled. Lock remains active, but admin navigation is now permitted.', 'info')
+
+        elif action == 'admin_bypass_off' and current_user.is_admin:
+            session[PENALTY_ADMIN_BYPASS_SESSION_KEY] = False
+            flash('Admin bypass disabled. Penalty lock enforcement restored.', 'info')
+
+        return redirect(url_for('penalty_zone_page'))
+
+    remaining_seconds = max(0, int((unlock_at - datetime.utcnow()).total_seconds()))
+    if remaining_seconds <= 0:
+        _clear_penalty_session()
+        flash('Penalty timer expired. System lockdown lifted automatically after 10 hours.', 'success')
+        return redirect(url_for('dashboard'))
+
+    penalty_task_text = session.get('penalty_task', random.choice(PENALTY_TASKS))
+    # Compatibility: some deployed templates reference `user.penalty_task` directly.
+    setattr(current_user, 'penalty_task', penalty_task_text)
+
+    return render_template(
+        'penalty_zone.html',
+        user=current_user,
+        penalty_task=penalty_task_text,
+        proof_submitted=bool(session.get('penalty_proof_submitted', False)),
+        penalty_minimized=bool(session.get('penalty_minimized', False)),
+        is_admin=current_user.is_admin,
+        admin_bypass_enabled=_admin_penalty_bypass_enabled(),
+        remaining_seconds=remaining_seconds,
+        unlock_at_iso=unlock_at.isoformat()
+    )
+
+# Idempotent route registration to prevent endpoint-collision crashes during deployment drift.
+if 'penalty_zone_page' not in app.view_functions:
+    app.add_url_rule(
+        '/penalty_zone',
+        endpoint='penalty_zone_page',
+        view_func=login_required(penalty_zone_page),
+        methods=['GET', 'POST']
+    )
+
 # --- VIRAL GROWTH: INSTAGRAM UNLOCK ---
 @app.route('/unlock_beta', methods=['POST'])
 @login_required
@@ -1327,10 +1502,6 @@ def admin_mailer():
     users = User.query.filter(User.email != None, User.email != '').all()
     return render_template('admin_mailer.html', users=users)
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
