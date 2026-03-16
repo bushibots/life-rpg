@@ -66,12 +66,21 @@
         {% endif %}
         {% if user.is_admin %}
             <hr class="border-danger opacity-50 my-4">
-            <form action="{{ url_for('penalty_zone') }}" method="POST">
-                <input type="hidden" name="action" value="minimize">
-                <button type="submit" class="btn btn-outline-warning btn-sm w-100 fw-bold" style="letter-spacing: 2px;">
-                    <i class="bi bi-shield-lock-fill me-2"></i> ADMIN OVERRIDE: MINIMIZE ZONE
-                </button>
-            </form>
+            <div class="d-flex gap-2">
+                <form action="{{ url_for('penalty_zone') }}" method="POST" class="w-50">
+                    <input type="hidden" name="action" value="minimize">
+                    <button type="submit" class="btn btn-outline-warning btn-sm w-100 fw-bold" style="letter-spacing: 1px;">
+                        <i class="bi bi-box-arrow-down-right me-1"></i> MINIMIZE
+                    </button>
+                </form>
+
+                <form action="{{ url_for('penalty_zone') }}" method="POST" class="w-50">
+                    <input type="hidden" name="action" value="forgive">
+                    <button type="submit" class="btn btn-warning text-dark btn-sm w-100 fw-bold shadow-sm" style="letter-spacing: 1px;">
+                        <i class="bi bi-unlock-fill me-1"></i> FORCE UNLOCK
+                    </button>
+                </form>
+            </div>
         {% endif %}
     </div>
 </div>

@@ -3,18 +3,10 @@ import time
 import random
 import io  # <--- FIXED: Added missing import
 import csv # <--- FIXED: Added missing import
-from importlib.util import find_spec
 from collections import Counter # <--- FIXED: Added missing import
 from datetime import datetime, date, timedelta
-if find_spec("dotenv"):
-    from dotenv import load_dotenv
-else:
-    def load_dotenv(*args, **kwargs):
-        return False
-if find_spec("requests"):
-    import requests
-else:
-    requests = None
+from dotenv import load_dotenv
+import requests
 from utils import generate_genie_questions, generate_genie_blueprint
 
 # --- FLASK & EXTENSIONS ---
@@ -52,22 +44,6 @@ app = Flask(__name__)
 
 
 # Guard against duplicate endpoint registrations during deployment drift/reloads.
-_original_add_url_rule = app.add_url_rule
-
-def _safe_add_url_rule(rule, endpoint=None, view_func=None, **options):
-    resolved_endpoint = endpoint or (getattr(view_func, '__name__', None) if view_func else None)
-
-    if resolved_endpoint and resolved_endpoint in app.view_functions:
-        existing_view = app.view_functions.get(resolved_endpoint)
-        if view_func is None or existing_view == view_func:
-            return
-
-        print(f"[RouteGuard] Skipping duplicate endpoint registration: {resolved_endpoint} -> {rule}")
-        return
-
-    return _original_add_url_rule(rule, endpoint=endpoint, view_func=view_func, **options)
-
-app.add_url_rule = _safe_add_url_rule
 
 # ========================================================
 # 1. CONFIGURATION
@@ -167,121 +143,35 @@ def _ensure_penalty_window():
 
 @app.before_request
 def check_penalty_zone():
-    if current_user.is_authenticated and current_user.in_penalty_zone:
+    # 1. Ignore if user is not logged in
+    if not current_user.is_authenticated:
+        return None
 
-        # Endpoints they are STILL allowed to access while trapped
+    endpoint = request.endpoint or ""
+
+    # 2. Check if the user is trapped in the Penalty Zone
+    if current_user.in_penalty_zone:
+
+        # --- ADMIN SECRETS: OVERRIDE BACKDOOR ---
+        if current_user.is_admin and session.get('penalty_minimized') and endpoint != 'penalty_zone':
+            return None  # Let the admin pass through freely
+
+        # 3. Lock down all other routes
         allowed_endpoints = ['penalty_zone', 'logout', 'static']
-        if current_user.is_admin and session.get('penalty_minimized') and endpoint != 'penalty_zone_page':
-                return None
-        if request.endpoint not in allowed_endpoints:
+        if endpoint not in allowed_endpoints and not endpoint.startswith("static"):
             return redirect(url_for('penalty_zone'))
 
-    if not current_user.is_authenticated:
-        return None
-
+    # 4. Check if the 10-hour timer has expired automatically
     unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-
-    # Admin bypass (testing/maintenance mode): lets admins inspect and fix system while lock is active.
-   # Admin bypass (testing/maintenance mode): lets admins inspect and fix system while lock is active.
-    if current_user.is_admin and session.get('penalty_minimized') and endpoint != 'penalty_zone_page':
-        return None
-
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-
-    # Admin bypass (testing/maintenance mode): allow admin navigation while lock stays active for users.
-    admin_bypass_active = bool(getattr(current_user, 'is_admin', False)) and (
-        bool(session.get(PENALTY_ADMIN_BYPASS_SESSION_KEY, False)) or bool(session.get('penalty_minimized', False))
-    )
-    if admin_bypass_active and endpoint != 'penalty_zone_page':
-        return None
-
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
-
-    if not current_user.is_authenticated:
-        return None
-
-    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
-    if not unlock_at:
-        return None
-
-    now = datetime.utcnow()
-    if now >= unlock_at:
-        _clear_penalty_session()
-        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
-        return None
-
-    endpoint = request.endpoint or ""
-
-    # Admin bypass (testing/maintenance mode): allow admin navigation while lock stays active for users.
-    admin_bypass_active = bool(getattr(current_user, 'is_admin', False)) and (
-        bool(session.get(PENALTY_ADMIN_BYPASS_SESSION_KEY, False)) or bool(session.get('penalty_minimized', False))
-    )
-    if admin_bypass_active and endpoint != 'penalty_zone_page':
-        return None
-
-    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
-        return redirect(url_for('penalty_zone_page'))
+    if unlock_at:
+        now = datetime.utcnow()
+        if now >= unlock_at:
+            _clear_penalty_session()
+            if current_user.in_penalty_zone:
+                current_user.in_penalty_zone = False
+                db.session.commit()
+            flash("Penalty timer expired. System lockdown lifted automatically.", "success")
+            return None
 
 def get_monthly_xp(user_id):
     today = date.today()
@@ -1483,49 +1373,62 @@ def genie_generate_quest():
 @app.route('/penalty_zone', methods=['GET', 'POST'])
 @login_required
 def penalty_zone():
-    unlock_at = _ensure_penalty_window()
+    # If they aren't trapped in the database, send them away safely
+    if not current_user.in_penalty_zone:
+        if 'penalty_minimized' in session:
+            session.pop('penalty_minimized')
+        return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         action = request.form.get('action', '').strip()
 
-        if action == 'submit_proof':
-            file = request.files.get('proof_file')
-            if file and file.filename:
-                filename = secure_filename(file.filename)
-                stamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
-                final_name = f"{current_user.id}_{stamp}_{filename}"
-                upload_dir = os.path.join(app.root_path, 'static', 'penalty_proofs')
-                os.makedirs(upload_dir, exist_ok=True)
-                file.save(os.path.join(upload_dir, final_name))
+        # --- 1. HANDLE IMAGE UPLOAD ---
+        # Checks for 'proof_image' (our HTML) or 'proof_file' (your custom code)
+        file = request.files.get('proof_image') or request.files.get('proof_file')
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            stamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+            final_name = f"{current_user.id}_{stamp}_{filename}"
+            upload_dir = os.path.join(app.root_path, 'static', 'uploads')
+            os.makedirs(upload_dir, exist_ok=True)
+            file.save(os.path.join(upload_dir, final_name))
 
-                session['penalty_proof_submitted'] = True
-                session['penalty_proof_path'] = f'penalty_proofs/{final_name}'
-                flash('Proof uploaded. Awaiting Administrator review.', 'info')
-            else:
-                flash('Upload failed. Please attach a valid file.', 'warning')
+            # Save it to the Database so it is permanent!
+            current_user.penalty_proof_path = final_name
+            db.session.commit()
+            flash('Proof uploaded. Awaiting Administrator review.', 'info')
+        elif action not in ['minimize', 'toggle_minimize', 'forgive', 'admin_release']:
+            flash('Upload failed. Please attach a valid file.', 'warning')
 
-        elif action == 'toggle_minimize' and current_user.is_admin:
+        # --- 2. ADMIN MINIMIZE ---
+        if action in ['minimize', 'toggle_minimize'] and current_user.is_admin:
             is_minimized = bool(session.get('penalty_minimized', False))
             session['penalty_minimized'] = not is_minimized
+            flash('System Administrator Override Toggled.', 'warning')
+            return redirect(url_for('dashboard'))
 
-        elif action == 'admin_release' and current_user.is_admin:
-            _clear_penalty_session()
+        # --- 3. ADMIN FORCE UNLOCK ---
+        if action in ['forgive', 'admin_release'] and current_user.is_admin:
+            # Cure the database lock!
+            current_user.in_penalty_zone = False
+            current_user.penalty_proof_path = None
+            current_user.penalty_task = None
+            db.session.commit()
+            if 'penalty_minimized' in session:
+                session.pop('penalty_minimized')
             flash('Administrator override executed. Penalty window unlocked.', 'success')
             return redirect(url_for('dashboard'))
 
         return redirect(url_for('penalty_zone'))
 
-    remaining_seconds = max(0, int((unlock_at - datetime.utcnow()).total_seconds()))
-    if remaining_seconds <= 0:
-        _clear_penalty_session()
-        flash('Penalty timer expired. System lockdown lifted automatically after 10 hours.', 'success')
-        return redirect(url_for('dashboard'))
+    # Static timer value for now (4 hours = 14400 seconds)
+    time_remaining = 14400
 
     return render_template(
         'penalty_zone.html',
         task=current_user.penalty_task,
         proof_path=current_user.penalty_proof_path,
-        time_remaining = 14400,
+        time_remaining=time_remaining,
         user=current_user
     )
 
@@ -1576,10 +1479,6 @@ def admin_mailer():
 
         sent_count = 0
 
-        if requests is None:
-            flash('Mailer dependency unavailable on server (requests missing). Please install requirements and reload.', 'danger')
-            return redirect(url_for('admin_mailer'))
-
         # --- USE BREVO HTTP API (Guaranteed Delivery) ---
         url = "https://api.brevo.com/v3/smtp/email"
         headers = {
@@ -1622,10 +1521,6 @@ def admin_mailer():
     return render_template('admin_mailer.html', users=users)
 
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

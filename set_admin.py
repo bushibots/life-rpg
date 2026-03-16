@@ -4,8 +4,8 @@ from models import User
 # This starts the connection to the database
 with app.app_context():
     # REPLACE 'CosmoCommander' WITH YOUR EXACT USERNAME
-    user = User.query.filter_by(username='Arish').first()
-    
+    user = User.query.filter_by(username='ArishDev').first()
+
     if user:
         user.is_admin = True
         db.session.commit()
@@ -20,7 +20,7 @@ from models import User
 with app.app_context():
     # REPLACE 'CosmoCommander' WITH YOUR EXACT USERNAME
     user = User.query.filter_by(username='Arish').first()
-    
+
     if user:
         user.is_admin = True
         db.session.commit()
