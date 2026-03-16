@@ -3,10 +3,18 @@ import time
 import random
 import io  # <--- FIXED: Added missing import
 import csv # <--- FIXED: Added missing import
+from importlib.util import find_spec
 from collections import Counter # <--- FIXED: Added missing import
 from datetime import datetime, date, timedelta
-from dotenv import load_dotenv
-import requests
+if find_spec("dotenv"):
+    from dotenv import load_dotenv
+else:
+    def load_dotenv(*args, **kwargs):
+        return False
+if find_spec("requests"):
+    import requests
+else:
+    requests = None
 from utils import generate_genie_questions, generate_genie_blueprint
 
 # --- FLASK & EXTENSIONS ---
@@ -220,6 +228,31 @@ def check_penalty_zone():
     # Admin bypass (testing/maintenance mode): lets admins inspect and fix system while lock is active.
    # Admin bypass (testing/maintenance mode): lets admins inspect and fix system while lock is active.
     if current_user.is_admin and session.get('penalty_minimized') and endpoint != 'penalty_zone_page':
+        return None
+
+    if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
+        return redirect(url_for('penalty_zone_page'))
+
+    if not current_user.is_authenticated:
+        return None
+
+    unlock_at = _parse_session_datetime(session.get("penalty_unlock_at"))
+    if not unlock_at:
+        return None
+
+    now = datetime.utcnow()
+    if now >= unlock_at:
+        _clear_penalty_session()
+        flash("Penalty timer expired. System lockdown lifted automatically after 10 hours.", "success")
+        return None
+
+    endpoint = request.endpoint or ""
+
+    # Admin bypass (testing/maintenance mode): allow admin navigation while lock stays active for users.
+    admin_bypass_active = bool(getattr(current_user, 'is_admin', False)) and (
+        bool(session.get(PENALTY_ADMIN_BYPASS_SESSION_KEY, False)) or bool(session.get('penalty_minimized', False))
+    )
+    if admin_bypass_active and endpoint != 'penalty_zone_page':
         return None
 
     if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
@@ -1542,6 +1575,10 @@ def admin_mailer():
             targets.append({"email": ce, "username": "Agent"})
 
         sent_count = 0
+
+        if requests is None:
+            flash('Mailer dependency unavailable on server (requests missing). Please install requirements and reload.', 'danger')
+            return redirect(url_for('admin_mailer'))
 
         # --- USE BREVO HTTP API (Guaranteed Delivery) ---
         url = "https://api.brevo.com/v3/smtp/email"
