@@ -160,8 +160,11 @@ def _ensure_penalty_window():
 @app.before_request
 def check_penalty_zone():
     if current_user.is_authenticated and current_user.in_penalty_zone:
+
         # Endpoints they are STILL allowed to access while trapped
         allowed_endpoints = ['penalty_zone', 'logout', 'static']
+        if current_user.is_admin and session.get('penalty_minimized') and endpoint != 'penalty_zone_page':
+                return None
         if request.endpoint not in allowed_endpoints:
             return redirect(url_for('penalty_zone'))
 
@@ -215,7 +218,8 @@ def check_penalty_zone():
     endpoint = request.endpoint or ""
 
     # Admin bypass (testing/maintenance mode): lets admins inspect and fix system while lock is active.
-    if _admin_penalty_bypass_enabled() and endpoint != 'penalty_zone_page':
+   # Admin bypass (testing/maintenance mode): lets admins inspect and fix system while lock is active.
+    if current_user.is_admin and session.get('penalty_minimized') and endpoint != 'penalty_zone_page':
         return None
 
     if endpoint not in PENALTY_ALLOWED_ENDPOINTS and not endpoint.startswith("static"):
