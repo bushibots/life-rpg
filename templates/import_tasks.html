@@ -1,54 +1,50 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="d-flex align-items-center justify-content-center" style="min-height: 80vh;">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-lg bg-dark border-secondary">
-            <div class="card-header bg-transparent border-bottom border-secondary text-center py-3">
-                <h3 class="text-info mb-0" style="font-family: 'Orbitron', sans-serif;">
-                    <i class="bi bi-cpu me-2"></i>BRAIN DUMP
-                </h3>
-            </div>
-            <div class="card-body p-4">
-                <p class="text-muted text-center small mb-4">
-                    Offload your mental stack. Paste messy notes, todo lists, or random thoughts below.
-                    The system will organize them into executable protocols.
-                </p>
-
-                <form method="POST">
-                    <div class="form-group mb-4">
-                        <textarea name="raw_text" class="form-control bg-dark text-white border-secondary font-monospace" 
-                                  rows="8" placeholder="> Study Torts for 2 hours&#10;> Buy milk and eggs&#10;> Call Mansi regarding the project..."
-                                  style="font-size: 0.9rem;"></textarea>
-                    </div>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card bg-dark text-white shadow-lg" style="{% if current_user.theme == 'solo' %}border: 1px solid rgba(220, 53, 69, 0.5); border-radius: 0; box-shadow: 0 0 20px rgba(220, 53, 69, 0.1);{% else %}border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);{% endif %}">
+                <div class="card-header border-bottom py-3" style="{% if current_user.theme == 'solo' %}background: rgba(20, 0, 0, 0.8); border-color: rgba(220, 53, 69, 0.3) !important;{% else %}background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.05) !important;{% endif %}">
+                    <h5 class="mb-0 fw-bold {% if current_user.theme == 'solo' %}text-danger{% endif %}">
+                        {% if current_user.theme == 'solo' %}
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> SYSTEM DIRECTIVE
+                        {% else %}
+                            <i class="bi bi-lightning-charge-fill me-2 text-info"></i> AI Auto-Plan
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    {% if current_user.theme == 'solo' %}
+                        <p class="text-danger mb-4 fw-semibold" style="letter-spacing: 1px;">[ALERT] State your intentions. The System will generate your mandatory Quests. Failure to complete assigned Quests will result in a penalty.</p>
+                    {% else %}
+                        <p class="text-white-50 mb-4">Paste your meeting notes, daily goals, or random thoughts. The AI will automatically extract and categorize them into tasks.</p>
+                    {% endif %}
                     
-                    <button type="submit" class="btn btn-info w-100 fw-bold py-2" id="importBtn" onclick="lockButton()">
-                        <i class="bi bi-box-arrow-in-down me-2"></i> INITIATE IMPORT
-                    </button>
-                </form>
+                    <form action="{{ url_for('import_tasks') }}" method="POST" id="importForm">
+                        <textarea name="raw_text" class="form-control bg-dark text-white mb-4" rows="8" placeholder="{% if current_user.theme == 'solo' %}Awaiting Player input...{% else %}e.g., I need to buy groceries tomorrow, finish the Python project by Friday, and call David...{% endif %}" required style="{% if current_user.theme == 'solo' %}border: 1px solid rgba(220, 53, 69, 0.4); border-radius: 0; box-shadow: inset 0 0 10px rgba(220, 53, 69, 0.1); font-family: 'Rajdhani', monospace;{% else %}border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);{% endif %}"></textarea>
+                        
+                        <button type="submit" class="btn {% if current_user.theme == 'solo' %}btn-outline-danger{% else %}btn-info text-dark{% endif %} btn-lg w-100 fw-bold shadow-sm" style="{% if current_user.theme == 'solo' %}border-radius: 0; letter-spacing: 2px;{% else %}border-radius: 8px;{% endif %}" id="submitBtn">
+                            {% if current_user.theme == 'solo' %}GENERATE QUESTS{% else %}Process with AI{% endif %}
+                        </button>
+                    </form>
+                </div>
             </div>
             
-            {% if not current_user.is_pro %}
-            <div class="card-footer bg-warning bg-opacity-10 border-top border-warning border-opacity-25 text-center py-2">
-                <small class="text-warning">
-                    <i class="bi bi-exclamation-triangle me-1"></i> <strong>Free Tier:</strong> Keyword Analysis Only. 
-                    <br>Upgrade for AI-powered context understanding.
-                </small>
+            <div class="text-center mt-4 d-none" id="loadingSpinner">
+                <div class="spinner-border {% if current_user.theme == 'solo' %}text-danger{% else %}text-info{% endif %} mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                <h5 class="{% if current_user.theme == 'solo' %}text-danger{% else %}text-white-50{% endif %} fw-bold" style="letter-spacing: 2px;">
+                    {% if current_user.theme == 'solo' %}ANALYZING PLAYER INTENTIONS...{% else %}Extracting tasks...{% endif %}
+                </h5>
             </div>
-            {% else %}
-            <div class="card-footer bg-info bg-opacity-10 border-top border-info border-opacity-25 text-center py-2">
-                <small class="text-info"><i class="bi bi-stars me-1"></i> AI Neural Core Active</small>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-function lockButton() {
-    const btn = document.getElementById('importBtn');
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> PROCESSING...';
-    btn.classList.add('disabled');
-}
+document.getElementById('importForm').addEventListener('submit', function() {
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('importForm').classList.add('d-none');
+    document.getElementById('loadingSpinner').classList.remove('d-none');
+});
 </script>
 {% endblock %}
