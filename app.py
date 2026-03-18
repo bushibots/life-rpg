@@ -349,66 +349,108 @@ def analytics():
 
     history = query.order_by(QuestHistory.date_completed.asc()).all()
 
-    # A. RADAR
     stats = {'STR': 0, 'INT': 0, 'WIS': 0, 'CON': 0, 'CHA': 0}
-    for h in history:
-        if h.stat_type in stats:
-            stats[h.stat_type] += h.xp_gained
-    radar_data = list(stats.values())
-    radar_labels = list(stats.keys())
-
-    # B. XP MAP
+    difficulty_counts = {'Easy': 0, 'Medium': 0, 'Hard': 0, 'Epic': 0}
+    difficulty_xp = {'Easy': 0, 'Medium': 0, 'Hard': 0, 'Epic': 0}
     xp_map = {}
+    weekday_map = {'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0, 'Sun': 0}
+
+    total_xp = 0
+    total_quests = len(history)
+
     for h in history:
-        d_str = h.date_completed.strftime('%Y-%m-%d')
-        xp_map[d_str] = xp_map.get(d_str, 0) + h.xp_gained
+        total_xp += h.xp_gained or 0
 
-    # C. HEALTH SCORE
+        if h.stat_type in stats:
+            stats[h.stat_type] += h.xp_gained or 0
+
+        if h.difficulty in difficulty_counts:
+            difficulty_counts[h.difficulty] += 1
+            difficulty_xp[h.difficulty] += h.xp_gained or 0
+
+        if h.date_completed:
+            d_str = h.date_completed.strftime('%Y-%m-%d')
+            xp_map[d_str] = xp_map.get(d_str, 0) + (h.xp_gained or 0)
+            weekday_map[h.date_completed.strftime('%a')] += h.xp_gained or 0
+
+    radar_labels = list(stats.keys())
+    radar_data = list(stats.values())
+
+    active_days_count = len(xp_map)
+    avg_xp_per_quest = int(total_xp / total_quests) if total_quests else 0
+    avg_xp_per_active_day = int(total_xp / active_days_count) if active_days_count else 0
+
     last_7_days_dates = [today - timedelta(days=i) for i in range(7)]
-    active_days = sum(1 for day in last_7_days_dates if day.strftime('%Y-%m-%d') in xp_map)
-    health_score = int((active_days / 7) * 100)
+    recent_active_days = sum(1 for day in last_7_days_dates if day.strftime('%Y-%m-%d') in xp_map)
+    health_score = int((recent_active_days / 7) * 100)
 
-    # D. LINE CHART
+    sorted_dates = sorted(xp_map.keys())
     line_labels = []
     line_data = []
+    daily_line_data = []
     cumulative_xp = 0
-    sorted_dates = sorted(xp_map.keys())
-
     for d_str in sorted_dates:
         cumulative_xp += xp_map.get(d_str, 0)
         line_labels.append(d_str)
         line_data.append(cumulative_xp)
+        daily_line_data.append(xp_map.get(d_str, 0))
 
-    if not line_data:
+    if not line_labels:
         line_labels = [today.strftime('%Y-%m-%d')]
         line_data = [0]
+        daily_line_data = [0]
 
-    # E. DONUT
-    difficulty_counts = {'Easy': 0, 'Medium': 0, 'Hard': 0, 'Epic': 0}
-    for h in history:
-        if h.difficulty in difficulty_counts:
-            difficulty_counts[h.difficulty] += 1
+    best_day = max(xp_map.items(), key=lambda item: item[1], default=(today.strftime('%Y-%m-%d'), 0))
 
-    # F. BAR CHART
-    bar_labels = []
-    bar_data = []
-    for i in range(6, -1, -1):
+    current_streak = 0
+    cursor_day = today
+    while cursor_day.strftime('%Y-%m-%d') in xp_map:
+        current_streak += 1
+        cursor_day -= timedelta(days=1)
+
+    rolling_labels = []
+    rolling_data = []
+    for i in range(13, -1, -1):
         d = today - timedelta(days=i)
         d_str = d.strftime('%Y-%m-%d')
-        bar_labels.append(d.strftime('%a'))
-        bar_data.append(xp_map.get(d_str, 0))
+        rolling_labels.append(d.strftime('%b %d'))
+        rolling_data.append(xp_map.get(d_str, 0))
+
+    weekday_labels = list(weekday_map.keys())
+    weekday_data = list(weekday_map.values())
+
+    strongest_stat = max(stats.items(), key=lambda item: item[1], default=('STR', 0))
+    most_common_difficulty = max(difficulty_counts.items(), key=lambda item: item[1], default=('Easy', 0))
+    intensity_score = min(100, int((avg_xp_per_active_day / 120) * 100)) if avg_xp_per_active_day else 0
 
     return render_template('analytics.html',
                          user=current_user,
                          radar_data=radar_data,
                          radar_labels=radar_labels,
+                         stat_totals=stats,
                          heatmap_data=xp_map,
                          health_score=health_score,
                          line_labels=line_labels,
                          line_data=line_data,
+                         daily_line_data=daily_line_data,
                          diff_data=list(difficulty_counts.values()),
-                         bar_labels=bar_labels,
-                         bar_data=bar_data,
+                         diff_labels=list(difficulty_counts.keys()),
+                         difficulty_xp=list(difficulty_xp.values()),
+                         bar_labels=rolling_labels,
+                         bar_data=rolling_data,
+                         weekday_labels=weekday_labels,
+                         weekday_data=weekday_data,
+                         total_xp=total_xp,
+                         total_quests=total_quests,
+                         active_days_count=active_days_count,
+                         avg_xp_per_quest=avg_xp_per_quest,
+                         avg_xp_per_active_day=avg_xp_per_active_day,
+                         best_day_label=best_day[0],
+                         best_day_xp=best_day[1],
+                         current_streak=current_streak,
+                         strongest_stat=strongest_stat,
+                         most_common_difficulty=most_common_difficulty,
+                         intensity_score=intensity_score,
                          selected_month=selected_month,
                          selected_year=selected_year,
                          show_all=show_all)

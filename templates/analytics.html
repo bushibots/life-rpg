@@ -1,575 +1,788 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+.analytics-shell {
+    position: relative;
+    isolation: isolate;
+}
+.analytics-shell::before {
+    content: "";
+    position: absolute;
+    inset: -2rem 0 auto;
+    height: 26rem;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(13, 202, 240, 0.18), transparent 28%),
+        radial-gradient(circle at 80% 0%, rgba(111, 66, 193, 0.22), transparent 24%),
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%);
+    filter: blur(10px);
+    pointer-events: none;
+    z-index: -1;
+}
+.analytics-hero,
+.analytics-panel,
+.analytics-kpi,
+.heat-tile,
+.quick-insight {
+    background: linear-gradient(180deg, rgba(17, 25, 40, 0.94), rgba(7, 13, 24, 0.94));
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: 0 18px 50px rgba(2, 8, 23, 0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.analytics-hero {
+    border-radius: 28px;
+    overflow: hidden;
+    position: relative;
+}
+.analytics-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -10% -45% auto;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(13, 202, 240, 0.22), transparent 65%);
+    animation: pulseOrb 6s ease-in-out infinite;
+}
+.hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+    gap: 1.5rem;
+}
+.hero-title {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.08em;
+    font-size: clamp(1.9rem, 2.6vw, 3rem);
+}
+.hero-subtitle {
+    color: #9fb3c8;
+    max-width: 52rem;
+}
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+.analytics-kpi,
+.quick-insight,
+.analytics-panel {
+    border-radius: 24px;
+}
+.analytics-kpi {
+    padding: 1rem 1.1rem;
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.analytics-kpi:hover,
+.analytics-panel:hover,
+.quick-insight:hover {
+    transform: translateY(-4px);
+    border-color: rgba(13, 202, 240, 0.35);
+    box-shadow: 0 24px 65px rgba(2, 8, 23, 0.45), 0 0 0 1px rgba(13, 202, 240, 0.08);
+}
+.kpi-label {
+    color: #90a5bc;
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+}
+.kpi-value {
+    font-size: clamp(1.5rem, 2vw, 2rem);
+    font-weight: 700;
+    color: #f8fbff;
+}
+.kpi-trend {
+    color: #77ddff;
+    font-size: .88rem;
+}
+.status-cluster {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.quick-insight {
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+.quick-insight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(13, 202, 240, 0.08), transparent 45%, rgba(111, 66, 193, 0.08));
+    pointer-events: none;
+}
+.analytics-panel {
+    padding: 1.25rem;
+    height: 100%;
+}
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+.panel-title {
+    color: #f8fbff;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-family: 'Orbitron', sans-serif;
+    margin-bottom: 0;
+    font-size: 1rem;
+}
+.panel-subtitle {
+    color: #88a0b8;
+    margin-bottom: 0;
+    font-size: .9rem;
+}
+.chart-stage {
+    position: relative;
+    min-height: 320px;
+}
+.chart-stage.chart-stage-sm { min-height: 260px; }
+.chart-stage.chart-stage-xs { min-height: 220px; }
+.analytics-badge {
+    border-radius: 999px;
+    border: 1px solid rgba(13, 202, 240, 0.28);
+    background: rgba(13, 202, 240, 0.08);
+    color: #8be9ff;
+    font-size: .75rem;
+    padding: .42rem .75rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+}
+.glass-form {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    padding: .8rem;
+}
+.heatmap-wrap {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16px, 1fr));
+    gap: .4rem;
+}
+.heat-tile {
+    width: 100%;
+    aspect-ratio: 1;
+    min-width: 16px;
+    border-radius: 5px;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+.heat-tile:hover {
+    transform: translateY(-2px) scale(1.06);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 10px 16px rgba(0,0,0,0.22);
+}
+.segmented-toggle {
+    display: inline-flex;
+    padding: .3rem;
+    gap: .3rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.segmented-toggle button {
+    border: 0;
+    background: transparent;
+    color: #92a6bb;
+    border-radius: 999px;
+    padding: .45rem .85rem;
+    font-size: .82rem;
+    transition: all .18s ease;
+}
+.segmented-toggle button.active {
+    background: linear-gradient(135deg, rgba(13, 202, 240, 0.18), rgba(111,66,193,0.18));
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(13, 202, 240, 0.14);
+}
+.metric-list {
+    display: grid;
+    gap: .85rem;
+}
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    color: #dce9f7;
+}
+.metric-row small { color: #87a0b8; }
+.metric-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+    margin-top: .45rem;
+}
+.metric-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #0dcaf0, #7c4dff);
+    box-shadow: 0 0 16px rgba(13, 202, 240, 0.35);
+}
+.floating-dots {
+    display: flex;
+    gap: .4rem;
+    align-items: center;
+}
+.floating-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0dcaf0;
+    box-shadow: 0 0 12px rgba(13, 202, 240, 0.55);
+    animation: blink 1.8s infinite ease-in-out;
+}
+.floating-dots span:nth-child(2) { animation-delay: .25s; }
+.floating-dots span:nth-child(3) { animation-delay: .5s; }
+@keyframes pulseOrb {
+    0%, 100% { transform: scale(1); opacity: .7; }
+    50% { transform: scale(1.12); opacity: 1; }
+}
+@keyframes blink {
+    0%, 80%, 100% { opacity: .25; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
+}
+@media (max-width: 1199px) {
+    .hero-grid,
+    .kpi-grid,
+    .status-cluster { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+    .hero-grid,
+    .kpi-grid,
+    .status-cluster { grid-template-columns: 1fr; }
+    .analytics-hero { border-radius: 22px; }
+    .panel-header { flex-direction: column; align-items: stretch; }
+}
+</style>
 
-<div class="card bg-dark border-secondary mb-4 shadow-lg">
-    <div class="card-body py-3 d-flex justify-content-between align-items-center control-bar">
-
-        <div class="mb-2 mb-md-0">
-            <h4 class="text-white mb-0" style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;">
-                <i class="bi bi-activity me-2 text-info"></i>
-                {% if show_all %}
-                    LIFETIME
-                {% else %}
-                    SECTOR: <span class="text-info">{{ selected_year }}-{{ '%02d'|format(selected_month) }}</span>
-                {% endif %}
-            </h4>
-        </div>
-
-        <form action="{{ url_for('analytics') }}" method="GET" class="d-flex gap-2 align-items-center control-bar" style="flex-wrap: wrap;">
-
-            <div class="input-group input-group-sm">
-                <select name="year" class="form-select bg-dark text-white border-secondary font-monospace">
-                    {% for y in range(2025, 2031) %}
-                    <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
-                    {% endfor %}
-                </select>
-                <select name="month" class="form-select bg-dark text-white border-secondary font-monospace">
-                    {% for m in range(1, 13) %}
-                    <option value="{{ m }}" {{ 'selected' if selected_month == m }}>
-                        {{ ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][m-1] }}
-                    </option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-info fw-bold text-dark">
-                    <i class="bi bi-search"></i>
-                </button>
-            </div>
-
-            <div class="d-flex gap-2 control-actions">
-                <a href="{{ url_for('analytics', all='true') }}" class="btn btn-sm w-100 {{ 'btn-light fw-bold' if show_all else 'btn-outline-secondary text-muted' }}">
-                    ALL TIME
-                </a>
-                <a href="{{ url_for('analytics') }}" class="btn btn-sm w-100 {{ 'btn-light fw-bold' if not show_all else 'btn-outline-secondary text-muted' }}">
-                    CURRENT
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-12 col-md-4">
-        <div class="card bg-dark border-secondary h-100 p-4 position-relative overflow-hidden stat-card">
-            <div class="position-absolute top-0 end-0 p-3 opacity-25">
-                <i class="bi bi-cpu fs-1 text-light"></i>
-            </div>
-            <h6 class="text-secondary text-uppercase small mb-3">System Consistency</h6>
-            <div class="d-flex align-items-end gap-2 mb-2">
-                <h1 class="display-3 fw-bold text-white mb-0" style="font-family: 'Orbitron', sans-serif;">{{ health_score }}%</h1>
-                <span class="mb-2 badge {{ 'bg-success' if health_score >= 80 else 'bg-warning' if health_score >= 50 else 'bg-danger' }}">
-                    {{ 'OPTIMAL' if health_score >= 80 else 'UNSTABLE' if health_score >= 50 else 'CRITICAL' }}
-                </span>
-            </div>
-            <div class="progress bg-black mt-2" style="height: 6px;">
-                <div class="progress-bar bg-{{ 'success' if health_score > 70 else 'info' if health_score > 30 else 'danger' }}"
-                     style="width: {{ health_score }}%; box-shadow: 0 0 10px currentColor;"></div>
-            </div>
-            <p class="small text-muted mt-2 mb-0">Based on activity in selected period</p>
-        </div>
-    </div>
-
-    <div class="col-12 col-md-4">
-        <div class="card bg-dark border-secondary h-100 p-3 stat-card">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-uppercase text-muted small mb-0">Attribute Balance</h6>
-                <i class="bi bi-person-bounding-box text-secondary"></i>
-            </div>
-            <div class="chart-container" style="height: 250px; width: 100%;">
-                <canvas id="radarChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-md-4">
-        <div class="card bg-dark border-secondary h-100 p-3 stat-card">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="text-uppercase text-muted small mb-0">Mission Complexity</h6>
-                <i class="bi bi-pie-chart text-secondary"></i>
-            </div>
-            <div class="chart-container" style="height: 250px; width: 100%;">
-                <canvas id="donutChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-12 col-lg-8">
-        <div class="card bg-dark border-secondary h-100 p-4 stat-card">
-            <div class="d-flex justify-content-between align-items-end mb-4">
-                <div>
-                    <h5 class="text-uppercase text-white mb-0" style="font-family: 'Orbitron', sans-serif;">XP Velocity</h5>
-                    <p class="text-muted small mb-0">Cumulative Growth Over Time</p>
+<div class="analytics-shell">
+    <section class="analytics-hero p-4 p-lg-5 mb-4">
+        <div class="hero-grid align-items-center">
+            <div>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <span class="analytics-badge"><i class="bi bi-stars me-1"></i> analytics upgraded</span>
+                    <span class="analytics-badge"><i class="bi bi-database-slash me-1"></i> no new database columns</span>
                 </div>
-                <span class="badge bg-dark border border-info text-info">
-                    <i class="bi bi-arrow-up-right me-1"></i> TRENDING
-                </span>
+                <h1 class="hero-title text-white mb-3">
+                    {% if show_all %}
+                        Lifetime performance cockpit
+                    {% else %}
+                        {{ selected_year }}-{{ '%02d'|format(selected_month) }} performance cockpit
+                    {% endif %}
+                </h1>
+                <p class="hero-subtitle mb-4">
+                    Cleaner visuals, denser signal, and better reads on consistency, intensity, and attribute balance — all generated from existing quest history with zero schema changes.
+                </p>
+
+                <div class="kpi-grid mb-4">
+                    <div class="analytics-kpi">
+                        <div class="kpi-label">Total XP</div>
+                        <div class="kpi-value">{{ total_xp }}</div>
+                        <div class="kpi-trend"><i class="bi bi-lightning-charge-fill me-1"></i>{{ avg_xp_per_quest }} avg / quest</div>
+                    </div>
+                    <div class="analytics-kpi">
+                        <div class="kpi-label">Missions cleared</div>
+                        <div class="kpi-value">{{ total_quests }}</div>
+                        <div class="kpi-trend"><i class="bi bi-calendar2-check me-1"></i>{{ active_days_count }} active days</div>
+                    </div>
+                    <div class="analytics-kpi">
+                        <div class="kpi-label">Peak day</div>
+                        <div class="kpi-value">{{ best_day_xp }}</div>
+                        <div class="kpi-trend"><i class="bi bi-graph-up-arrow me-1"></i>{{ best_day_label }}</div>
+                    </div>
+                    <div class="analytics-kpi">
+                        <div class="kpi-label">Current streak</div>
+                        <div class="kpi-value">{{ current_streak }}</div>
+                        <div class="kpi-trend"><i class="bi bi-fire me-1"></i>{{ health_score }}% 7-day consistency</div>
+                    </div>
+                </div>
+
+                <form action="{{ url_for('analytics') }}" method="GET" class="glass-form d-flex flex-wrap gap-2 align-items-center">
+                    <div class="input-group input-group-sm flex-grow-1" style="min-width: min(100%, 320px);">
+                        <select name="year" class="form-select bg-dark text-white border-secondary font-monospace">
+                            {% for y in range(2025, 2031) %}
+                            <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="month" class="form-select bg-dark text-white border-secondary font-monospace">
+                            {% for m in range(1, 13) %}
+                            <option value="{{ m }}" {{ 'selected' if selected_month == m }}>
+                                {{ ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][m-1] }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-info fw-bold text-dark"><i class="bi bi-search"></i></button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('analytics', all='true') }}" class="btn btn-sm {{ 'btn-light fw-bold' if show_all else 'btn-outline-secondary text-muted' }}">All time</a>
+                        <a href="{{ url_for('analytics') }}" class="btn btn-sm {{ 'btn-light fw-bold' if not show_all else 'btn-outline-secondary text-muted' }}">Current month</a>
+                    </div>
+                </form>
             </div>
-            <div class="chart-container" style="height: 300px; width: 100%;">
-                <canvas id="lineChart"></canvas>
+
+            <div class="status-cluster">
+                <div class="quick-insight">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="kpi-label">System consistency</div>
+                            <div class="display-5 fw-bold text-white mb-0">{{ health_score }}%</div>
+                        </div>
+                        <i class="bi bi-heart-pulse fs-3 text-info"></i>
+                    </div>
+                    <div class="metric-bar"><span style="width: {{ health_score }}%"></span></div>
+                    <small class="d-block mt-2">Activity on the last 7 calendar days.</small>
+                </div>
+
+                <div class="quick-insight">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="kpi-label">Intensity score</div>
+                            <div class="display-5 fw-bold text-white mb-0">{{ intensity_score }}%</div>
+                        </div>
+                        <i class="bi bi-rocket-takeoff fs-3 text-info"></i>
+                    </div>
+                    <div class="metric-bar"><span style="width: {{ intensity_score }}%"></span></div>
+                    <small class="d-block mt-2">Estimated from XP per active day. High signal, no fluff.</small>
+                </div>
+
+                <div class="quick-insight">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <div class="kpi-label">Strongest attribute</div>
+                            <div class="h3 fw-bold text-white mb-0">{{ strongest_stat[0] }}</div>
+                        </div>
+                        <span class="analytics-badge">{{ strongest_stat[1] }} XP</span>
+                    </div>
+                    <small>Highest XP contribution in the selected dataset.</small>
+                </div>
+
+                <div class="quick-insight">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <div class="kpi-label">Most common difficulty</div>
+                            <div class="h3 fw-bold text-white mb-0">{{ most_common_difficulty[0] }}</div>
+                        </div>
+                        <span class="analytics-badge">{{ most_common_difficulty[1] }} runs</span>
+                    </div>
+                    <div class="floating-dots"><span></span><span></span><span></span></div>
+                </div>
             </div>
+        </div>
+    </section>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-xl-8">
+            <section class="analytics-panel">
+                <div class="panel-header">
+                    <div>
+                        <h5 class="panel-title">XP momentum</h5>
+                        <p class="panel-subtitle">Switch between cumulative growth and per-day output without reloading the page.</p>
+                    </div>
+                    <div class="segmented-toggle" id="lineModeToggle">
+                        <button type="button" class="active" data-mode="cumulative">Cumulative</button>
+                        <button type="button" data-mode="daily">Daily</button>
+                    </div>
+                </div>
+                <div class="chart-stage">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-xl-4">
+            <section class="analytics-panel">
+                <div class="panel-header">
+                    <div>
+                        <h5 class="panel-title">Attribute balance</h5>
+                        <p class="panel-subtitle">Fast read on how evenly your effort is distributed.</p>
+                    </div>
+                    <span class="analytics-badge">Radar</span>
+                </div>
+                <div class="chart-stage chart-stage-sm">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </section>
         </div>
     </div>
 
-    <div class="col-12 col-lg-4">
-        <div class="card bg-dark border-secondary h-100 p-4 stat-card">
-            <h5 class="text-uppercase text-white mb-3" style="font-family: 'Orbitron', sans-serif;">Daily Output</h5>
-            <p class="text-muted small mb-3">Last 7 Active Days</p>
-            <div class="chart-container" style="height: 300px; width: 100%;">
-                <canvas id="barChart"></canvas>
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-4">
+            <section class="analytics-panel">
+                <div class="panel-header">
+                    <div>
+                        <h5 class="panel-title">Difficulty mix</h5>
+                        <p class="panel-subtitle">What level of challenge dominates your completed quests.</p>
+                    </div>
+                    <span class="analytics-badge">Distribution</span>
+                </div>
+                <div class="chart-stage chart-stage-sm">
+                    <canvas id="donutChart"></canvas>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-lg-4">
+            <section class="analytics-panel">
+                <div class="panel-header">
+                    <div>
+                        <h5 class="panel-title">2-week output</h5>
+                        <p class="panel-subtitle">Daily XP for the most recent 14-day window.</p>
+                    </div>
+                    <span class="analytics-badge">Recent</span>
+                </div>
+                <div class="chart-stage chart-stage-sm">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-lg-4">
+            <section class="analytics-panel">
+                <div class="panel-header">
+                    <div>
+                        <h5 class="panel-title">Weekly rhythm</h5>
+                        <p class="panel-subtitle">Your strongest weekdays based on total XP.</p>
+                    </div>
+                    <span class="analytics-badge">Pattern</span>
+                </div>
+                <div class="chart-stage chart-stage-sm">
+                    <canvas id="weekdayChart"></canvas>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-5">
+            <section class="analytics-panel">
+                <div class="panel-header">
+                    <div>
+                        <h5 class="panel-title">Attribute contribution</h5>
+                        <p class="panel-subtitle">Horizontal graph for raw XP contribution by stat.</p>
+                    </div>
+                    <span class="analytics-badge">New graph</span>
+                </div>
+                <div class="chart-stage chart-stage-sm">
+                    <canvas id="statBarChart"></canvas>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-lg-7">
+            <section class="analytics-panel">
+                <div class="panel-header">
+                    <div>
+                        <h5 class="panel-title">Derived insights</h5>
+                        <p class="panel-subtitle">More inputs, less cringe — everything below is inferred from the existing quest history table.</p>
+                    </div>
+                    <span class="analytics-badge">No migration</span>
+                </div>
+                <div class="metric-list mt-2">
+                    {% set max_total = radar_data|max if radar_data else 0 %}
+                    {% for label, value in stat_totals.items() %}
+                    <div>
+                        <div class="metric-row">
+                            <div>
+                                <strong>{{ label }}</strong>
+                                <small class="d-block">{{ 'Primary power lane' if value == strongest_stat[1] and value > 0 else 'Still room to push this stat' }}</small>
+                            </div>
+                            <strong>{{ value }} XP</strong>
+                        </div>
+                        <div class="metric-bar"><span style="width: {{ (value / max_total * 100) if max_total else 0 }}%"></span></div>
+                    </div>
+                    {% endfor %}
+                    <hr class="border-secondary opacity-25 my-2">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="quick-insight h-100">
+                                <div class="kpi-label">XP / active day</div>
+                                <div class="h2 fw-bold text-white mb-1">{{ avg_xp_per_active_day }}</div>
+                                <small>Average throughput when you actually show up.</small>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="quick-insight h-100">
+                                <div class="kpi-label">Throughput note</div>
+                                <div class="h2 fw-bold text-white mb-1">
+                                    {% if avg_xp_per_active_day >= 120 %}Overdrive{% elif avg_xp_per_active_day >= 60 %}Strong{% elif avg_xp_per_active_day > 0 %}Warm-up{% else %}Cold start{% endif %}
+                                </div>
+                                <small>Label generated from your average XP on active days.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <section class="analytics-panel mb-4">
+        <div class="panel-header">
+            <div>
+                <h5 class="panel-title"><i class="bi bi-grid-3x3-gap me-2"></i>Activity heatmap</h5>
+                <p class="panel-subtitle">Last 60 days of output intensity. Hover for exact values.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 small text-muted">
+                <span>Low</span>
+                <span class="heat-tile" style="width:16px; min-width:16px; background: rgba(255,255,255,0.08);"></span>
+                <span class="heat-tile" style="width:16px; min-width:16px; background: rgba(13,202,240,0.35);"></span>
+                <span class="heat-tile" style="width:16px; min-width:16px; background: rgba(13,202,240,0.75);"></span>
+                <span class="heat-tile" style="width:16px; min-width:16px; background: rgba(124,77,255,0.95);"></span>
+                <span>High</span>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="card bg-dark border-secondary p-4 mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="text-uppercase text-white mb-0" style="font-family: 'Orbitron', sans-serif;">
-            <i class="bi bi-grid-3x3 me-2 text-secondary"></i>Activity Heatmap
-        </h5>
-        <div class="d-flex gap-2 small">
-            <span class="text-muted">Less</span>
-            <div style="width: 12px; height: 12px;" class="bg-secondary bg-opacity-10 rounded-1"></div>
-            <div style="width: 12px; height: 12px;" class="bg-info bg-opacity-25 rounded-1"></div>
-            <div style="width: 12px; height: 12px;" class="bg-info bg-opacity-75 rounded-1"></div>
-            <div style="width: 12px; height: 12px;" class="bg-info rounded-1"></div>
-            <span class="text-muted">More</span>
-        </div>
-    </div>
-    <div class="d-flex flex-wrap gap-1 justify-content-center" id="heatmapContainer"></div>
+        <div class="heatmap-wrap" id="heatmapContainer"></div>
+    </section>
 </div>
 
 <script>
-    // --- 1. GLOBAL STYLE CONFIG ---
-    const gridColor = 'rgba(255, 255, 255, 0.05)';
+(() => {
+    const gridColor = 'rgba(148, 163, 184, 0.12)';
     const textColor = '#94a3b8';
-    const accentColor = '#0dcaf0'; // Cyan/Info
+    const cyan = '#0dcaf0';
+    const purple = '#7c4dff';
+    const teal = '#00e5a8';
+    const orange = '#ff9f43';
+    const red = '#ff4d6d';
 
-    // Ensure charts scale properly
     Chart.defaults.color = textColor;
     Chart.defaults.borderColor = gridColor;
     Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
     Chart.defaults.responsive = true;
-    Chart.defaults.maintainAspectRatio = false; // CRITICAL FOR MOBILE
+    Chart.defaults.maintainAspectRatio = false;
+    Chart.defaults.animation.duration = 1400;
+    Chart.defaults.animations.colors = { duration: 500 };
 
-   // --- 2. ENHANCED RADAR CHART (Attribute Matrix HUD) ---
-const radarCtx = document.getElementById('radarChart').getContext('2d');
+    const baseTooltip = {
+        backgroundColor: 'rgba(7, 13, 24, 0.96)',
+        titleColor: '#f8fbff',
+        bodyColor: '#dce9f7',
+        borderColor: 'rgba(13, 202, 240, 0.25)',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false
+    };
 
-// 1. Bio-Scanner Gradient Fill
-const radarGradient = radarCtx.createLinearGradient(0, 0, 0, 400);
-radarGradient.addColorStop(0, 'rgba(0, 242, 255, 0.5)');   // Neon Cyan High
-radarGradient.addColorStop(1, 'rgba(148, 0, 211, 0.2)'); // Dark Purple Low
+    const lineCtx = document.getElementById('lineChart').getContext('2d');
+    const lineGradient = lineCtx.createLinearGradient(0, 0, 0, 320);
+    lineGradient.addColorStop(0, 'rgba(13, 202, 240, 0.35)');
+    lineGradient.addColorStop(1, 'rgba(13, 202, 240, 0.01)');
 
-new Chart(radarCtx, {
-    type: 'radar',
-    data: {
-        labels: {{ radar_labels | tojson }},
-        datasets: [{
-            label: 'Attribute Level',
-            data: {{ radar_data | tojson }},
-
-            // Neon Polygon
-            backgroundColor: radarGradient,
-            borderColor: '#00f2ff',
-            borderWidth: 2,
-
-            // Glowing Stat Nodes
-            pointBackgroundColor: '#00f2ff',
-            pointBorderColor: '#050014', // Matches the dark background
-            pointBorderWidth: 2,
-            pointRadius: 4,
-
-            // Explosive Hover Effect on Nodes
-            pointHoverRadius: 9,
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#9400d3', // Flashes purple
-            pointHoverBorderWidth: 3
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-            // Snaps outward like a tactical map deploying
-            duration: 2500,
-            easing: 'easeOutElastic'
+    const lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+            labels: {{ line_labels | tojson }},
+            datasets: [{
+                label: 'Cumulative XP',
+                data: {{ line_data | tojson }},
+                borderColor: cyan,
+                backgroundColor: lineGradient,
+                fill: true,
+                borderWidth: 3,
+                tension: 0.35,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: cyan,
+                pointBorderWidth: 2
+            }]
         },
-        scales: {
-            r: {
-                // The "Spokes" of the radar
-                angleLines: {
-                    color: 'rgba(0, 242, 255, 0.3)',
-                    lineWidth: 1,
-                    borderDash: [5, 5] // Tactical dashed scanning lines
-                },
-                // The "Web" of the radar
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)',
-                    lineWidth: 1
-                },
-                // The Attribute Names (Strength, Intellect, etc.)
-                pointLabels: {
-                    color: '#00f2ff',
-                    font: { family: 'Orbitron', size: 12, weight: 'bold', letterSpacing: 1 },
-                    padding: 15
-                },
-                // Hides the messy numbers on the web itself
-                ticks: {
-                    display: false,
-                    backdropColor: 'transparent'
-                }
-            }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: 'rgba(5, 0, 20, 0.95)',
-                titleFont: { family: 'Orbitron', size: 14, color: '#fff' },
-                bodyFont: { family: 'monospace', size: 13, color: '#00f2ff' },
-                borderColor: '#00f2ff',
-                borderWidth: 1,
-                padding: 12,
-                displayColors: false,
-                callbacks: {
-                    label: function(context) {
-                        return " 🧬 PROFICIENCY: Lvl " + context.parsed.r;
+        options: {
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...baseTooltip,
+                    callbacks: {
+                        label: (context) => `${context.dataset.label}: ${context.parsed.y} XP`
                     }
-                }
-            }
-        }
-    }
-});
-
-  // --- 3. ENHANCED DONUT CHART (Tactical Threat Radar) ---
-const donutCtx = document.getElementById('donutChart').getContext('2d');
-
-new Chart(donutCtx, {
-    type: 'doughnut',
-    data: {
-        // Upgraded labels to match an RPG ranking system
-        labels: ['Easy (F-Rank)', 'Medium (C-Rank)', 'Hard (A-Rank)', 'Epic (S-Rank)'],
-        datasets: [{
-            data: {{ diff_data | tojson }},
-            // High-contrast Neon Cyberpunk Colors
-            backgroundColor: [
-                'rgba(0, 255, 157, 0.7)', // Neon Green
-                'rgba(0, 242, 255, 0.7)', // Neon Cyan
-                'rgba(255, 158, 0, 0.7)', // Neon Orange
-                'rgba(255, 0, 60, 0.7)'   // Neon Crimson
-            ],
-            // Solid brights when hovering
-            hoverBackgroundColor: [
-                'rgba(0, 255, 157, 1)',
-                'rgba(0, 242, 255, 1)',
-                'rgba(255, 158, 0, 1)',
-                'rgba(255, 0, 60, 1)'
-            ],
-            // 1. Tactical Gaps: Matches your deep night background to make slices "float"
-            borderColor: '#050014',
-            borderWidth: 4,
-
-            // 2. High-Tech Edges: Rounds the corners of each slice
-            borderRadius: 5,
-
-            // 3. Extrude Effect: Pops out heavily when hovered
-            hoverOffset: 15
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        // Thinner, sleeker ring (leaving room in the center for the HUD feel)
-        cutout: '80%',
-        animation: {
-            animateRotate: true, // Spins in like a radar booting up
-            animateScale: true,  // Scales up from the center
-            duration: 2000,
-            easing: 'easeOutCirc'
-        },
-        plugins: {
-            legend: {
-                position: 'right',
-                labels: {
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    font: { family: 'monospace', size: 12 },
-                    padding: 20,
-                    // Replaces chunky squares with sleek glowing dots
-                    usePointStyle: true,
-                    pointStyle: 'circle'
                 }
             },
-            tooltip: {
-                backgroundColor: 'rgba(5, 0, 20, 0.95)',
-                titleFont: { family: 'Orbitron', size: 14 },
-                bodyFont: { family: 'monospace', size: 13, weight: 'bold' },
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-                borderWidth: 1,
-                padding: 12,
-                callbacks: {
-                    label: function(context) {
-                        return " 🎯 TARGETS: " + context.parsed + " Missions";
-                    }
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+                y: { beginAtZero: true, ticks: { callback: (value) => `${value}` } }
+            }
+        }
+    });
+
+    const radarCtx = document.getElementById('radarChart').getContext('2d');
+    const radarGradient = radarCtx.createLinearGradient(0, 0, 0, 320);
+    radarGradient.addColorStop(0, 'rgba(13, 202, 240, 0.55)');
+    radarGradient.addColorStop(1, 'rgba(124, 77, 255, 0.12)');
+    new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+            labels: {{ radar_labels | tojson }},
+            datasets: [{
+                data: {{ radar_data | tojson }},
+                backgroundColor: radarGradient,
+                borderColor: cyan,
+                borderWidth: 2,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: cyan,
+                pointRadius: 4,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false }, tooltip: baseTooltip },
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(13, 202, 240, 0.18)' },
+                    grid: { color: 'rgba(255,255,255,0.08)' },
+                    pointLabels: { color: '#dce9f7', font: { size: 12, weight: '600' } },
+                    ticks: { display: false, backdropColor: 'transparent' }
                 }
             }
         }
-    }
-});
+    });
 
-// --- 4. ENHANCED BAR CHART (Daily XP Yield) ---
-const barCtx = document.getElementById('barChart').getContext('2d');
-
-// 1. Cyberpunk Vertical Gradient for the Bars
-const barGradient = barCtx.createLinearGradient(0, 0, 0, 300);
-barGradient.addColorStop(0, 'rgba(148, 0, 211, 0.8)'); // Deep Purple Top
-barGradient.addColorStop(1, 'rgba(0, 242, 255, 0.1)'); // Cyan Base
-
-// Glowing gradient for when the user hovers over a bar
-const hoverBarGradient = barCtx.createLinearGradient(0, 0, 0, 300);
-hoverBarGradient.addColorStop(0, 'rgba(0, 242, 255, 1)'); // Bright Cyan Top
-hoverBarGradient.addColorStop(1, 'rgba(148, 0, 211, 0.4)'); // Purple Base
-
-new Chart(barCtx, {
-    type: 'bar',
-    data: {
-        labels: {{ bar_labels | tojson }},
-        datasets: [{
-            label: 'XP Gained',
-            data: {{ bar_data | tojson }},
-            backgroundColor: barGradient,
-            hoverBackgroundColor: hoverBarGradient,
-            // Creates a bright "scanner line" on the top edge of the bar
-            borderColor: '#00f2ff',
-            borderWidth: { top: 2, right: 0, bottom: 0, left: 0 },
-            borderRadius: 4, // Sleek, pill-like rounded tops
-            barPercentage: 0.6,
-            categoryPercentage: 0.8
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-            duration: 1500,
-            easing: 'easeOutElastic' // Satisfying "spring up" animation on load
+    new Chart(document.getElementById('donutChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ diff_labels | tojson }},
+            datasets: [{
+                data: {{ diff_data | tojson }},
+                backgroundColor: [teal, cyan, orange, red],
+                borderColor: 'rgba(7, 13, 24, 0.95)',
+                borderWidth: 4,
+                hoverOffset: 12
+            }]
         },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)',
-                    borderDash: [4, 4], // Tactical dotted scanner lines
-                    drawBorder: false
-                },
-                ticks: {
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    font: { family: 'monospace' }
-                }
-            },
-            x: {
-                grid: { display: false },
-                ticks: {
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    font: { family: 'monospace' }
-                }
-            }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: 'rgba(5, 0, 20, 0.95)',
-                titleFont: { family: 'Orbitron', size: 14 },
-                bodyFont: { family: 'monospace', size: 13, weight: 'bold' },
-                borderColor: '#9400d3', // Purple border for the tooltip box
-                borderWidth: 1,
-                padding: 12,
-                displayColors: false,
-                callbacks: {
-                    label: function(context) {
-                        return "💥 DAILY YIELD: " + context.parsed.y + " XP";
-                    }
+        options: {
+            cutout: '72%',
+            plugins: {
+                legend: { labels: { color: '#dce9f7', usePointStyle: true, pointStyle: 'circle' } },
+                tooltip: {
+                    ...baseTooltip,
+                    callbacks: { label: (context) => `${context.label}: ${context.parsed} missions` }
                 }
             }
         }
-    }
-});
+    });
 
-    // --- 5. ENHANCED XP VELOCITY ENGINE ---
-const lineCtx = document.getElementById('lineChart').getContext('2d');
+    const barCtx = document.getElementById('barChart').getContext('2d');
+    const barGradient = barCtx.createLinearGradient(0, 0, 0, 280);
+    barGradient.addColorStop(0, 'rgba(13, 202, 240, 0.9)');
+    barGradient.addColorStop(1, 'rgba(124, 77, 255, 0.28)');
+    new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ bar_labels | tojson }},
+            datasets: [{
+                data: {{ bar_data | tojson }},
+                backgroundColor: barGradient,
+                borderRadius: 12,
+                borderSkipped: false,
+                maxBarThickness: 24
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false }, tooltip: { ...baseTooltip, callbacks: { label: (context) => `${context.parsed.y} XP` } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxRotation: 0, minRotation: 0 } },
+                y: { beginAtZero: true }
+            }
+        }
+    });
 
-// 1. Tactical Visual: Advanced Multi-Stop Gradient
-const gradient = lineCtx.createLinearGradient(0, 0, 0, 400);
-gradient.addColorStop(0, 'rgba(0, 242, 255, 0.4)');   // Bright Cyan Top
-gradient.addColorStop(0.5, 'rgba(148, 0, 211, 0.1)'); // Deep Purple Mid
-gradient.addColorStop(1, 'rgba(5, 0, 20, 0.0)');     // Transparent Bottom
+    new Chart(document.getElementById('weekdayChart'), {
+        type: 'line',
+        data: {
+            labels: {{ weekday_labels | tojson }},
+            datasets: [{
+                data: {{ weekday_data | tojson }},
+                borderColor: purple,
+                backgroundColor: 'rgba(124, 77, 255, 0.16)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: purple,
+                pointBorderWidth: 2
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false }, tooltip: { ...baseTooltip, callbacks: { label: (context) => `${context.parsed.y} XP` } } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true }
+            }
+        }
+    });
 
-new Chart(lineCtx, {
-    type: 'line',
-    data: {
-        labels: {{ line_labels | tojson }},
-        datasets: [{
-            label: 'Total XP',
+    new Chart(document.getElementById('statBarChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ radar_labels | tojson }},
+            datasets: [{
+                data: {{ radar_data | tojson }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.75)',
+                    'rgba(13, 202, 240, 0.78)',
+                    'rgba(0, 229, 168, 0.78)',
+                    'rgba(255, 159, 67, 0.78)',
+                    'rgba(124, 77, 255, 0.78)'
+                ],
+                borderRadius: 12,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { ...baseTooltip, callbacks: { label: (context) => `${context.parsed.x} XP` } } },
+            scales: {
+                x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    const modes = {
+        cumulative: {
+            label: 'Cumulative XP',
             data: {{ line_data | tojson }},
-            borderColor: '#00f2ff', // Neon Cyan
-            backgroundColor: gradient,
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4, // Smoother "Velocity" curves
-
-            // TACTICAL FIX: Visibility on Day 1
-            pointRadius: 4,
-            pointBackgroundColor: '#00f2ff',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-
-            // VISUAL SATISFACTION: Glow effect
-            pointHoverRadius: 8,
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#00f2ff',
-            pointHoverBorderWidth: 4,
-
-            // Line Shadow (Glow Effect)
-            segment: {
-                borderCapStyle: 'round'
-            }
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-            intersect: false,
-            mode: 'index'
+            borderColor: cyan,
+            backgroundColor: lineGradient
         },
-        animation: {
-            duration: 2000,
-            easing: 'easeOutQuart' // Smooth "growth" animation on load
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: {
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    font: { family: 'monospace' },
-                    maxTicksLimit: 7
-                }
-            },
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)', // Subtle scanning lines
-                    drawBorder: false
-                },
-                ticks: {
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    font: { family: 'monospace' },
-                    callback: function(value) { return value + ' XP'; }
-                }
-            }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: 'rgba(5, 0, 20, 0.9)',
-                titleFont: { family: 'Orbitron', size: 14 },
-                bodyFont: { family: 'monospace', size: 13 },
-                borderColor: '#00f2ff',
-                borderWidth: 1,
-                padding: 12,
-                displayColors: false,
-                callbacks: {
-                    label: function(context) {
-                        return "⚡ TOTAL POWER: " + context.parsed.y + " XP";
-                    }
-                }
-            }
+        daily: {
+            label: 'Daily XP',
+            data: {{ daily_line_data | tojson }},
+            borderColor: purple,
+            backgroundColor: 'rgba(124, 77, 255, 0.16)'
         }
-    }
-});
-// --- 6. ENHANCED HEATMAP (Activity Matrix) ---
-const heatmapData = {{ heatmap_data | tojson }};
-const container = document.getElementById('heatmapContainer');
+    };
 
-// Clear container to prevent duplicates on reload
-container.innerHTML = '';
-
-// Generate last 60 days
-for (let i = 59; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const xp = heatmapData[dateStr] || 0;
-
-    // Tactical Colors based on XP intensity
-    let bgColor = 'rgba(255, 255, 255, 0.05)'; // Empty Node
-    let border = '1px solid rgba(255, 255, 255, 0.02)';
-    let boxShadow = 'none';
-
-    if (xp > 0 && xp <= 50) {
-        bgColor = 'rgba(0, 242, 255, 0.3)'; // Low Power
-        border = '1px solid rgba(0, 242, 255, 0.5)';
-    } else if (xp > 50 && xp <= 100) {
-        bgColor = 'rgba(0, 242, 255, 0.7)'; // Optimal Power
-        border = '1px solid #00f2ff';
-        boxShadow = '0 0 5px rgba(0, 242, 255, 0.4)'; // Slight Glow
-    } else if (xp > 100 && xp <= 200) {
-        bgColor = '#00f2ff'; // High Output (Solid Cyan)
-        border = '1px solid #fff';
-        boxShadow = '0 0 8px #00f2ff'; // Heavy Glow
-    } else if (xp > 200) {
-        bgColor = '#9400d3'; // OVERDRIVE (Purple)
-        border = '1px solid #fff';
-        boxShadow = '0 0 12px #9400d3'; // Core Breach Glow
-    }
-
-    const box = document.createElement('div');
-
-    // Core Styling
-    box.style.width = '14px';
-    box.style.height = '14px';
-    box.style.borderRadius = '3px';
-    box.style.backgroundColor = bgColor;
-    box.style.border = border;
-    box.style.boxShadow = boxShadow;
-    box.style.cursor = 'crosshair'; // Tactical targeting cursor
-    box.style.transition = 'all 0.2s ease-in-out';
-    box.style.position = 'relative'; // Required for z-index scaling
-
-    // Initial invisible state for the boot-up animation
-    box.style.opacity = '0';
-    box.style.transform = 'scale(0.1)';
-
-    // Interactive Hover Zoom
-    box.addEventListener('mouseenter', () => {
-        box.style.transform = 'scale(1.5)';
-        box.style.zIndex = '10'; // Pops over the other boxes
-        if (xp > 0) {
-            box.style.boxShadow = `0 0 15px ${xp > 200 ? '#9400d3' : '#00f2ff'}`;
-        } else {
-            box.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-        }
+    document.querySelectorAll('#lineModeToggle button').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('#lineModeToggle button').forEach((btn) => btn.classList.remove('active'));
+            button.classList.add('active');
+            const mode = modes[button.dataset.mode];
+            lineChart.data.datasets[0].label = mode.label;
+            lineChart.data.datasets[0].data = mode.data;
+            lineChart.data.datasets[0].borderColor = mode.borderColor;
+            lineChart.data.datasets[0].backgroundColor = mode.backgroundColor;
+            lineChart.update();
+        });
     });
 
-    // Reset on Mouse Leave
-    box.addEventListener('mouseleave', () => {
-        box.style.transform = 'scale(1)';
-        box.style.zIndex = '1';
-        box.style.boxShadow = boxShadow;
-        box.style.backgroundColor = bgColor;
-    });
+    const heatmapData = {{ heatmap_data | tojson }};
+    const heatmapContainer = document.getElementById('heatmapContainer');
+    heatmapContainer.innerHTML = '';
 
-    // Custom RPG Tooltip Text
-    box.title = xp > 0 ? `[${dateStr}] ⚡ YIELD: ${xp} XP` : `[${dateStr}] NO DATA`;
-    box.setAttribute('data-bs-toggle', 'tooltip');
+    for (let i = 59; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const xp = heatmapData[dateStr] || 0;
+        const tile = document.createElement('div');
+        tile.className = 'heat-tile';
+        tile.title = `${dateStr} • ${xp} XP`;
 
-    container.appendChild(box);
+        if (xp === 0) tile.style.background = 'rgba(255,255,255,0.07)';
+        else if (xp <= 40) tile.style.background = 'rgba(13,202,240,0.30)';
+        else if (xp <= 90) tile.style.background = 'rgba(13,202,240,0.75)';
+        else tile.style.background = 'rgba(124,77,255,0.95)';
 
-    // Staggered Boot-Up Animation (Cascades from oldest to newest)
-    setTimeout(() => {
-        box.style.opacity = '1';
-        box.style.transform = 'scale(1)';
-    }, (60 - i) * 15); // 15ms delay per box creates a fast scanning effect
-}
+        if (xp > 0) tile.style.boxShadow = '0 0 18px rgba(13, 202, 240, 0.16)';
+        heatmapContainer.appendChild(tile);
+    }
+})();
 </script>
-
 {% endblock %}
