@@ -89,6 +89,216 @@
         color: #fff !important;
         transform: scale(1.05);
     }
+    .dashboard-hero {
+        position: relative;
+        isolation: isolate;
+        background:
+            radial-gradient(circle at top left, rgba(13, 202, 240, 0.16), transparent 30%),
+            radial-gradient(circle at top right, rgba(99, 102, 241, 0.18), transparent 26%),
+            linear-gradient(135deg, rgba(13,17,23,0.98), rgba(9,12,18,0.98));
+    }
+    .dashboard-hero::before,
+    .dashboard-hero::after {
+        content: '';
+        position: absolute;
+        inset: auto;
+        border-radius: 999px;
+        filter: blur(10px);
+        opacity: 0.7;
+        z-index: -1;
+        animation: floatOrb 9s ease-in-out infinite;
+    }
+    .dashboard-hero::before {
+        width: 160px;
+        height: 160px;
+        top: -40px;
+        right: -20px;
+        background: radial-gradient(circle, rgba(13, 202, 240, 0.22), transparent 70%);
+    }
+    .dashboard-hero::after {
+        width: 210px;
+        height: 210px;
+        left: -50px;
+        bottom: -90px;
+        background: radial-gradient(circle, rgba(168, 85, 247, 0.18), transparent 70%);
+        animation-delay: -3s;
+    }
+    @keyframes floatOrb {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        50% { transform: translate3d(0, -12px, 0) scale(1.05); }
+    }
+    .hero-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    .hero-stat-card {
+        padding: 0.9rem 1rem;
+        border-radius: 14px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 14px 30px rgba(0,0,0,0.18);
+        backdrop-filter: blur(12px);
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .hero-stat-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(13, 202, 240, 0.35);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 18px 34px rgba(13, 202, 240, 0.12);
+    }
+    .hero-stat-label {
+        display: block;
+        color: rgba(255,255,255,0.55);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-size: 0.68rem;
+        margin-bottom: 0.35rem;
+    }
+    .hero-stat-value { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .workspace-header {
+        padding: 1rem 1.2rem;
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.16);
+    }
+    .task-item {
+        position: relative;
+        overflow: hidden;
+    }
+    .task-item::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(13, 202, 240, 0.06), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.45s ease;
+        pointer-events: none;
+    }
+    .task-item:hover::after { transform: translateX(100%); }
+    .task-status-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        background: rgba(255,255,255,0.02) !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .task-status-btn:hover {
+        transform: scale(1.08);
+        border-color: rgba(13, 202, 240, 0.4) !important;
+        box-shadow: 0 10px 18px rgba(13, 202, 240, 0.12);
+    }
+    .task-meta-chip {
+        border-radius: 999px;
+        padding: 0.35rem 0.65rem;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.07);
+    }
+    .task-edit-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.38rem 0.72rem;
+        max-width: 100%;
+        white-space: nowrap;
+        background: rgba(13, 202, 240, 0.08);
+        color: #aeeeff !important;
+    }
+    .task-edit-btn i {
+        display: inline-flex;
+        width: 1.1rem;
+        height: 1.1rem;
+        min-width: 1.1rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(13, 202, 240, 0.18);
+        font-size: 0.68rem;
+    }
+    .task-edit-btn span,
+    .add-task-btn span {
+        display: inline-block;
+        line-height: 1;
+    }
+    .task-action-controls {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    .add-task-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        padding: 0.52rem 0.8rem;
+        border-radius: 999px;
+        white-space: nowrap;
+        background: rgba(255,255,255,0.02);
+        border: 1px dashed rgba(13, 202, 240, 0.3);
+        transition: all 0.25s ease;
+    }
+    .add-task-btn i {
+        font-size: 0.9rem !important;
+        line-height: 1;
+    }
+    .add-task-btn:hover {
+        border-style: solid;
+        transform: translateX(4px);
+        background: rgba(13, 202, 240, 0.08);
+    }
+    .modal.fade .modal-dialog {
+        transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+        transform: translateY(18px) scale(0.98);
+    }
+    .modal.show .modal-dialog {
+        transform: translateY(0) scale(1);
+    }
+    .modal-backdrop {
+        width: 100vw;
+        height: 100vh;
+        background: rgba(2, 6, 12, 0.82);
+        backdrop-filter: blur(7px);
+        pointer-events: auto;
+    }
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1080;
+        padding: 1rem;
+        background: rgba(3, 9, 18, 0.12);
+    }
+    .modal.show {
+        display: block;
+    }
+    .modal-dialog,
+    .modal-dialog.modal-dialog-centered {
+        min-height: calc(100vh - 2rem);
+        display: flex;
+        align-items: center;
+        margin: 0 auto;
+    }
+    .modal-open .modal {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    .pulse-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #0dcaf0;
+        box-shadow: 0 0 0 rgba(13, 202, 240, 0.6);
+        animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+        0% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.55); }
+        70% { box-shadow: 0 0 0 12px rgba(13, 202, 240, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0); }
+    }
 </style>
 
 {% if not user.email %}
@@ -138,7 +348,7 @@
 
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card bg-dark text-white shadow-sm position-relative overflow-hidden" style="border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; background: #0d1117;" data-intro="Welcome to your dashboard! Here you can track your productivity score. Completing tasks builds your momentum." data-step="1">
+        <div class="card bg-dark text-white shadow-sm position-relative overflow-hidden dashboard-hero" style="border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; background: #0d1117;" data-intro="Welcome to your dashboard! Here you can track your productivity score. Completing tasks builds your momentum." data-step="1">
             <div class="card-body text-center p-4">
                 <div class="d-flex justify-content-between align-items-start">
 
@@ -194,6 +404,24 @@
                 <div class="progress bg-secondary bg-opacity-25 mt-3 mx-auto" style="height: 6px; max-width: 400px; border-radius: 10px;">
                     <div class="progress-bar bg-info" id="monthlyProgressBar" role="progressbar" style="width: {{ (monthly_xp / 2000) * 100 }}%; border-radius: 10px;"></div>
                 </div>
+                <div class="hero-stat-grid text-start">
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">Projects</span>
+                        <span class="hero-stat-value">{{ goals|length }}</span>
+                    </div>
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">Overdue</span>
+                        <span class="hero-stat-value">{{ overdue_count }}</span>
+                    </div>
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">Completed Today</span>
+                        <span class="hero-stat-value">{{ todays_completed|default([])|length }}</span>
+                    </div>
+                    <div class="hero-stat-card">
+                        <span class="hero-stat-label">Momentum</span>
+                        <span class="hero-stat-value d-flex align-items-center gap-2"><span class="pulse-dot"></span> Active</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -216,7 +444,7 @@
 {% endif %}
 
 <div class="mb-4 mt-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 workspace-header">
         <h5 class="text-white mb-0 fw-bold">Workspace</h5>
 
         <div class="d-flex flex-wrap align-items-center gap-2">
@@ -306,7 +534,7 @@
                  data-backlog="{{ 'true' if is_backlog else 'false' }}">
 
                 <div class="d-flex align-items-start gap-3 w-100">
-                    <button onclick="toggleTask(this, '{{ habit.id }}')" class="btn btn-link text-decoration-none mt-1 p-0 border-0 flex-shrink-0" style="background: none; cursor: pointer;">
+                    <button onclick="toggleTask(this, '{{ habit.id }}')" class="btn btn-link text-decoration-none mt-1 p-0 border-0 flex-shrink-0 task-status-btn" style="background: none; cursor: pointer;">
                         <i class="bi bi-check-circle-fill text-info fs-5 completed-icon" style="{{ 'display:block;' if habit.completed else 'display:none;' }}"></i>
                         <i class="bi bi-circle text-muted fs-5 pending-icon" style="{{ 'display:none;' if habit.completed else 'display:block;' }}"></i>
                     </button>
@@ -329,23 +557,23 @@
 
                         <div class="d-flex gap-2 align-items-center mt-2 flex-wrap opacity-75">
                             {% if habit.target_date %}
-                                <span class="badge bg-transparent border {{ 'border-danger text-danger' if is_overdue else 'border-secondary text-light' }} fw-normal" style="font-size: 0.7rem;">
+                                <span class="badge bg-transparent border {{ 'border-danger text-danger' if is_overdue else 'border-secondary text-light' }} fw-normal task-meta-chip" style="font-size: 0.7rem;">
                                     <i class="bi bi-calendar me-1"></i> {{ habit.target_date.strftime('%b %d') }}
                                 </span>
                             {% endif %}
 
-                            <span class="text-muted" style="font-size: 0.75rem;">{{ habit.stat_type }} • {{ habit.difficulty }}</span>
+                            <span class="text-muted task-meta-chip" style="font-size: 0.75rem;">{{ habit.stat_type }} • {{ habit.difficulty }}</span>
 
                             {% if habit.is_daily %}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary fw-normal" style="font-size: 0.65rem;"><i class="bi bi-arrow-repeat me-1"></i>Recurring</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary fw-normal task-meta-chip" style="font-size: 0.65rem;"><i class="bi bi-arrow-repeat me-1"></i>Recurring</span>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                <div class="d-flex gap-2 ms-3 align-self-start pt-1 opacity-75">
+                <div class="d-flex gap-2 ms-3 align-self-start pt-1 opacity-75 task-action-controls">
                     <button
                         type="button"
-                        class="btn btn-link text-muted p-0 hover-info task-edit-btn"
+                        class="btn btn-link text-muted hover-info task-edit-btn"
                         data-habit-id="{{ habit.id }}"
                         data-habit-name="{{ habit.name }}"
                         data-habit-difficulty="{{ habit.difficulty }}"
@@ -354,14 +582,14 @@
                         data-goal-name="{{ goal.name }}"
                         data-habit-description="{{ habit.description|default('', true) }}"
                         onclick="openEditModalFromButton(this)">
-                        <i class="bi bi-pencil-square me-1"></i>Edit Task
+                        <i class="bi bi-vector-pen"></i><span>Edit Task</span>
                     </button>
                 </div>
             </div>
             {% endif %}
             {% endfor %}
             <div class="py-2 px-4" style="background: rgba(255, 255, 255, 0.01);">
-                <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none ps-0 hover-info fw-semibold" onclick="openAddHabitModal('{{ goal.id }}')"><i class="bi bi-plus fs-5 align-middle"></i> Add Task</button>
+                <button type="button" class="btn btn-sm btn-link text-muted text-decoration-none hover-info fw-semibold add-task-btn" onclick="openAddHabitModal('{{ goal.id }}')"><i class="bi bi-plus-circle fs-6 align-middle"></i><span>Add Task</span></button>
             </div>
         </div>
     </div>
@@ -653,10 +881,14 @@ function unlockAndRedirect() {
     // --- 5. BULLETPROOF JAVASCRIPT MODAL HELPERS ---
 
     function normalizeModalState() {
+        const visibleModals = document.querySelectorAll('.modal.show');
         document.querySelectorAll('.modal-backdrop').forEach((backdrop, idx, arr) => {
+            backdrop.style.width = '100vw';
+            backdrop.style.height = '100vh';
+            backdrop.style.pointerEvents = 'auto';
             if (idx < arr.length - 1) backdrop.remove();
         });
-        if (!document.querySelector('.modal.show')) {
+        if (!visibleModals.length) {
             document.body.classList.remove('modal-open');
             document.body.style.removeProperty('overflow');
             document.body.style.removeProperty('padding-right');
@@ -674,6 +906,16 @@ function unlockAndRedirect() {
             data.goalName,
             data.habitDescription
         );
+    }
+
+    function focusModalInView(modalEl) {
+        requestAnimationFrame(() => {
+            modalEl.scrollTop = 0;
+            const dialog = modalEl.querySelector('.modal-dialog');
+            if (dialog) {
+                dialog.scrollIntoView({ block: 'center', inline: 'nearest' });
+            }
+        });
     }
 
     function openEditModal(id, name, difficulty, isDaily, dateStr, catName, desc) {
@@ -696,8 +938,9 @@ function unlockAndRedirect() {
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('editHabitModal');
         normalizeModalState();
-        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: true, focus: true, keyboard: true });
         modal.show();
+        focusModalInView(modalEl);
     }
 
     function openGoalEditModal(id, name) {
@@ -707,8 +950,9 @@ function unlockAndRedirect() {
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('editGoalModal');
         normalizeModalState();
-        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: true, focus: true, keyboard: true });
         modal.show();
+        focusModalInView(modalEl);
     }
 
     function openAddHabitModal(goalId) {
@@ -717,8 +961,9 @@ function unlockAndRedirect() {
         // Use pure JS to launch modal safely
         const modalEl = document.getElementById('addHabitModal');
         normalizeModalState();
-        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: true, focus: true, keyboard: true });
         modal.show();
+        focusModalInView(modalEl);
     }
 
     document.querySelectorAll('.js-edit-task').forEach((btn) => {
@@ -737,13 +982,21 @@ function unlockAndRedirect() {
 
     // Cleanup safety: prevent stuck backdrop / locked page scroll after closing modals.
     document.querySelectorAll('.modal').forEach((modalEl) => {
+        modalEl.addEventListener('show.bs.modal', () => {
+            document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
+            setTimeout(normalizeModalState, 30);
+        });
+        modalEl.addEventListener('shown.bs.modal', () => {
+            document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
+            normalizeModalState();
+        });
         modalEl.addEventListener('hidden.bs.modal', () => {
-            if (!document.querySelector('.modal.show')) {
-                document.body.classList.remove('modal-open');
-                document.body.style.removeProperty('overflow');
-                document.body.style.removeProperty('padding-right');
-                document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
-            }
+            document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('padding-right');
+            document.body.style.removeProperty('overflow');
         });
     });
 </script>
