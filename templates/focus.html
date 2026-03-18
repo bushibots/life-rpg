@@ -2,406 +2,1344 @@
 
 {% block content %}
 <style>
-    /* =========================================
-       FLAGSHIP FOCUS HUB STYLES
-       ========================================= */
-    .focus-card {
-        background: var(--glass-bg) !important;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border);
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 20px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-        transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    :root {
+        --focus-bg-1: rgba(11, 16, 32, 0.92);
+        --focus-bg-2: rgba(19, 28, 47, 0.8);
+        --focus-glass: rgba(255, 255, 255, 0.07);
+        --focus-border: rgba(255, 255, 255, 0.12);
+        --focus-highlight: #6ee7ff;
+        --focus-highlight-2: #9b8cff;
+        --focus-success: #4df6a4;
+        --focus-warning: #ffcc66;
+        --focus-danger: #ff6b8a;
+        --ring-size: 320px;
+        --ring-circumference: 1069;
     }
 
-    /* SVG Timer Ring Magic */
-    .timer-container {
+    .focus-shell {
         position: relative;
-        width: 280px;
-        height: 280px;
-        margin: 0 auto;
+        padding-bottom: 2rem;
+        overflow: hidden;
     }
-    .timer-svg {
-        transform: rotate(-90deg);
-        width: 100%;
+
+    .focus-shell::before,
+    .focus-shell::after {
+        content: "";
+        position: absolute;
+        inset: auto;
+        width: 32rem;
+        height: 32rem;
+        border-radius: 50%;
+        filter: blur(65px);
+        opacity: 0.35;
+        z-index: 0;
+        pointer-events: none;
+        animation: floatGlow 14s ease-in-out infinite;
+    }
+
+    .focus-shell::before {
+        top: -8rem;
+        right: -10rem;
+        background: radial-gradient(circle, rgba(110, 231, 255, 0.35), transparent 62%);
+    }
+
+    .focus-shell::after {
+        bottom: -12rem;
+        left: -12rem;
+        background: radial-gradient(circle, rgba(155, 140, 255, 0.32), transparent 65%);
+        animation-delay: -5s;
+    }
+
+    @keyframes floatGlow {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        50% { transform: translate3d(0, 20px, 0) scale(1.05); }
+    }
+
+    .focus-layer {
+        position: relative;
+        z-index: 1;
+    }
+
+    .focus-hero,
+    .focus-card,
+    .focus-sidecard {
+        background: linear-gradient(145deg, var(--focus-bg-1), var(--focus-bg-2));
+        border: 1px solid var(--focus-border);
+        border-radius: 28px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+
+    .focus-hero {
+        padding: 1.4rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-kicker {
+        font-size: 0.78rem;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.58);
+    }
+
+    .hero-title {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.05;
+    }
+
+    .hero-copy {
+        color: rgba(255, 255, 255, 0.72);
+        max-width: 48rem;
+    }
+
+    .stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.95rem 1rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        min-width: 11rem;
+    }
+
+    .stat-pill i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 14px;
+        color: var(--focus-highlight);
+        background: rgba(110, 231, 255, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(110, 231, 255, 0.08);
+    }
+
+    .stat-pill strong {
+        display: block;
+        color: #fff;
+        font-size: 1.1rem;
+    }
+
+    .stat-pill span {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.83rem;
+    }
+
+    .focus-card,
+    .focus-sidecard {
+        padding: 1.35rem;
         height: 100%;
     }
-    .timer-bg {
-        fill: none;
-        stroke: rgba(255, 255, 255, 0.05);
-        stroke-width: 3;
+
+    .section-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        margin-bottom: 0.75rem;
     }
-    .timer-progress {
+
+    .mode-pills,
+    .control-grid,
+    .playlist-grid,
+    .ambient-grid,
+    .shortcut-grid,
+    .task-list {
+        display: grid;
+        gap: 0.8rem;
+    }
+
+    .mode-pills {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .mode-pill,
+    .control-chip,
+    .playlist-item,
+    .ambient-item,
+    .shortcut-item,
+    .task-item {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+        transition: 0.25s ease;
+    }
+
+    .mode-pill {
+        border-radius: 18px;
+        padding: 0.95rem 1rem;
+        color: rgba(255, 255, 255, 0.78);
+        text-align: left;
+    }
+
+    .mode-pill strong,
+    .playlist-item strong,
+    .ambient-item strong,
+    .task-item strong {
+        display: block;
+        color: #fff;
+    }
+
+    .mode-pill span,
+    .playlist-item span,
+    .ambient-item span,
+    .task-item span,
+    .shortcut-item span,
+    .support-copy,
+    .metric-card small,
+    .range-caption,
+    .helper-text,
+    .intention-note {
+        color: rgba(255, 255, 255, 0.58);
+    }
+
+    .mode-pill.active {
+        background: linear-gradient(135deg, rgba(110, 231, 255, 0.18), rgba(155, 140, 255, 0.18));
+        border-color: rgba(110, 231, 255, 0.42);
+        box-shadow: 0 15px 40px rgba(35, 138, 210, 0.18);
+        transform: translateY(-2px);
+    }
+
+    .mode-pill:hover,
+    .playlist-item:hover,
+    .ambient-item:hover,
+    .control-chip:hover,
+    .shortcut-item:hover,
+    .task-item:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .timer-stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        margin: 1rem auto 1.5rem;
+        width: min(100%, var(--ring-size));
+        aspect-ratio: 1;
+    }
+
+    .timer-stage::before {
+        content: "";
+        position: absolute;
+        inset: 16%;
+        border-radius: 50%;
+        background: radial-gradient(circle at top, rgba(110, 231, 255, 0.16), rgba(2, 8, 23, 0.08) 58%, rgba(2, 8, 23, 0.6));
+        filter: blur(10px);
+    }
+
+    .timer-svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+
+    .timer-bg,
+    .timer-progress,
+    .timer-progress-shadow {
         fill: none;
-        stroke: #0dcaf0; /* Neon Info Color */
-        stroke-width: 4;
+        stroke-width: 12;
+        cx: 190;
+        cy: 190;
+        r: 170;
+    }
+
+    .timer-bg {
+        stroke: rgba(255, 255, 255, 0.07);
+    }
+
+    .timer-progress-shadow {
+        stroke: rgba(110, 231, 255, 0.12);
+        filter: blur(10px);
+    }
+
+    .timer-progress,
+    .timer-progress-shadow {
         stroke-linecap: round;
-        stroke-dasharray: 283; /* 2 * pi * 45 */
+        stroke-dasharray: var(--ring-circumference);
         stroke-dashoffset: 0;
-        transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
-        filter: drop-shadow(0 0 10px rgba(13, 202, 240, 0.5));
+        transition: stroke-dashoffset 0.8s linear, stroke 0.3s ease;
+    }
+
+    .timer-core {
+        position: absolute;
+        text-align: center;
+        width: 72%;
+        z-index: 2;
     }
 
     #time-display {
-        font-family: 'Exo 2', sans-serif;
-        font-size: 5rem;
-        font-weight: 700;
-        letter-spacing: -2px;
-        text-shadow: 0 0 20px rgba(255,255,255,0.2);
+        font-size: clamp(3.5rem, 8vw, 5.4rem);
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        color: #fff;
+        margin: 0;
+        text-shadow: 0 0 30px rgba(110, 231, 255, 0.14);
     }
 
-    /* Ambient Sound Buttons */
-    .sound-btn {
-        border-radius: 12px;
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.05);
-        transition: var(--transition-smooth);
+    #mode-label {
+        margin-top: 0.8rem;
+        font-size: 0.82rem;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--focus-highlight);
+    }
+
+    .timer-subline {
+        margin-top: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.55rem;
+    }
+
+    .timer-tag {
+        padding: 0.5rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .control-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin: 1rem 0 1.2rem;
+    }
+
+    .control-chip {
+        border-radius: 18px;
+        padding: 0.95rem 0.75rem;
+        text-align: center;
+        color: #fff;
         cursor: pointer;
     }
-    .sound-btn:hover {
-        background: rgba(255,255,255,0.05);
-        transform: translateX(4px);
-    }
-    .sound-btn.playing {
-        background: rgba(13, 202, 240, 0.1);
-        border-color: rgba(13, 202, 240, 0.3);
-        box-shadow: 0 0 15px rgba(13, 202, 240, 0.1);
-    }
-    .sound-btn.playing .play-icon::before {
-        content: "\f4fa"; /* Bootstrap pause-circle-fill icon */
-        color: #0dcaf0;
+
+    .control-chip.primary {
+        background: linear-gradient(135deg, #6ee7ff, #7bc7ff);
+        color: #08111f;
+        font-weight: 800;
+        box-shadow: 0 18px 30px rgba(110, 231, 255, 0.22);
     }
 
-    /* Volume Slider Polish */
-    .form-range::-webkit-slider-thumb {
-        background: #0dcaf0;
-        box-shadow: 0 0 10px rgba(13, 202, 240, 0.5);
+    .metrics-row {
+        display: grid;
+        gap: 0.8rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 1rem;
     }
 
-    /* =========================================
-       ZEN MODE OVERRIDES
-       ========================================= */
-    body.zen-mode .navbar { display: none !important; }
-    body.zen-mode .ambient-panel { display: none !important; }
-    body.zen-mode .zen-hide { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
-    
-    body.zen-mode .focus-wrapper {
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
+    .metric-card {
+        padding: 1rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .metric-card strong {
+        display: block;
+        color: #fff;
+        font-size: 1.4rem;
+    }
+
+    .progress-strip {
+        margin-top: 1rem;
+        display: grid;
+        gap: 0.6rem;
+    }
+
+    .progress-track {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--focus-highlight), var(--focus-highlight-2));
+        width: 0;
+        transition: width 0.35s ease;
+    }
+
+    .insight-list {
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .insight-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.95rem 1rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .insight-item strong,
+    .support-title,
+    .panel-title {
+        color: #fff;
+    }
+
+    .playlist-grid,
+    .ambient-grid,
+    .shortcut-grid,
+    .task-list {
+        grid-template-columns: 1fr;
+    }
+
+    .playlist-item,
+    .ambient-item,
+    .shortcut-item,
+    .task-item {
+        border-radius: 18px;
+        padding: 0.95rem 1rem;
+        cursor: pointer;
+    }
+
+    .playlist-item.active,
+    .ambient-item.active {
+        border-color: rgba(110, 231, 255, 0.4);
+        background: rgba(110, 231, 255, 0.12);
+        box-shadow: 0 14px 34px rgba(110, 231, 255, 0.12);
+    }
+
+    .media-status {
+        margin-top: 1rem;
+        padding: 0.9rem 1rem;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .range-wrap {
+        margin-top: 1rem;
+    }
+
+    .range-wrap input[type="range"] {
+        accent-color: var(--focus-highlight);
+    }
+
+    .task-entry,
+    .intention-entry {
+        display: flex;
+        gap: 0.7rem;
+    }
+
+    .task-input,
+    .intention-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 0.95rem 1rem;
+        color: #fff;
+    }
+
+    .task-input::placeholder,
+    .intention-input::placeholder {
+        color: rgba(255, 255, 255, 0.42);
+    }
+
+    .add-btn,
+    .zen-btn {
+        border: none;
+        border-radius: 16px;
+        padding: 0.95rem 1rem;
+        color: #08111f;
+        background: linear-gradient(135deg, #6ee7ff, #9b8cff);
+        font-weight: 700;
+        min-width: 3.4rem;
+    }
+
+    .task-item {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        cursor: default;
+    }
+
+    .task-item.completed strong,
+    .task-item.completed span {
+        opacity: 0.55;
+        text-decoration: line-through;
+    }
+
+    .task-check {
+        width: 1.15rem;
+        height: 1.15rem;
+        accent-color: var(--focus-success);
+    }
+
+    .task-delete {
+        margin-left: auto;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.52);
+        font-size: 1rem;
+    }
+
+    .shortcut-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .shortcut-item {
+        text-align: center;
+        cursor: default;
+    }
+
+    .shortcut-item kbd {
+        display: inline-block;
+        min-width: 2.2rem;
+        padding: 0.35rem 0.55rem;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 0.55rem;
+    }
+
+    .pulse-dot {
+        display: inline-block;
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 50%;
+        background: var(--focus-success);
+        box-shadow: 0 0 0 rgba(77, 246, 164, 0.5);
+        animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(77, 246, 164, 0.45); }
+        70% { box-shadow: 0 0 0 12px rgba(77, 246, 164, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(77, 246, 164, 0); }
+    }
+
+    body.zen-mode .navbar,
+    body.zen-mode footer,
+    body.zen-mode .hero-support,
+    body.zen-mode .focus-right,
+    body.zen-mode .focus-left .focus-sidecard:not(.zen-safe) {
+        display: none !important;
+    }
+
+    body.zen-mode .focus-shell {
+        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 9999;
-        background: #05070a;
     }
-    
+
+    body.zen-mode .focus-hero {
+        display: none;
+    }
+
+    body.zen-mode .focus-main-col {
+        width: 100%;
+        max-width: 920px;
+    }
+
     body.zen-mode .focus-card {
-        border: none;
-        box-shadow: none;
-        background: transparent !important;
-        transform: scale(1.1);
+        padding: 2rem;
+        background: rgba(5, 10, 20, 0.9);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 991px) {
+        .control-grid,
+        .metrics-row,
+        .shortcut-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .focus-shell { padding-bottom: 1rem; }
+    }
+
+    @media (max-width: 575px) {
+        :root { --ring-size: 280px; }
+        .control-grid,
+        .metrics-row,
+        .shortcut-grid {
+            grid-template-columns: 1fr;
+        }
+        .focus-hero,
+        .focus-card,
+        .focus-sidecard { border-radius: 22px; }
     }
 </style>
 
-<div class="container mt-4 focus-wrapper">
-    <div class="row justify-content-center w-100">
-        
-        <div class="col-lg-7">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4 zen-hide">
-                <h4 class="text-white fw-bold mb-0"><i class="bi bi-bullseye text-info me-2"></i>Focus Hub</h4>
-                <button class="btn btn-sm btn-outline-secondary" onclick="toggleZenMode()" title="Hide all distractions">
-                    <i class="bi bi-arrows-fullscreen me-1"></i> Zen Mode
-                </button>
-            </div>
-
-            <div class="card focus-card p-4 p-md-5 text-center">
-                
-                <div class="d-flex justify-content-center gap-2 gap-md-3 mb-5 filter-scroll-container pb-0" style="mask-image: none; -webkit-mask-image: none;">
-                    <button class="filter-pill active" id="btn-pomodoro" onclick="setMode('pomodoro', 25)">Deep Work (25m)</button>
-                    <button class="filter-pill" id="btn-short" onclick="setMode('short', 5)">Short Break (5m)</button>
-                    <button class="filter-pill" id="btn-long" onclick="setMode('long', 15)">Long Break (15m)</button>
+<div class="container-fluid mt-4 focus-shell">
+    <div class="focus-layer">
+        <section class="focus-hero">
+            <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-4">
+                <div>
+                    <div class="hero-kicker mb-2">Deep work command center</div>
+                    <h1 class="hero-title mb-3">Focus Hub, redesigned for flow.</h1>
+                    <p class="hero-copy mb-0">Run focused sprints, queue royalty-free music, mix ambient textures, track your key tasks, and keep a sleek dashboard that remembers your setup every time you return.</p>
                 </div>
-
-                <div class="timer-container mb-5">
-                    <svg class="timer-svg" viewBox="0 0 100 100">
-                        <circle class="timer-bg" cx="50" cy="50" r="45"></circle>
-                        <circle class="timer-progress" cx="50" cy="50" r="45" id="timer-ring"></circle>
-                    </svg>
-                    <div class="position-absolute top-50 start-50 translate-middle w-100">
-                        <h1 id="time-display" class="mb-0 text-white">25:00</h1>
-                        <p id="mode-label" class="text-info text-uppercase fw-semibold mb-0 mt-2" style="letter-spacing: 2px; font-size: 0.8rem;">Focus Protocol</p>
+                <div class="d-flex flex-wrap gap-3 justify-content-xl-end hero-support">
+                    <div class="stat-pill">
+                        <i class="bi bi-lightning-charge"></i>
+                        <div>
+                            <strong id="hero-streak">0</strong>
+                            <span>session streak</span>
+                        </div>
                     </div>
-                </div>
-
-                <div class="d-flex justify-content-center align-items-center gap-4">
-                    <button class="btn btn-lg btn-info text-dark fw-bold px-5 shadow-sm" id="start-btn" onclick="toggleTimer()" style="border-radius: 50px; font-size: 1.2rem; width: 180px;">
-                        START
-                    </button>
-                    <button class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" onclick="resetTimer()" style="width: 52px; height: 52px; transition: 0.3s;" onmouseover="this.style.transform='rotate(-180deg)'" onmouseout="this.style.transform='rotate(0deg)'">
-                        <i class="bi bi-arrow-counterclockwise fs-4"></i>
+                    <div class="stat-pill">
+                        <i class="bi bi-clock-history"></i>
+                        <div>
+                            <strong id="hero-total-minutes">0 min</strong>
+                            <span>focused today</span>
+                        </div>
+                    </div>
+                    <div class="stat-pill">
+                        <i class="bi bi-headphones"></i>
+                        <div>
+                            <strong id="hero-track-name">Silent</strong>
+                            <span>now playing</span>
+                        </div>
+                    </div>
+                    <button class="zen-btn" id="zen-toggle" type="button">
+                        <i class="bi bi-arrows-fullscreen me-1"></i>Zen
                     </button>
                 </div>
+            </div>
+        </section>
 
-                <div class="mt-5 pt-4 border-top zen-hide" style="border-color: rgba(255,255,255,0.05) !important;">
-                    <p class="text-white-50 small text-uppercase fw-semibold mb-3" style="letter-spacing: 1px;">Daily Sessions Completed</p>
-                    <div class="d-flex justify-content-center gap-3" id="session-dots">
-                        <i class="bi bi-circle text-muted fs-5"></i>
-                        <i class="bi bi-circle text-muted fs-5"></i>
-                        <i class="bi bi-circle text-muted fs-5"></i>
-                        <i class="bi bi-circle text-muted fs-5"></i>
+        <div class="row g-4 align-items-stretch">
+            <div class="col-xl-7 focus-main-col">
+                <section class="focus-card">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                        <div>
+                            <div class="section-label"><span class="pulse-dot"></span> primary timer</div>
+                            <h3 class="panel-title mb-1">Build momentum with flexible focus cycles</h3>
+                            <p class="support-copy mb-0">Switch modes instantly, skip ahead when needed, and let your session history update automatically.</p>
+                        </div>
+                        <button class="btn btn-outline-light rounded-pill px-3" id="zen-toggle-inline" type="button">
+                            <i class="bi bi-stars me-1"></i>Zen mode
+                        </button>
+                    </div>
+
+                    <div class="mode-pills mb-3" id="mode-pills"></div>
+
+                    <div class="timer-stage">
+                        <svg class="timer-svg" viewBox="0 0 380 380" aria-hidden="true">
+                            <circle class="timer-bg" cx="190" cy="190" r="170"></circle>
+                            <circle class="timer-progress-shadow" cx="190" cy="190" r="170" id="timer-ring-shadow"></circle>
+                            <circle class="timer-progress" cx="190" cy="190" r="170" id="timer-ring"></circle>
+                        </svg>
+                        <div class="timer-core">
+                            <p id="time-display">25:00</p>
+                            <div id="mode-label">Focus Sprint</div>
+                            <div class="timer-subline">
+                                <div class="timer-tag" id="cycle-tag">Cycle 1 of 4</div>
+                                <div class="timer-tag" id="quote-tag">Lock in and begin.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-grid">
+                        <button class="control-chip primary" id="start-btn" type="button">Start</button>
+                        <button class="control-chip" id="reset-btn" type="button">Reset</button>
+                        <button class="control-chip" id="skip-btn" type="button">Skip</button>
+                        <button class="control-chip" id="music-toggle-btn" type="button">Music</button>
+                    </div>
+
+                    <div class="metrics-row">
+                        <div class="metric-card">
+                            <small>Today</small>
+                            <strong id="sessions-completed">0</strong>
+                            <span>focus sessions completed</span>
+                        </div>
+                        <div class="metric-card">
+                            <small>Target</small>
+                            <strong id="target-status">0/4</strong>
+                            <span>deep work cycles logged</span>
+                        </div>
+                        <div class="metric-card">
+                            <small>Reward</small>
+                            <strong id="xp-preview">0 XP</strong>
+                            <span>estimated session payout</span>
+                        </div>
+                    </div>
+
+                    <div class="progress-strip">
+                        <div class="d-flex justify-content-between align-items-center small">
+                            <span class="helper-text">Daily rhythm</span>
+                            <span class="helper-text" id="progress-copy">0% of your 4-session target</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar" id="daily-progress-bar"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-xl-5 focus-left">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <section class="focus-sidecard zen-safe">
+                            <div class="section-label"><i class="bi bi-check2-square"></i> focus board</div>
+                            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                <div>
+                                    <h4 class="panel-title mb-1">Session intention + micro-task queue</h4>
+                                    <p class="support-copy mb-0">Write what matters now and keep a tiny checklist beside the timer.</p>
+                                </div>
+                                <span class="badge rounded-pill text-bg-dark border border-light-subtle" id="task-count-badge">0 tasks</span>
+                            </div>
+
+                            <div class="intention-entry mb-2">
+                                <input id="intention-input" class="intention-input" type="text" maxlength="120" placeholder="What outcome would make this session a win?">
+                            </div>
+                            <div class="intention-note mb-3" id="intention-preview">No intention set yet.</div>
+
+                            <div class="task-entry mb-3">
+                                <input id="task-input" class="task-input" type="text" maxlength="100" placeholder="Add a small, concrete task">
+                                <button class="add-btn" id="add-task-btn" type="button"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+
+                            <div class="task-list" id="task-list"></div>
+                        </section>
+                    </div>
+
+                    <div class="col-12 focus-right">
+                        <section class="focus-sidecard">
+                            <div class="section-label"><i class="bi bi-disc"></i> music + ambience</div>
+                            <h4 class="panel-title mb-1">Royalty-free playlists with ambient layering</h4>
+                            <p class="support-copy mb-3">Pick a sleek soundtrack, then blend in rain, café, or ocean textures independently.</p>
+
+                            <div class="playlist-grid mb-3" id="playlist-grid"></div>
+                            <div class="ambient-grid mb-3" id="ambient-grid"></div>
+
+                            <div class="media-status">
+                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <strong id="media-title">No track selected</strong>
+                                        <div class="range-caption" id="media-subtitle">Choose a playlist to start listening.</div>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-light rounded-pill" id="stop-audio-btn" type="button">Stop all</button>
+                                </div>
+
+                                <div class="range-wrap">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="range-caption">Music volume</span>
+                                        <span class="range-caption" id="music-volume-value">55%</span>
+                                    </div>
+                                    <input id="music-volume" type="range" min="0" max="100" value="55">
+                                </div>
+
+                                <div class="range-wrap">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="range-caption">Ambience volume</span>
+                                        <span class="range-caption" id="ambient-volume-value">35%</span>
+                                    </div>
+                                    <input id="ambient-volume" type="range" min="0" max="100" value="35">
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="col-12 focus-right">
+                        <section class="focus-sidecard">
+                            <div class="section-label"><i class="bi bi-magic"></i> shortcuts + support</div>
+                            <div class="insight-list mb-3">
+                                <div class="insight-item">
+                                    <div>
+                                        <strong>Auto-save memory</strong>
+                                        <div class="support-copy">Your mode, task list, intention, and audio preferences persist locally.</div>
+                                    </div>
+                                    <i class="bi bi-cloud-check fs-4 text-info"></i>
+                                </div>
+                                <div class="insight-item">
+                                    <div>
+                                        <strong>Reward sync</strong>
+                                        <div class="support-copy">Completed focus sprints post back to your account to update focus time, XP, and gold.</div>
+                                    </div>
+                                    <i class="bi bi-trophy fs-4 text-warning"></i>
+                                </div>
+                            </div>
+
+                            <div class="shortcut-grid">
+                                <div class="shortcut-item">
+                                    <kbd>Space</kbd>
+                                    <strong>Play / pause</strong>
+                                    <span>Control the timer without leaving the keyboard.</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>R</kbd>
+                                    <strong>Reset</strong>
+                                    <span>Start the current cycle fresh.</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>Z</kbd>
+                                    <strong>Zen mode</strong>
+                                    <span>Hide everything except the essentials.</span>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
-                
-                <button class="btn btn-outline-light btn-sm position-absolute top-0 end-0 m-4 d-none" id="exit-zen-btn" onclick="toggleZenMode()">
-                    <i class="bi bi-fullscreen-exit me-1"></i> Exit Zen
-                </button>
             </div>
         </div>
-        
-        <div class="col-lg-4 mt-4 mt-lg-0 ambient-panel">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h6 class="text-white fw-bold mb-0 opacity-0">Spacer</h6> </div>
-            
-            <div class="card bg-dark text-white shadow-lg p-4 h-100" style="border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;">
-                <h6 class="fw-bold mb-4 text-white-50 text-uppercase" style="letter-spacing: 1px;">
-                    <i class="bi bi-headphones text-info me-2"></i>Ambient Audio
-                </h6>
-                
-                <div class="d-flex flex-column gap-3">
-                    
-                    <div class="sound-btn d-flex align-items-center justify-content-between p-3" onclick="toggleSound('rain', this, 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_6b52a550fa.mp3')">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-info bg-opacity-10 p-2 rounded me-3 text-info"><i class="bi bi-cloud-rain fs-4"></i></div>
-                            <div class="text-start">
-                                <h6 class="mb-0 fw-bold text-white">Heavy Rain</h6>
-                                <small class="text-white-50">Deep focus & masking</small>
-                            </div>
-                        </div>
-                        <i class="bi bi-play-circle-fill fs-3 play-icon text-white-50"></i>
-                    </div>
-
-                    <div class="sound-btn d-flex align-items-center justify-content-between p-3" onclick="toggleSound('cafe', this, 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3')">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-warning bg-opacity-10 p-2 rounded me-3 text-warning"><i class="bi bi-cup-hot fs-4"></i></div>
-                            <div class="text-start">
-                                <h6 class="mb-0 fw-bold text-white">Coffee Shop</h6>
-                                <small class="text-white-50">Creative ambient buzz</small>
-                            </div>
-                        </div>
-                        <i class="bi bi-play-circle-fill fs-3 play-icon text-white-50"></i>
-                    </div>
-                    
-                    <div class="sound-btn d-flex align-items-center justify-content-between p-3" onclick="toggleSound('waves', this, 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_7565705b63.mp3')">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary"><i class="bi bi-water fs-4"></i></div>
-                            <div class="text-start">
-                                <h6 class="mb-0 fw-bold text-white">Ocean Waves</h6>
-                                <small class="text-white-50">Calming rhythm</small>
-                            </div>
-                        </div>
-                        <i class="bi bi-play-circle-fill fs-3 play-icon text-white-50"></i>
-                    </div>
-
-                </div>
-
-                <div class="mt-auto pt-4 border-top mt-4" style="border-color: rgba(255,255,255,0.05) !important;">
-                    <div class="d-flex justify-content-between text-white-50 small mb-2 fw-semibold">
-                        <span>Master Volume</span>
-                        <i class="bi bi-volume-up"></i>
-                    </div>
-                    <input type="range" class="form-range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolume()">
-                </div>
-            </div>
-        </div>
-
     </div>
 </div>
 
-<audio id="ambient-player" loop></audio>
-<audio id="ding-player" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3"></audio>
+<audio id="music-player" preload="none"></audio>
+<audio id="ambient-player" preload="none" loop></audio>
+<audio id="ding-player" preload="none" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3?filename=positive-notification-951.wav"></audio>
 
 <script>
-    // --- TIMER ENGINE ---
-    let timerInterval;
+    const modeConfig = {
+        focus: {
+            label: 'Focus Sprint',
+            minutes: 25,
+            accent: '#6ee7ff',
+            description: 'Ideal for deep work and flow-state building.',
+            quote: 'Lock in and begin.',
+            rewardMinutes: 25
+        },
+        short: {
+            label: 'Short Reset',
+            minutes: 5,
+            accent: '#4df6a4',
+            description: 'Stand up, breathe, and reset your attention.',
+            quote: 'Step away for a minute.',
+            rewardMinutes: 0
+        },
+        long: {
+            label: 'Long Recharge',
+            minutes: 15,
+            accent: '#9b8cff',
+            description: 'Recharge fully before the next major push.',
+            quote: 'Recover so the next sprint feels easy.',
+            rewardMinutes: 0
+        },
+        custom: {
+            label: 'Power Hour',
+            minutes: 50,
+            accent: '#ffcc66',
+            description: 'Extended single-task immersion for bigger projects.',
+            quote: 'Make a meaningful dent.',
+            rewardMinutes: 50
+        }
+    };
+
+    const playlistTracks = [
+        {
+            id: 'lofi',
+            name: 'Lo-fi Lift',
+            meta: 'Gentle beats for steady concentration',
+            url: 'https://cdn.pixabay.com/download/audio/2023/05/17/audio_7b1b84c4f8.mp3?filename=lofi-study-112191.mp3',
+            icon: 'bi-vinyl-fill'
+        },
+        {
+            id: 'piano',
+            name: 'Soft Piano Flow',
+            meta: 'Royalty-free piano atmosphere',
+            url: 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_946498fca9.mp3?filename=deep-relaxing-145038.mp3',
+            icon: 'bi-music-note-beamed'
+        },
+        {
+            id: 'synth',
+            name: 'Neon Drift',
+            meta: 'Clean synth textures with light motion',
+            url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b22f0b48.mp3?filename=future-bass-beat-14623.mp3',
+            icon: 'bi-boombox'
+        },
+        {
+            id: 'cinematic',
+            name: 'Cinematic Focus',
+            meta: 'Airy, non-lyrical score for bigger tasks',
+            url: 'https://cdn.pixabay.com/download/audio/2022/08/02/audio_cdf0af0f96.mp3?filename=inspiring-ambient-116199.mp3',
+            icon: 'bi-stars'
+        }
+    ];
+
+    const ambientTracks = [
+        {
+            id: 'rain',
+            name: 'Rain Veil',
+            meta: 'Dense rainfall to mask distractions',
+            url: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_6b52a550fa.mp3?filename=rain-ambient-114354.mp3',
+            icon: 'bi-cloud-rain-heavy-fill'
+        },
+        {
+            id: 'cafe',
+            name: 'Café Murmur',
+            meta: 'Warm public-space texture',
+            url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=coffee-shop-ambience-6504.mp3',
+            icon: 'bi-cup-hot-fill'
+        },
+        {
+            id: 'ocean',
+            name: 'Ocean Glass',
+            meta: 'Slow waves for calmer pacing',
+            url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_7565705b63.mp3?filename=ocean-waves-250310.mp3',
+            icon: 'bi-water'
+        }
+    ];
+
+    const storageKey = 'focusHubStateV2';
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const ringCircumference = 2 * Math.PI * 170;
+    document.documentElement.style.setProperty('--ring-circumference', ringCircumference.toFixed(0));
+
+    let timerInterval = null;
     let isRunning = false;
-    let totalSeconds = 25 * 60; 
+    let currentMode = 'focus';
+    let totalSeconds = modeConfig[currentMode].minutes * 60;
     let remainingSeconds = totalSeconds;
-    let completedSessions = 0;
-    
-    const display = document.getElementById('time-display');
-    const ring = document.getElementById('timer-ring');
+    let currentPlaylist = null;
+    let currentAmbient = null;
+
+    const defaultState = {
+        today: todayKey,
+        sessionsToday: 0,
+        totalMinutesToday: 0,
+        cycleCount: 1,
+        currentMode: 'focus',
+        intention: '',
+        tasks: [],
+        musicVolume: 55,
+        ambientVolume: 35,
+        lastPlaylist: null,
+        lastAmbient: null
+    };
+
+    const musicPlayer = document.getElementById('music-player');
+    const ambientPlayer = document.getElementById('ambient-player');
+    const dingPlayer = document.getElementById('ding-player');
     const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    const musicToggleBtn = document.getElementById('music-toggle-btn');
+    const timeDisplay = document.getElementById('time-display');
     const modeLabel = document.getElementById('mode-label');
-    const ringCircumference = 283; // 2 * pi * 45
+    const cycleTag = document.getElementById('cycle-tag');
+    const quoteTag = document.getElementById('quote-tag');
+    const timerRing = document.getElementById('timer-ring');
+    const timerRingShadow = document.getElementById('timer-ring-shadow');
+    const modePills = document.getElementById('mode-pills');
+    const playlistGrid = document.getElementById('playlist-grid');
+    const ambientGrid = document.getElementById('ambient-grid');
+    const taskList = document.getElementById('task-list');
+    const taskInput = document.getElementById('task-input');
+    const addTaskBtn = document.getElementById('add-task-btn');
+    const intentionInput = document.getElementById('intention-input');
+    const intentionPreview = document.getElementById('intention-preview');
+    const musicVolume = document.getElementById('music-volume');
+    const ambientVolume = document.getElementById('ambient-volume');
+    const mediaTitle = document.getElementById('media-title');
+    const mediaSubtitle = document.getElementById('media-subtitle');
+    const musicVolumeValue = document.getElementById('music-volume-value');
+    const ambientVolumeValue = document.getElementById('ambient-volume-value');
+    const stopAudioBtn = document.getElementById('stop-audio-btn');
+    const heroTrackName = document.getElementById('hero-track-name');
+    const heroTotalMinutes = document.getElementById('hero-total-minutes');
+    const heroStreak = document.getElementById('hero-streak');
+    const sessionsCompleted = document.getElementById('sessions-completed');
+    const targetStatus = document.getElementById('target-status');
+    const xpPreview = document.getElementById('xp-preview');
+    const progressCopy = document.getElementById('progress-copy');
+    const dailyProgressBar = document.getElementById('daily-progress-bar');
+    const taskCountBadge = document.getElementById('task-count-badge');
+    const zenToggleButtons = [document.getElementById('zen-toggle'), document.getElementById('zen-toggle-inline')];
+
+    let appState = loadState();
+
+    function loadState() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(storageKey) || '{}');
+            const merged = { ...defaultState, ...parsed };
+            if (merged.today !== todayKey) {
+                merged.today = todayKey;
+                merged.sessionsToday = 0;
+                merged.totalMinutesToday = 0;
+                merged.cycleCount = 1;
+            }
+            return merged;
+        } catch (error) {
+            return { ...defaultState };
+        }
+    }
+
+    function saveState() {
+        localStorage.setItem(storageKey, JSON.stringify(appState));
+    }
+
+    function renderModePills() {
+        modePills.innerHTML = Object.entries(modeConfig).map(([id, config]) => `
+            <button type="button" class="mode-pill ${id === currentMode ? 'active' : ''}" data-mode="${id}">
+                <strong>${config.label}</strong>
+                <span>${config.minutes} min · ${config.description}</span>
+            </button>
+        `).join('');
+    }
+
+    function renderPlaylistGrid() {
+        playlistGrid.innerHTML = playlistTracks.map(track => `
+            <button type="button" class="playlist-item ${currentPlaylist === track.id ? 'active' : ''}" data-playlist="${track.id}">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi ${track.icon} fs-4 text-info"></i>
+                    <div class="text-start">
+                        <strong>${track.name}</strong>
+                        <span>${track.meta}</span>
+                    </div>
+                </div>
+            </button>
+        `).join('');
+    }
+
+    function renderAmbientGrid() {
+        ambientGrid.innerHTML = ambientTracks.map(track => `
+            <button type="button" class="ambient-item ${currentAmbient === track.id ? 'active' : ''}" data-ambient="${track.id}">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi ${track.icon} fs-4 text-info"></i>
+                    <div class="text-start">
+                        <strong>${track.name}</strong>
+                        <span>${track.meta}</span>
+                    </div>
+                </div>
+            </button>
+        `).join('');
+    }
+
+    function renderTasks() {
+        taskList.innerHTML = '';
+        if (!appState.tasks.length) {
+            taskList.innerHTML = '<div class="task-item"><div><strong>No tasks queued</strong><span>Add 1–3 concrete actions to stay sharp.</span></div></div>';
+        } else {
+            appState.tasks.forEach((task, index) => {
+                const item = document.createElement('div');
+                item.className = `task-item ${task.done ? 'completed' : ''}`;
+                item.innerHTML = `
+                    <input class="task-check" type="checkbox" ${task.done ? 'checked' : ''} aria-label="Toggle task completion">
+                    <div>
+                        <strong>${escapeHtml(task.text)}</strong>
+                        <span>${task.done ? 'Completed' : 'Ready for this session'}</span>
+                    </div>
+                    <button class="task-delete" type="button" aria-label="Delete task"><i class="bi bi-x-lg"></i></button>
+                `;
+                item.querySelector('.task-check').addEventListener('change', () => toggleTask(index));
+                item.querySelector('.task-delete').addEventListener('click', () => deleteTask(index));
+                taskList.appendChild(item);
+            });
+        }
+        taskCountBadge.textContent = `${appState.tasks.length} task${appState.tasks.length === 1 ? '' : 's'}`;
+    }
+
+    function escapeHtml(value) {
+        return value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
+
+    function addTask() {
+        const value = taskInput.value.trim();
+        if (!value) return;
+        appState.tasks.unshift({ text: value, done: false });
+        taskInput.value = '';
+        saveState();
+        renderTasks();
+    }
+
+    function toggleTask(index) {
+        appState.tasks[index].done = !appState.tasks[index].done;
+        saveState();
+        renderTasks();
+    }
+
+    function deleteTask(index) {
+        appState.tasks.splice(index, 1);
+        saveState();
+        renderTasks();
+    }
+
+    function setMode(modeId, preserveState = false) {
+        currentMode = modeId;
+        appState.currentMode = modeId;
+        totalSeconds = modeConfig[modeId].minutes * 60;
+        remainingSeconds = preserveState ? Math.min(remainingSeconds, totalSeconds) : totalSeconds;
+        if (!preserveState) {
+            clearInterval(timerInterval);
+            isRunning = false;
+            startBtn.textContent = 'Start';
+            startBtn.classList.add('primary');
+        }
+        const config = modeConfig[modeId];
+        modeLabel.textContent = config.label;
+        quoteTag.textContent = config.quote;
+        timerRing.style.stroke = config.accent;
+        timerRingShadow.style.stroke = config.accent;
+        xpPreview.textContent = `${config.rewardMinutes * 2} XP`;
+        renderModePills();
+        updateDisplay();
+        saveState();
+    }
 
     function updateDisplay() {
-        let mins = Math.floor(remainingSeconds / 60);
-        let secs = remainingSeconds % 60;
-        display.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        
-        // Update SVG Ring
-        let fraction = remainingSeconds / totalSeconds;
-        let offset = ringCircumference - (fraction * ringCircumference);
-        ring.style.strokeDashoffset = offset;
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        timeDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        const progress = totalSeconds ? 1 - (remainingSeconds / totalSeconds) : 0;
+        const dashOffset = progress * ringCircumference;
+        timerRing.style.strokeDashoffset = String(dashOffset);
+        timerRingShadow.style.strokeDashoffset = String(dashOffset);
+        cycleTag.textContent = `Cycle ${appState.cycleCount} of 4`;
     }
 
     function toggleTimer() {
         if (isRunning) {
             clearInterval(timerInterval);
-            startBtn.innerText = "RESUME";
-            startBtn.classList.replace('btn-danger', 'btn-info');
-            startBtn.classList.remove('text-white');
-            startBtn.classList.add('text-dark');
-        } else {
-            startBtn.innerText = "PAUSE";
-            startBtn.classList.replace('btn-info', 'btn-danger');
-            startBtn.classList.remove('text-dark');
-            startBtn.classList.add('text-white');
-            
-            timerInterval = setInterval(() => {
-                remainingSeconds--;
-                updateDisplay();
-                
-                if (remainingSeconds <= 0) {
-                    timerComplete();
-                }
-            }, 1000);
+            isRunning = false;
+            startBtn.textContent = 'Resume';
+            return;
         }
-        isRunning = !isRunning;
-    }
 
-    function timerComplete() {
-        clearInterval(timerInterval);
-        isRunning = false;
-        
-        // Play Ding
-        document.getElementById('ding-player').play();
-        
-        // Reset Button
-        startBtn.innerText = "START";
-        startBtn.classList.replace('btn-danger', 'btn-info');
-        startBtn.classList.remove('text-white');
-        startBtn.classList.add('text-dark');
-        
-        // If Pomodoro finished, log a dot!
-        if (totalSeconds === 25 * 60) {
-            logSession();
-            setMode('short', 5); // Auto switch to short break
-        } else {
-            setMode('pomodoro', 25); // Auto switch back to work
-        }
-        
-        // Browser Notification
-        if (Notification.permission === "granted") {
-            new Notification("Timer Complete!", { body: "Time to switch gears.", icon: "/static/logo.png" });
-        }
+        isRunning = true;
+        startBtn.textContent = 'Pause';
+        timerInterval = setInterval(() => {
+            if (remainingSeconds > 0) {
+                remainingSeconds -= 1;
+                updateDisplay();
+            }
+            if (remainingSeconds <= 0) {
+                timerComplete();
+            }
+        }, 1000);
     }
 
     function resetTimer() {
         clearInterval(timerInterval);
         isRunning = false;
         remainingSeconds = totalSeconds;
-        startBtn.innerText = "START";
-        startBtn.classList.replace('btn-danger', 'btn-info');
-        startBtn.classList.remove('text-white');
-        startBtn.classList.add('text-dark');
+        startBtn.textContent = 'Start';
         updateDisplay();
     }
 
-    function setMode(modeId, minutes) {
-        // Update Buttons
-        document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-${modeId}`).classList.add('active');
-        
-        // Update Colors & Labels
-        if (modeId === 'pomodoro') {
-            ring.style.stroke = '#0dcaf0';
-            modeLabel.innerText = "Focus Protocol";
-            modeLabel.className = "text-info text-uppercase fw-semibold mb-0 mt-2";
-        } else if (modeId === 'short') {
-            ring.style.stroke = '#0aff68';
-            modeLabel.innerText = "Short Recovery";
-            modeLabel.className = "text-success text-uppercase fw-semibold mb-0 mt-2";
+    async function timerComplete() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        startBtn.textContent = 'Start';
+        dingPlayer.currentTime = 0;
+        dingPlayer.play().catch(() => {});
+
+        const config = modeConfig[currentMode];
+        const completedMode = currentMode;
+        if (config.rewardMinutes > 0) {
+            appState.sessionsToday += 1;
+            appState.totalMinutesToday += config.rewardMinutes;
+            appState.cycleCount = Math.min(4, appState.cycleCount + 1);
+            await syncFocusSession(config.rewardMinutes);
+        }
+
+        if (completedMode === 'focus' || completedMode === 'custom') {
+            setMode(appState.sessionsToday % 4 === 0 ? 'long' : 'short');
         } else {
-            ring.style.stroke = '#bc13fe';
-            modeLabel.innerText = "Deep Recharge";
-            modeLabel.className = "text-primary text-uppercase fw-semibold mb-0 mt-2";
+            setMode('focus');
         }
-        
-        totalSeconds = minutes * 60;
-        resetTimer();
+
+        updateSummary();
+        notifyUser(`${config.label} complete`, completedMode === 'focus' || completedMode === 'custom' ? 'Great work. Take a well-earned break.' : 'Break finished. Time to get back into flow.');
     }
 
-    function logSession() {
-        completedSessions++;
-        const dotsContainer = document.getElementById('session-dots');
-        dotsContainer.innerHTML = '';
-        
-        // Draw 4 dots (fill them in based on completion)
-        for(let i=1; i<=4; i++) {
-            if (i <= (completedSessions % 4 || 4)) {
-                dotsContainer.innerHTML += '<i class="bi bi-circle-fill text-info fs-5" style="text-shadow: 0 0 10px rgba(13,202,240,0.5);"></i>';
-            } else {
-                dotsContainer.innerHTML += '<i class="bi bi-circle text-muted fs-5"></i>';
-            }
+    async function syncFocusSession(minutes) {
+        try {
+            await fetch('/save_focus_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ minutes })
+            });
+        } catch (error) {
+            console.warn('Unable to save focus session:', error);
+        }
+        saveState();
+    }
+
+    function notifyUser(title, body) {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'granted') {
+            new Notification(title, { body, icon: '/static/logo.png' });
         }
     }
 
-    // --- AMBIENT AUDIO ENGINE ---
-    const audioPlayer = document.getElementById('ambient-player');
-    const volumeSlider = document.getElementById('volume-slider');
-    let currentSoundBtn = null;
+    function updateSummary() {
+        heroTotalMinutes.textContent = `${appState.totalMinutesToday} min`;
+        heroStreak.textContent = String(appState.sessionsToday);
+        sessionsCompleted.textContent = String(appState.sessionsToday);
+        targetStatus.textContent = `${appState.sessionsToday}/4`;
+        const percent = Math.min(100, Math.round((appState.sessionsToday / 4) * 100));
+        progressCopy.textContent = `${percent}% of your 4-session target`;
+        dailyProgressBar.style.width = `${percent}%`;
+        intentionPreview.textContent = appState.intention ? appState.intention : 'No intention set yet.';
+        intentionInput.value = appState.intention;
+        saveState();
+    }
 
-    function toggleSound(soundName, btnElement, url) {
-        // If clicking the same button that is already playing, pause it
-        if (currentSoundBtn === btnElement && !audioPlayer.paused) {
-            audioPlayer.pause();
-            btnElement.classList.remove('playing');
+    function playPlaylist(id) {
+        const track = playlistTracks.find(item => item.id === id);
+        if (!track) return;
+        if (currentPlaylist === id && !musicPlayer.paused) {
+            musicPlayer.pause();
+            heroTrackName.textContent = 'Paused';
+            mediaTitle.textContent = `${track.name} paused`;
+            mediaSubtitle.textContent = track.meta;
             return;
         }
-        
-        // Reset all buttons
-        document.querySelectorAll('.sound-btn').forEach(btn => btn.classList.remove('playing'));
-        
-        // Play the new sound
-        audioPlayer.src = url;
-        audioPlayer.volume = volumeSlider.value / 100;
-        audioPlayer.play();
-        
-        // Highlight active button
-        btnElement.classList.add('playing');
-        currentSoundBtn = btnElement;
+        currentPlaylist = id;
+        appState.lastPlaylist = id;
+        musicPlayer.src = track.url;
+        musicPlayer.volume = Number(musicVolume.value) / 100;
+        musicPlayer.play().catch(() => {});
+        heroTrackName.textContent = track.name;
+        mediaTitle.textContent = track.name;
+        mediaSubtitle.textContent = track.meta;
+        musicToggleBtn.textContent = 'Pause music';
+        renderPlaylistGrid();
+        saveState();
     }
 
-    function updateVolume() {
-        audioPlayer.volume = volumeSlider.value / 100;
+    function playAmbient(id) {
+        const track = ambientTracks.find(item => item.id === id);
+        if (!track) return;
+        if (currentAmbient === id && !ambientPlayer.paused) {
+            ambientPlayer.pause();
+            currentAmbient = null;
+            appState.lastAmbient = null;
+            renderAmbientGrid();
+            saveState();
+            return;
+        }
+        currentAmbient = id;
+        appState.lastAmbient = id;
+        ambientPlayer.src = track.url;
+        ambientPlayer.volume = Number(ambientVolume.value) / 100;
+        ambientPlayer.play().catch(() => {});
+        renderAmbientGrid();
+        saveState();
     }
 
-    // --- ZEN MODE ---
+    function stopAllAudio() {
+        musicPlayer.pause();
+        ambientPlayer.pause();
+        musicPlayer.currentTime = 0;
+        ambientPlayer.currentTime = 0;
+        currentPlaylist = null;
+        currentAmbient = null;
+        appState.lastPlaylist = null;
+        appState.lastAmbient = null;
+        heroTrackName.textContent = 'Silent';
+        mediaTitle.textContent = 'No track selected';
+        mediaSubtitle.textContent = 'Choose a playlist to start listening.';
+        renderPlaylistGrid();
+        renderAmbientGrid();
+        saveState();
+    }
+
+    function updateVolumeDisplays() {
+        musicVolumeValue.textContent = `${musicVolume.value}%`;
+        ambientVolumeValue.textContent = `${ambientVolume.value}%`;
+        musicPlayer.volume = Number(musicVolume.value) / 100;
+        ambientPlayer.volume = Number(ambientVolume.value) / 100;
+        appState.musicVolume = Number(musicVolume.value);
+        appState.ambientVolume = Number(ambientVolume.value);
+        saveState();
+    }
+
     function toggleZenMode() {
         document.body.classList.toggle('zen-mode');
-        
-        const exitBtn = document.getElementById('exit-zen-btn');
-        if (document.body.classList.contains('zen-mode')) {
-            exitBtn.classList.remove('d-none');
-            // Request full screen if browser allows
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        } else {
-            exitBtn.classList.add('d-none');
-            if (document.exitFullscreen) document.exitFullscreen();
+        if (document.body.classList.contains('zen-mode') && document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else if (!document.body.classList.contains('zen-mode') && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
         }
     }
 
-    // Initialize
-    document.addEventListener("DOMContentLoaded", () => {
-        updateDisplay();
-        // Ask for notification permission early
-        if (Notification.permission !== "denied") {
-            Notification.requestPermission();
+    function bindEvents() {
+        startBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        skipBtn.addEventListener('click', timerComplete);
+        musicToggleBtn.addEventListener('click', () => {
+            if (musicPlayer.paused && appState.lastPlaylist) {
+                playPlaylist(appState.lastPlaylist);
+            } else if (!musicPlayer.paused) {
+                musicPlayer.pause();
+                musicToggleBtn.textContent = 'Resume music';
+            } else {
+                playPlaylist(playlistTracks[0].id);
+            }
+        });
+        addTaskBtn.addEventListener('click', addTask);
+        taskInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') addTask();
+        });
+        intentionInput.addEventListener('input', event => {
+            appState.intention = event.target.value.trim();
+            updateSummary();
+        });
+        musicVolume.addEventListener('input', updateVolumeDisplays);
+        ambientVolume.addEventListener('input', updateVolumeDisplays);
+        stopAudioBtn.addEventListener('click', stopAllAudio);
+        playlistGrid.addEventListener('click', event => {
+            const button = event.target.closest('[data-playlist]');
+            if (button) playPlaylist(button.dataset.playlist);
+        });
+        ambientGrid.addEventListener('click', event => {
+            const button = event.target.closest('[data-ambient]');
+            if (button) playAmbient(button.dataset.ambient);
+        });
+        modePills.addEventListener('click', event => {
+            const button = event.target.closest('[data-mode]');
+            if (button) setMode(button.dataset.mode);
+        });
+        zenToggleButtons.forEach(button => button.addEventListener('click', toggleZenMode));
+        document.addEventListener('keydown', event => {
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+            if (event.code === 'Space') {
+                event.preventDefault();
+                toggleTimer();
+            } else if (event.key.toLowerCase() === 'r') {
+                resetTimer();
+            } else if (event.key.toLowerCase() === 'z') {
+                toggleZenMode();
+            }
+        });
+        musicPlayer.addEventListener('play', () => { musicToggleBtn.textContent = 'Pause music'; });
+        musicPlayer.addEventListener('pause', () => { musicToggleBtn.textContent = currentPlaylist ? 'Resume music' : 'Music'; });
+        musicPlayer.addEventListener('ended', () => { musicToggleBtn.textContent = 'Music'; });
+    }
+
+    function initialize() {
+        currentMode = appState.currentMode;
+        totalSeconds = modeConfig[currentMode].minutes * 60;
+        remainingSeconds = totalSeconds;
+        musicVolume.value = String(appState.musicVolume);
+        ambientVolume.value = String(appState.ambientVolume);
+        renderModePills();
+        renderPlaylistGrid();
+        renderAmbientGrid();
+        renderTasks();
+        updateVolumeDisplays();
+        updateSummary();
+        setMode(currentMode, true);
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().catch(() => {});
         }
-    });
+    }
+
+    bindEvents();
+    initialize();
 </script>
 {% endblock %}
