@@ -789,18 +789,48 @@ def export_data():
 @app.route('/admin')
 @login_required
 def admin_panel():
+    # 1. Kick out non-admins
     if not current_user.is_admin:
         return redirect(url_for('dashboard'))
 
+    # 2. Fetch ALL the data you need for the page
     users_list = User.query.all()
+    goals = Goal.query.all()
+    trapped_players = User.query.filter_by(in_penalty_zone=True).all()
     total_quests = Habit.query.count()
     feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
 
+    # 3. Send it ALL to the HTML page in ONE go
     return render_template('admin.html',
                            users=users_list,
+                           goals=goals,
+                           trapped_players=trapped_players,
                            user_count=len(users_list),
                            quests=total_quests,
                            feedbacks=feedbacks)
+
+# --- SYSTEM ADMIN: EVALUATE PENALTY PROOF ---
+@app.route('/admin/evaluate_penalty/<int:user_id>/<action>', methods=['POST'])
+@login_required
+def evaluate_penalty(user_id, action):
+    if not current_user.is_admin:
+        return redirect(url_for('dashboard'))
+
+    target_user = User.query.get_or_404(user_id)
+
+    if action == 'approve':
+        target_user.in_penalty_zone = False
+        target_user.penalty_task = None
+        target_user.penalty_proof_path = None
+        flash(f"Player {target_user.username}'s proof accepted. Penalty lock lifted.", 'success')
+
+    elif action == 'reject':
+        # Wipe the proof but leave them trapped
+        target_user.penalty_proof_path = None
+        flash(f"Player {target_user.username}'s proof rejected. They must resubmit.", 'warning')
+
+    db.session.commit()
+    return redirect(url_for('admin'))
 
 @app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
 @login_required
