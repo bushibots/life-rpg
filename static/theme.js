@@ -2,6 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.getElementById('theme-toggle');
+    if (!toggleBtn) return;
     const icon = toggleBtn.querySelector('i');
 
     // 1. Check LocalStorage for saved preference
