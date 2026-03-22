@@ -159,6 +159,8 @@
     {% endif %}
 </head>
 <body>
+<div class="cosmos-grid"></div>
+<div class="cosmos-noise"></div>
 
 {% if current_user.is_authenticated %}
 <nav class="navbar navbar-expand-lg navbar-dark mb-4 sticky-top" style="background: rgba(5, 7, 10, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
@@ -240,7 +242,36 @@
 </div>
 {% endif %}
 
-<div class="container-fluid px-3 pb-5">
+<div class="app-shell px-3 px-lg-4">
+<div class="page-frame">
+<div class="page-hero reveal-up">
+    <div class="page-hero-grid">
+        <div>
+            <span class="page-eyebrow"><i class="bi bi-stars"></i> Flagship experience</span>
+            <h1 class="page-title">{% block page_title %}Command Center{% endblock %}</h1>
+            <p class="page-subtitle">{% block page_subtitle %}A smoother, richer interface with elevated visuals, faster access, and premium motion design across the entire app.{% endblock %}</p>
+        </div>
+        <div class="page-hero-stats">
+            <div class="hero-panel">
+                <span>System state</span>
+                <strong>{% if current_user.is_authenticated %}Online{% else %}Guest Access{% endif %}</strong>
+            </div>
+            <div class="hero-panel">
+                <span>Navigation</span>
+                <strong>⌘K Spotlight</strong>
+            </div>
+            <div class="hero-panel">
+                <span>Experience</span>
+                <strong>Smoother Motion</strong>
+            </div>
+            <div class="hero-panel">
+                <span>Upgrade</span>
+                <strong>Quick Dock</strong>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid px-0 pb-5">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -254,6 +285,78 @@
     {% endwith %}
 
     {% block content %}{% endblock %}
+</div>
+</div>
+</div>
+
+<div class="command-dock reveal-up">
+    <button class="command-shortcut" type="button" id="open-command-palette">
+        <span class="d-flex align-items-center gap-2"><i class="bi bi-command"></i> Open command palette</span>
+        <span class="command-chip">⌘K</span>
+    </button>
+    {% if current_user.is_authenticated %}
+    <div class="command-card">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <div class="page-badge mb-2"><i class="bi bi-lightning-charge"></i> Quick actions</div>
+                <h2 class="h6 text-white mb-1">Premium launch dock</h2>
+                <p class="small mb-0">Jump into core workflows from anywhere with one tap.</p>
+            </div>
+            <i class="bi bi-grid-1x2-fill text-info"></i>
+        </div>
+        <div class="command-links">
+            <a class="command-link" href="{{ url_for('dashboard') }}"><i class="bi bi-grid"></i> Dashboard</a>
+            <a class="command-link" href="{{ url_for('planning') }}"><i class="bi bi-map"></i> Planning</a>
+            <a class="command-link" href="{{ url_for('analytics') }}"><i class="bi bi-graph-up-arrow"></i> Analytics</a>
+            <a class="command-link" href="{{ url_for('focus_hub') }}"><i class="bi bi-stopwatch"></i> Focus Hub</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="palette-overlay" id="command-palette" aria-hidden="true">
+    <div class="palette-panel">
+        <div class="palette-search">
+            <input type="text" id="command-search" placeholder="Search pages, actions, and premium shortcuts..." autocomplete="off">
+        </div>
+        <div class="palette-results" id="command-results">
+            {% if current_user.is_authenticated %}
+            <a class="palette-item" href="{{ url_for('dashboard') }}" data-command-search="dashboard home overview quests xp progress">
+                <span><strong>Dashboard</strong><br><small class="text-muted">Your live performance overview and daily mission control.</small></span>
+                <span class="feature-pill"><i class="bi bi-grid"></i> Core</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('planning') }}" data-command-search="planning roadmap calendar tasks strategy">
+                <span><strong>Planning</strong><br><small class="text-muted">Map priorities, organize goals, and build next actions.</small></span>
+                <span class="feature-pill"><i class="bi bi-map"></i> Plan</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('analytics') }}" data-command-search="analytics charts insights heatmap reports">
+                <span><strong>Analytics</strong><br><small class="text-muted">Track performance, trends, and momentum patterns.</small></span>
+                <span class="feature-pill"><i class="bi bi-bar-chart"></i> Insight</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('history') }}" data-command-search="history archive logs completed quests">
+                <span><strong>History</strong><br><small class="text-muted">Review logs and completed activity with context.</small></span>
+                <span class="feature-pill"><i class="bi bi-clock-history"></i> Review</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('focus_hub') }}" data-command-search="focus hub timer deep work mode">
+                <span><strong>Focus Hub</strong><br><small class="text-muted">Start a smoother concentration session and stay on task.</small></span>
+                <span class="feature-pill"><i class="bi bi-stopwatch"></i> Focus</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('settings') }}" data-command-search="settings preferences theme config">
+                <span><strong>Settings</strong><br><small class="text-muted">Tune the system, theme, and account experience.</small></span>
+                <span class="feature-pill"><i class="bi bi-sliders"></i> Tune</span>
+            </a>
+            {% else %}
+            <a class="palette-item" href="{{ url_for('login') }}" data-command-search="login sign in access">
+                <span><strong>Login</strong><br><small class="text-muted">Sign in and resume your command center.</small></span>
+                <span class="feature-pill"><i class="bi bi-box-arrow-in-right"></i> Enter</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('register') }}" data-command-search="register create account sign up">
+                <span><strong>Create account</strong><br><small class="text-muted">Start with the upgraded flagship experience.</small></span>
+                <span class="feature-pill"><i class="bi bi-person-plus"></i> Join</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 <div id="genie-overlay" class="d-none">
