@@ -319,6 +319,61 @@ label,
     background: rgba(9, 14, 24, 0.96) !important;
 }
 
+.command-dock {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1030;
+    display: grid;
+    gap: 0.75rem;
+    width: min(320px, calc(100vw - 2rem));
+}
+
+.command-card,
+.command-shortcut {
+    border-radius: 22px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(7, 12, 22, 0.8);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(20px);
+}
+
+.command-card {
+    padding: 1rem;
+}
+
+.command-shortcut {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem;
+    cursor: pointer;
+}
+
+.command-shortcut:hover,
+.command-card:hover {
+    border-color: rgba(103, 232, 249, 0.28);
+}
+
+.command-links {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-top: 0.8rem;
+}
+
+.command-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 14px;
+    text-decoration: none;
+    color: var(--text-1);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
 .command-link:hover {
     color: #fff;
     background: rgba(103, 232, 249, 0.1);
@@ -330,8 +385,8 @@ label,
     inset: 0;
     z-index: 1050;
     display: none;
-    background: rgba(3, 8, 15, 0.18);
-    pointer-events: none;
+    background: rgba(3, 8, 15, 0.58);
+    backdrop-filter: blur(14px);
     padding: 1rem;
 }
 
@@ -339,15 +394,11 @@ label,
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    pointer-events: auto;
 }
 
 .palette-panel {
-    width: min(720px, calc(100% - 2rem));
-    margin-top: 10rem;
-    margin-left: auto;
-    margin-right: 1rem;
-    pointer-events: auto;
+    width: min(820px, 100%);
+    margin-top: 6vh;
     border-radius: 28px;
     border: 1px solid rgba(255,255,255,0.08);
     background: rgba(5, 10, 18, 0.94);
@@ -473,11 +524,10 @@ body.light-mode .input-group-text {
         grid-template-columns: 1fr;
     }
 
-    .palette-panel {
-        width: calc(100% - 1rem);
-        margin-right: 0;
-        margin-left: 0;
-        margin-top: 8rem;
+    .command-dock {
+        left: 1rem;
+        right: 1rem;
+        width: auto;
     }
 }
 
@@ -495,8 +545,7 @@ body.light-mode .input-group-text {
         width: calc(100% - 1rem);
     }
 
-    .palette-panel {
-        width: 100%;
-        margin-top: 7rem;
+    .command-dock {
+        bottom: 0.75rem;
     }
 }

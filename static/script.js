@@ -66,7 +66,7 @@ function initCommandPalette() {
     const openBtn = document.getElementById('open-command-palette');
     const input = document.getElementById('command-search');
     const items = [...document.querySelectorAll('.palette-item')];
-    if (!palette || !input) return;
+    if (!palette || !openBtn || !input) return;
 
     const setActive = (target) => {
         items.forEach(item => item.classList.toggle('active', item === target));
@@ -99,15 +99,19 @@ function initCommandPalette() {
         palette.setAttribute('aria-hidden', 'true');
     };
 
-    if (openBtn) {
-        openBtn.addEventListener('click', openPalette);
-    }
+    openBtn.addEventListener('click', openPalette);
     palette.addEventListener('click', (event) => {
         if (event.target === palette) closePalette();
     });
     input.addEventListener('input', filterItems);
 
     document.addEventListener('keydown', (event) => {
+        const metaPressed = event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey);
+        if (metaPressed) {
+            event.preventDefault();
+            if (palette.classList.contains('active')) closePalette(); else openPalette();
+            return;
+        }
         if (!palette.classList.contains('active')) return;
         if (event.key === 'Escape') {
             closePalette();
