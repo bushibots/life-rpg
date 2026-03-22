@@ -49,41 +49,118 @@
     {% if current_user.is_authenticated and current_user.theme == 'solo' %}
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
+        body {
+            background-color: #02040a !important;
+            background-image: 
+                linear-gradient(rgba(13, 202, 240, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(13, 202, 240, 0.05) 1px, transparent 1px) !important;
+            background-size: 30px 30px !important;
+            font-family: 'Rajdhani', sans-serif !important;
+            color: #e0f2fe !important;
+        }
+
+        /* Override the normal theme colors instantly */
+        :root {
+            --glass-bg: rgba(4, 9, 18, 0.9) !important;
+            --glass-border: rgba(13, 202, 240, 0.6) !important;
+        }
+
+        .card, .premium-card, .goal-card, .modal-content, .accordion-item {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: 0 0 20px rgba(13, 202, 240, 0.15), inset 0 0 10px rgba(13, 202, 240, 0.05) !important;
+            border-radius: 0px !important; /* Sharp System Edges */
+        }
+
+        h1, h2, h3, h4, h5, h6, .card-header, .navbar-brand {
+            font-family: 'Rajdhani', sans-serif !important;
+            text-transform: uppercase !important;
+            letter-spacing: 2px !important;
+            color: #0dcaf0 !important;
+            text-shadow: 0 0 12px rgba(13, 202, 240, 0.6) !important;
+            border-color: rgba(13, 202, 240, 0.3) !important;
+            font-weight: 700 !important;
+        }
+
+        .navbar {
+            background: rgba(2, 4, 10, 0.95) !important;
+            border-bottom: 2px solid rgba(13, 202, 240, 0.6) !important;
+            box-shadow: 0 5px 30px rgba(13, 202, 240, 0.2) !important;
+        }
+
+        .btn-info, .btn-outline-info, .btn-primary, .genie-css-btn {
+            background: rgba(13, 202, 240, 0.1) !important;
+            border: 1px solid #0dcaf0 !important;
+            color: #0dcaf0 !important;
+            box-shadow: 0 0 10px rgba(13, 202, 240, 0.2) !important;
+            border-radius: 0px !important;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            transition: all 0.2s ease !important;
+        }
+        
+        .btn-info:hover, .btn-outline-info:hover, .btn-primary:hover, .genie-css-btn:hover {
+            background: #0dcaf0 !important;
+            color: #000 !important;
+            box-shadow: 0 0 25px rgba(13, 202, 240, 0.8) !important;
+        }
+
+        .modern-input, .form-control, .form-select {
+            background: rgba(0, 0, 0, 0.8) !important;
+            border: 1px solid rgba(13, 202, 240, 0.4) !important;
+            color: #0dcaf0 !important;
+            border-radius: 0 !important;
+            font-family: 'Rajdhani', sans-serif !important;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .modern-input:focus, .form-control:focus {
+            box-shadow: 0 0 15px rgba(13, 202, 240, 0.5) !important;
+            border-color: #0dcaf0 !important;
+        }
+
+        .list-group-item, .task-item, .audit-row, .preset-row {
+            background: transparent !important;
+            border-bottom: 1px solid rgba(13, 202, 240, 0.2) !important;
+        }
+
+        .text-muted, .text-white-50, p, .small {
+            color: rgba(13, 202, 240, 0.8) !important;
+        }
+
+        .progress {
+            background: rgba(13, 202, 240, 0.1) !important;
+            border: 1px solid rgba(13, 202, 240, 0.4) !important;
+            border-radius: 0 !important;
+        }
+        
+        .progress-bar {
+            background: #0dcaf0 !important;
+            box-shadow: 0 0 15px #0dcaf0 !important;
+        }
+
+        .badge.bg-info {
+            background: rgba(13, 202, 240, 0.1) !important;
+            border: 1px solid #0dcaf0 !important;
+            color: #0dcaf0 !important;
+            border-radius: 0 !important;
+            box-shadow: 0 0 10px rgba(13, 202, 240, 0.3) !important;
+        }
+        
+        /* Hide theme toggle in solo mode as it forces dark-system anyway */
         #theme-toggle {
             display: none !important;
         }
     </style>
     {% endif %}
 </head>
-<body class="{% if current_user.is_authenticated and current_user.theme == 'solo' %}solo-mode{% endif %}">
+<body>
 <div class="cosmos-grid"></div>
 <div class="cosmos-noise"></div>
-{% if current_user.is_authenticated and current_user.theme == 'solo' %}
-<div class="solo-atmosphere" aria-hidden="true">
-    <div class="solo-rune-ring"></div>
-    <div class="solo-rune-ring solo-rune-ring-2"></div>
-    <div class="solo-particles">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-    </div>
-</div>
-<div class="solo-hud reveal-up">
-    <div class="solo-hud-line">SYSTEM ACTIVE · {{ current_user.username|upper }}</div>
-    <div class="solo-hud-grid">
-        <div class="solo-hud-card">
-            <small>Streak</small>
-            <strong>{{ current_user.current_streak }}</strong>
-        </div>
-        <div class="solo-hud-card">
-            <small>Total XP</small>
-            <strong>{{ current_user.total_xp }}</strong>
-        </div>
-        <div class="solo-hud-card">
-            <small>Gold</small>
-            <strong>{{ current_user.gold }}</strong>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 {% if current_user.is_authenticated %}
 <nav class="navbar navbar-expand-lg navbar-dark mb-4 sticky-top" style="background: rgba(5, 7, 10, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
@@ -181,7 +258,7 @@
             </div>
             <div class="hero-panel">
                 <span>Navigation</span>
-                <strong>Click Navigate</strong>
+                <strong>⌘K Spotlight</strong>
             </div>
             <div class="hero-panel">
                 <span>Experience</span>
@@ -189,7 +266,7 @@
             </div>
             <div class="hero-panel">
                 <span>Upgrade</span>
-                <strong>Inline Controls</strong>
+                <strong>Quick Dock</strong>
             </div>
         </div>
     </div>
@@ -210,6 +287,31 @@
     {% block content %}{% endblock %}
 </div>
 </div>
+</div>
+
+<div class="command-dock reveal-up">
+    <button class="command-shortcut" type="button" id="open-command-palette">
+        <span class="d-flex align-items-center gap-2"><i class="bi bi-command"></i> Open command palette</span>
+        <span class="command-chip">⌘K</span>
+    </button>
+    {% if current_user.is_authenticated %}
+    <div class="command-card">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <div class="page-badge mb-2"><i class="bi bi-lightning-charge"></i> Quick actions</div>
+                <h2 class="h6 text-white mb-1">Premium launch dock</h2>
+                <p class="small mb-0">Jump into core workflows from anywhere with one tap.</p>
+            </div>
+            <i class="bi bi-grid-1x2-fill text-info"></i>
+        </div>
+        <div class="command-links">
+            <a class="command-link" href="{{ url_for('dashboard') }}"><i class="bi bi-grid"></i> Dashboard</a>
+            <a class="command-link" href="{{ url_for('planning') }}"><i class="bi bi-map"></i> Planning</a>
+            <a class="command-link" href="{{ url_for('analytics') }}"><i class="bi bi-graph-up-arrow"></i> Analytics</a>
+            <a class="command-link" href="{{ url_for('focus_hub') }}"><i class="bi bi-stopwatch"></i> Focus Hub</a>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <div class="palette-overlay" id="command-palette" aria-hidden="true">

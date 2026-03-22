@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initRevealAnimations();
     initCommandPalette();
     initAmbientTilt();
-    initSoloModeEffects();
     updateSystemClock();
     setInterval(updateSystemClock, 1000);
 });
@@ -62,46 +61,12 @@ function initAmbientTilt() {
     });
 }
 
-
-function initSoloModeEffects() {
-    if (!document.body.classList.contains('solo-mode') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const rings = document.querySelectorAll('.solo-rune-ring');
-    const particles = document.querySelectorAll('.solo-particles span');
-    let latestX = 0;
-    let latestY = 0;
-    let ticking = false;
-
-    const renderFrame = () => {
-        rings.forEach((ring, index) => {
-            const multiplier = index === 0 ? 12 : -8;
-            ring.style.transform = `translate3d(${latestX * multiplier}px, ${latestY * multiplier}px, 0)`;
-        });
-
-        particles.forEach((particle, index) => {
-            const depth = (index % 3) + 1;
-            particle.style.transform = `translate3d(${latestX * depth * 10}px, ${latestY * depth * 10}px, 0)`;
-        });
-
-        ticking = false;
-    };
-
-    document.addEventListener('mousemove', (event) => {
-        latestX = (event.clientX / window.innerWidth) - 0.5;
-        latestY = (event.clientY / window.innerHeight) - 0.5;
-        if (!ticking) {
-            window.requestAnimationFrame(renderFrame);
-            ticking = true;
-        }
-    }, { passive: true });
-}
-
 function initCommandPalette() {
     const palette = document.getElementById('command-palette');
     const openBtn = document.getElementById('open-command-palette');
     const input = document.getElementById('command-search');
     const items = [...document.querySelectorAll('.palette-item')];
-    if (!palette || !input) return;
+    if (!palette || !openBtn || !input) return;
 
     const setActive = (target) => {
         items.forEach(item => item.classList.toggle('active', item === target));
@@ -134,15 +99,19 @@ function initCommandPalette() {
         palette.setAttribute('aria-hidden', 'true');
     };
 
-    if (openBtn) {
-        openBtn.addEventListener('click', openPalette);
-    }
+    openBtn.addEventListener('click', openPalette);
     palette.addEventListener('click', (event) => {
         if (event.target === palette) closePalette();
     });
     input.addEventListener('input', filterItems);
 
     document.addEventListener('keydown', (event) => {
+        const metaPressed = event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey);
+        if (metaPressed) {
+            event.preventDefault();
+            if (palette.classList.contains('active')) closePalette(); else openPalette();
+            return;
+        }
         if (!palette.classList.contains('active')) return;
         if (event.key === 'Escape') {
             closePalette();
