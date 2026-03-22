@@ -49,116 +49,41 @@
     {% if current_user.is_authenticated and current_user.theme == 'solo' %}
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #02040a !important;
-            background-image: 
-                linear-gradient(rgba(13, 202, 240, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(13, 202, 240, 0.05) 1px, transparent 1px) !important;
-            background-size: 30px 30px !important;
-            font-family: 'Rajdhani', sans-serif !important;
-            color: #e0f2fe !important;
-        }
-
-        /* Override the normal theme colors instantly */
-        :root {
-            --glass-bg: rgba(4, 9, 18, 0.9) !important;
-            --glass-border: rgba(13, 202, 240, 0.6) !important;
-        }
-
-        .card, .premium-card, .goal-card, .modal-content, .accordion-item {
-            background: var(--glass-bg) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border: 1px solid var(--glass-border) !important;
-            box-shadow: 0 0 20px rgba(13, 202, 240, 0.15), inset 0 0 10px rgba(13, 202, 240, 0.05) !important;
-            border-radius: 0px !important; /* Sharp System Edges */
-        }
-
-        h1, h2, h3, h4, h5, h6, .card-header, .navbar-brand {
-            font-family: 'Rajdhani', sans-serif !important;
-            text-transform: uppercase !important;
-            letter-spacing: 2px !important;
-            color: #0dcaf0 !important;
-            text-shadow: 0 0 12px rgba(13, 202, 240, 0.6) !important;
-            border-color: rgba(13, 202, 240, 0.3) !important;
-            font-weight: 700 !important;
-        }
-
-        .navbar {
-            background: rgba(2, 4, 10, 0.95) !important;
-            border-bottom: 2px solid rgba(13, 202, 240, 0.6) !important;
-            box-shadow: 0 5px 30px rgba(13, 202, 240, 0.2) !important;
-        }
-
-        .btn-info, .btn-outline-info, .btn-primary, .genie-css-btn {
-            background: rgba(13, 202, 240, 0.1) !important;
-            border: 1px solid #0dcaf0 !important;
-            color: #0dcaf0 !important;
-            box-shadow: 0 0 10px rgba(13, 202, 240, 0.2) !important;
-            border-radius: 0px !important;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            transition: all 0.2s ease !important;
-        }
-        
-        .btn-info:hover, .btn-outline-info:hover, .btn-primary:hover, .genie-css-btn:hover {
-            background: #0dcaf0 !important;
-            color: #000 !important;
-            box-shadow: 0 0 25px rgba(13, 202, 240, 0.8) !important;
-        }
-
-        .modern-input, .form-control, .form-select {
-            background: rgba(0, 0, 0, 0.8) !important;
-            border: 1px solid rgba(13, 202, 240, 0.4) !important;
-            color: #0dcaf0 !important;
-            border-radius: 0 !important;
-            font-family: 'Rajdhani', sans-serif !important;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        .modern-input:focus, .form-control:focus {
-            box-shadow: 0 0 15px rgba(13, 202, 240, 0.5) !important;
-            border-color: #0dcaf0 !important;
-        }
-
-        .list-group-item, .task-item, .audit-row, .preset-row {
-            background: transparent !important;
-            border-bottom: 1px solid rgba(13, 202, 240, 0.2) !important;
-        }
-
-        .text-muted, .text-white-50, p, .small {
-            color: rgba(13, 202, 240, 0.8) !important;
-        }
-
-        .progress {
-            background: rgba(13, 202, 240, 0.1) !important;
-            border: 1px solid rgba(13, 202, 240, 0.4) !important;
-            border-radius: 0 !important;
-        }
-        
-        .progress-bar {
-            background: #0dcaf0 !important;
-            box-shadow: 0 0 15px #0dcaf0 !important;
-        }
-
-        .badge.bg-info {
-            background: rgba(13, 202, 240, 0.1) !important;
-            border: 1px solid #0dcaf0 !important;
-            color: #0dcaf0 !important;
-            border-radius: 0 !important;
-            box-shadow: 0 0 10px rgba(13, 202, 240, 0.3) !important;
-        }
-        
-        /* Hide theme toggle in solo mode as it forces dark-system anyway */
         #theme-toggle {
             display: none !important;
         }
     </style>
     {% endif %}
 </head>
-<body>
+<body class="{% if current_user.is_authenticated and current_user.theme == 'solo' %}solo-mode{% endif %}">
+<div class="cosmos-grid"></div>
+<div class="cosmos-noise"></div>
+{% if current_user.is_authenticated and current_user.theme == 'solo' %}
+<div class="solo-atmosphere" aria-hidden="true">
+    <div class="solo-rune-ring"></div>
+    <div class="solo-rune-ring solo-rune-ring-2"></div>
+    <div class="solo-particles">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+</div>
+<div class="solo-hud reveal-up">
+    <div class="solo-hud-line">SYSTEM ACTIVE · {{ current_user.username|upper }}</div>
+    <div class="solo-hud-grid">
+        <div class="solo-hud-card">
+            <small>Streak</small>
+            <strong>{{ current_user.current_streak }}</strong>
+        </div>
+        <div class="solo-hud-card">
+            <small>Total XP</small>
+            <strong>{{ current_user.total_xp }}</strong>
+        </div>
+        <div class="solo-hud-card">
+            <small>Gold</small>
+            <strong>{{ current_user.gold }}</strong>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 {% if current_user.is_authenticated %}
 <nav class="navbar navbar-expand-lg navbar-dark mb-4 sticky-top" style="background: rgba(5, 7, 10, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
@@ -240,7 +165,36 @@
 </div>
 {% endif %}
 
-<div class="container-fluid px-3 pb-5">
+<div class="app-shell px-3 px-lg-4">
+<div class="page-frame">
+<div class="page-hero reveal-up">
+    <div class="page-hero-grid">
+        <div>
+            <span class="page-eyebrow"><i class="bi bi-stars"></i> Flagship experience</span>
+            <h1 class="page-title">{% block page_title %}Command Center{% endblock %}</h1>
+            <p class="page-subtitle">{% block page_subtitle %}A smoother, richer interface with elevated visuals, faster access, and premium motion design across the entire app.{% endblock %}</p>
+        </div>
+        <div class="page-hero-stats">
+            <div class="hero-panel">
+                <span>System state</span>
+                <strong>{% if current_user.is_authenticated %}Online{% else %}Guest Access{% endif %}</strong>
+            </div>
+            <div class="hero-panel">
+                <span>Navigation</span>
+                <strong>Click Navigate</strong>
+            </div>
+            <div class="hero-panel">
+                <span>Experience</span>
+                <strong>Smoother Motion</strong>
+            </div>
+            <div class="hero-panel">
+                <span>Upgrade</span>
+                <strong>Inline Controls</strong>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid px-0 pb-5">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -254,6 +208,53 @@
     {% endwith %}
 
     {% block content %}{% endblock %}
+</div>
+</div>
+</div>
+
+<div class="palette-overlay" id="command-palette" aria-hidden="true">
+    <div class="palette-panel">
+        <div class="palette-search">
+            <input type="text" id="command-search" placeholder="Search pages, actions, and premium shortcuts..." autocomplete="off">
+        </div>
+        <div class="palette-results" id="command-results">
+            {% if current_user.is_authenticated %}
+            <a class="palette-item" href="{{ url_for('dashboard') }}" data-command-search="dashboard home overview quests xp progress">
+                <span><strong>Dashboard</strong><br><small class="text-muted">Your live performance overview and daily mission control.</small></span>
+                <span class="feature-pill"><i class="bi bi-grid"></i> Core</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('planning') }}" data-command-search="planning roadmap calendar tasks strategy">
+                <span><strong>Planning</strong><br><small class="text-muted">Map priorities, organize goals, and build next actions.</small></span>
+                <span class="feature-pill"><i class="bi bi-map"></i> Plan</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('analytics') }}" data-command-search="analytics charts insights heatmap reports">
+                <span><strong>Analytics</strong><br><small class="text-muted">Track performance, trends, and momentum patterns.</small></span>
+                <span class="feature-pill"><i class="bi bi-bar-chart"></i> Insight</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('history') }}" data-command-search="history archive logs completed quests">
+                <span><strong>History</strong><br><small class="text-muted">Review logs and completed activity with context.</small></span>
+                <span class="feature-pill"><i class="bi bi-clock-history"></i> Review</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('focus_hub') }}" data-command-search="focus hub timer deep work mode">
+                <span><strong>Focus Hub</strong><br><small class="text-muted">Start a smoother concentration session and stay on task.</small></span>
+                <span class="feature-pill"><i class="bi bi-stopwatch"></i> Focus</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('settings') }}" data-command-search="settings preferences theme config">
+                <span><strong>Settings</strong><br><small class="text-muted">Tune the system, theme, and account experience.</small></span>
+                <span class="feature-pill"><i class="bi bi-sliders"></i> Tune</span>
+            </a>
+            {% else %}
+            <a class="palette-item" href="{{ url_for('login') }}" data-command-search="login sign in access">
+                <span><strong>Login</strong><br><small class="text-muted">Sign in and resume your command center.</small></span>
+                <span class="feature-pill"><i class="bi bi-box-arrow-in-right"></i> Enter</span>
+            </a>
+            <a class="palette-item" href="{{ url_for('register') }}" data-command-search="register create account sign up">
+                <span><strong>Create account</strong><br><small class="text-muted">Start with the upgraded flagship experience.</small></span>
+                <span class="feature-pill"><i class="bi bi-person-plus"></i> Join</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 <div id="genie-overlay" class="d-none">
