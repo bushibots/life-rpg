@@ -2,24 +2,22 @@
 
 // 1. The "Spark" Effect (High-Tech/Mechanical feel)
 function triggerSparks(x, y) {
-    var count = 200;
-    
     // Convert click coordinates to canvas percentage
     // (Required by the library)
     const xPercent = x / window.innerWidth;
     const yPercent = y / window.innerHeight;
 
     confetti({
-        particleCount: 50,
-        spread: 60,
+        particleCount: 12,
+        spread: 35,
         origin: { x: xPercent, y: yPercent },
         colors: ['#0dcaf0', '#ffffff', '#ffd700'], // Cyan, White, Gold
         disableForReducedMotion: true,
-        gravity: 2.5, // High gravity = feels heavy/precise like sparks
-        scalar: 0.7,  // Small particles
+        gravity: 2.8,
+        scalar: 0.55,
         drift: 0,
-        ticks: 80,    // Disappear quickly
-        shapes: ['square'] // Square sparks look more digital
+        ticks: 36,
+        shapes: ['square']
     });
 }
 
@@ -40,20 +38,17 @@ function showFloatingText(x, y, text) {
     el.style.pointerEvents = 'none'; // Click through it
     el.style.zIndex = '9999';
     el.style.textShadow = '0 0 5px rgba(13, 202, 240, 0.5)'; // Neon glow
-    el.style.transition = 'all 0.8s ease-out';
+    el.style.transition = 'opacity 0.12s linear';
     
     document.body.appendChild(el);
 
     // Animation: Float up and vanish
-    requestAnimationFrame(() => {
-        el.style.transform = 'translateY(-40px)';
-        el.style.opacity = '0';
-    });
+    requestAnimationFrame(() => { el.style.opacity = '0'; });
 
     // Cleanup memory
     setTimeout(() => {
         el.remove();
-    }, 800);
+    }, 120);
 }
 
 // 3. Auto-Attach to Checkboxes
