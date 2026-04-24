@@ -2,6 +2,7 @@ import os
 import json
 import random
 import time
+import re
 import google.generativeai as genai
 from datetime import date
 
@@ -17,6 +18,9 @@ MODEL_LIST = [
     'models/gemini-2.5-flash-lite',
     'models/gemini-flash-latest'
 ]
+
+ALLOWED_STAT_TYPES = {"STR", "INT", "WIS", "CON", "CHA"}
+DEFAULT_MODEL = MODEL_LIST[0]
 
 # ---------------------------------------------------------
 # PRE-WRITTEN STATIC TEXT (Used during Cooldown)
@@ -41,6 +45,96 @@ FEEDBACK_FALLBACKS = [
     "Data analysis indicates steady improvement.",
     "Maintain your daily streak for best results."
 ]
+
+
+def _configure_network_proxy():
+    """Enable outbound proxy automatically on PythonAnywhere."""
+    if 'PYTHONANYWHERE_DOMAIN' in os.environ:
+        os.environ["http_proxy"] = "http://proxy.server:3128"
+        os.environ["https_proxy"] = "http://proxy.server:3128"
+
+
+def _extract_json_payload(raw_text, expected="array"):
+    """
+    Extract JSON from model output that may include markdown/code fences.
+    expected: "array" or "object"
+    """
+    if not raw_text:
+        raise ValueError("Empty model response")
+
+    clean_text = raw_text.strip()
+    clean_text = clean_text.replace("```json", "").replace("```", "").strip()
+
+    if expected == "array":
+        start, end = clean_text.find("["), clean_text.rfind("]")
+    else:
+        start, end = clean_text.find("{"), clean_text.rfind("}")
+
+    if start == -1 or end == -1 or end < start:
+        raise ValueError("No valid JSON payload found in model response")
+
+    return clean_text[start:end + 1]
+
+
+def _safe_int(value, default=1, minimum=1, maximum=4):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(maximum, parsed))
+
+
+def _normalize_task(task):
+    """Normalize an AI task object into the schema expected by the app."""
+    if not isinstance(task, dict):
+        return None
+
+    name = str(task.get("name", "")).strip()
+    category = str(task.get("category", "General")).strip() or "General"
+    stat_type = str(task.get("stat_type", "CON")).strip().upper()
+    if stat_type not in ALLOWED_STAT_TYPES:
+        stat_type = "CON"
+
+    difficulty = _safe_int(task.get("difficulty", 1), default=1, minimum=1, maximum=4)
+    description = str(task.get("description", "")).strip()
+
+    target_date = task.get("target_date")
+    if target_date is not None:
+        target_date = str(target_date).strip() or None
+        if target_date and not re.match(r"^\d{4}-\d{2}-\d{2}$", target_date):
+            target_date = None
+
+    if not name:
+        return None
+
+    return {
+        "name": name,
+        "category": category,
+        "stat_type": stat_type,
+        "difficulty": difficulty,
+        "description": description,
+        "target_date": target_date
+    }
+
+
+def _call_model_with_fallback(prompt, available_keys, expected_json="array"):
+    """Try multiple keys and models, returning parsed JSON payload on success."""
+    for current_key in available_keys:
+        if not current_key:
+            continue
+        try:
+            genai.configure(api_key=current_key)
+            for model_name in MODEL_LIST:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    response = model.generate_content(prompt)
+                    payload = _extract_json_payload(getattr(response, "text", ""), expected=expected_json)
+                    return json.loads(payload)
+                except Exception:
+                    continue
+        except Exception:
+            continue
+    return None
 
 # ---------------------------------------------------------
 # 1. SIMPLE KEYWORD PARSER (Fallback Logic)
@@ -88,70 +182,52 @@ def guess_category(text):
 # 2. SMART BRAIN DUMP PARSER (Gemini)
 # ---------------------------------------------------------
 def smart_ai_parse(text_input, primary_api_key):
-    if 'PYTHONANYWHERE_DOMAIN' in os.environ:
-        os.environ["http_proxy"] = "http://proxy.server:3128"
-        os.environ["https_proxy"] = "http://proxy.server:3128"
+    _configure_network_proxy()
 
-    available_keys = [primary_api_key]
-    if os.getenv('GEMINI_API_KEY_2'): available_keys.append(os.getenv('GEMINI_API_KEY_2'))
-    if os.getenv('GEMINI_API_KEY_3'): available_keys.append(os.getenv('GEMINI_API_KEY_3'))
+    available_keys = [primary_api_key, os.getenv('GEMINI_API_KEY_2'), os.getenv('GEMINI_API_KEY_3')]
+    available_keys = [k for k in available_keys if k]
     random.shuffle(available_keys)
 
     today_str = date.today().strftime("%Y-%m-%d")
 
     prompt = f"""
-    You are a logic-based task extraction engine.
+    You are a strict JSON task parser.
     Current Date: {today_str}
     User Input: "{text_input}"
 
-    CORE OBJECTIVE:
-    Analyze the input and convert it into a structured JSON list of actionable tasks.
-
-    STYLE GUIDELINES:
-    - Task Names: Simple and direct (e.g., "Read Chapter 1").
-    - Category: The Project name grouping (e.g. "Fitness", "Finance", "Housework").
-    - stat_type: YOU MUST ASSIGN ONE OF THESE EXACT STRINGS based on the task type:
-      * "STR" : Physical, Health, Exercise, Gym
-      * "INT" : Learning, Deep Work, Coding, Studying
-      * "WIS" : Admin, Planning, Meditation, Strategy, Finance
-      * "CON" : Chores, Routine, Errands, Cleaning
-      * "CHA" : Social, Meetings, Emails, Calls
-    - Difficulty: 1 (Easy) to 4 (Epic).
-
-    OUTPUT FORMAT:
-    Return ONLY raw JSON. Do not include markdown formatting like ```json.
+    Convert the input into a JSON array of actionable tasks.
+    Rules:
+    1) Return ONLY valid JSON array and nothing else.
+    2) Use this schema for each task.
     [
         {{
-            "name": "Task Name",
-            "category": "CategoryString",
-            "stat_type": "STR",
+            "name": "Clear action name",
+            "category": "Project or area",
+            "stat_type": "STR|INT|WIS|CON|CHA",
             "difficulty": 1,
-            "target_date": "YYYY-MM-DD",
-            "description": "Simple guide."
+            "target_date": "YYYY-MM-DD or null",
+            "description": "One short practical sentence."
         }}
     ]
+    3) difficulty must be an integer from 1 to 4.
+    4) stat_type mapping:
+       STR physical/health, INT study/coding, WIS planning/finance, CON chores/routine, CHA social/communication.
+    5) If date is missing/unclear, set target_date to null.
+    6) Split multiple tasks into separate objects.
     """
+    tasks = _call_model_with_fallback(prompt, available_keys, expected_json="array")
+    if isinstance(tasks, dict):
+        tasks = [tasks]
 
-    for current_key in available_keys:
-        if not current_key: continue
-        try:
-            genai.configure(api_key=current_key)
-            for model_name in MODEL_LIST:
-                try:
-                    model = genai.GenerativeModel(model_name)
-                    response = model.generate_content(prompt)
+    normalized = []
+    if isinstance(tasks, list):
+        for raw_task in tasks:
+            normalized_task = _normalize_task(raw_task)
+            if normalized_task:
+                normalized.append(normalized_task)
 
-                    clean_text = response.text.strip()
-                    if clean_text.startswith("```json"): clean_text = clean_text[7:]
-                    if clean_text.endswith("```"): clean_text = clean_text[:-3]
-
-                    tasks = json.loads(clean_text)
-                    if isinstance(tasks, dict): tasks = [tasks]
-                    return tasks
-                except Exception:
-                    continue
-        except Exception:
-            continue
+    if normalized:
+        return normalized
 
     return [guess_category(line) for line in text_input.split('\n') if line.strip()]
 
@@ -170,21 +246,19 @@ def get_backlog_strategy(hours_debt, days_to_clear, mode):
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key: return "API Key missing."
 
-        if 'PYTHONANYWHERE_DOMAIN' in os.environ:
-            os.environ["http_proxy"] = "http://proxy.server:3128"
-            os.environ["https_proxy"] = "http://proxy.server:3128"
+        _configure_network_proxy()
 
         genai.configure(api_key=api_key)
 
         prompt = (
             f"The user has {hours_debt} hours of academic backlog to cover in {days_to_clear} days "
             f"using {mode} methods. "
-            f"Provide one sentence of clear, practical, and serious advice. "
-            f"No motivational fluff. Just strategy. Under 25 words."
+            f"Give one tactical recommendation with concrete execution advice. "
+            f"Keep it direct and practical. Maximum 25 words."
         )
 
         # Try primary model
-        model = genai.GenerativeModel(MODEL_LIST[0])
+        model = genai.GenerativeModel(DEFAULT_MODEL)
         response = model.generate_content(prompt)
 
         # Update Timestamp only on successful AI call
@@ -209,9 +283,7 @@ def get_ai_feedback(stats_text):
         api_key = os.getenv('GEMINI_API_KEY_2')
         if not api_key: return "AI offline."
 
-        if 'PYTHONANYWHERE_DOMAIN' in os.environ:
-            os.environ["http_proxy"] = "http://proxy.server:3128"
-            os.environ["https_proxy"] = "http://proxy.server:3128"
+        _configure_network_proxy()
 
         genai.configure(api_key=api_key)
 
@@ -222,7 +294,7 @@ def get_ai_feedback(stats_text):
         """
 
         # Try primary model
-        model = genai.GenerativeModel(MODEL_LIST[0])
+        model = genai.GenerativeModel(DEFAULT_MODEL)
         response = model.generate_content(prompt)
 
         API_TIMESTAMPS['feedback'] = time.time()
@@ -234,12 +306,12 @@ def generate_genie_questions(wish):
     try:
         # 1. Setup API Key and PythonAnywhere Proxy
         api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
-        if 'PYTHONANYWHERE_DOMAIN' in os.environ:
-            os.environ["http_proxy"] = "http://proxy.server:3128"
-            os.environ["https_proxy"] = "http://proxy.server:3128"
+        if not api_key:
+            raise ValueError("Missing Gemini API key")
+        _configure_network_proxy()
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel(DEFAULT_MODEL)
 
         prompt = f"""
         The user wants to achieve this major life goal: "{wish}".
@@ -252,11 +324,11 @@ def generate_genie_questions(wish):
         ["How many hours a week can you dedicate to this?", "What is your current budget?", "Do you have any prior experience with this?"]
         """
         response = model.generate_content(prompt)
-
-        # Clean up response and parse JSON
-        clean_text = response.text.replace('```json', '').replace('```', '').strip()
-        questions = json.loads(clean_text)
-        return questions[:3]
+        payload = _extract_json_payload(getattr(response, "text", ""), expected="array")
+        questions = json.loads(payload)
+        if not isinstance(questions, list):
+            raise ValueError("Question response is not a list")
+        return [str(q).strip() for q in questions if str(q).strip()][:3]
 
     except Exception as e:
         print(f"Genie Question Generation Error: {e}")
@@ -271,12 +343,12 @@ def generate_genie_blueprint(wish, q1, a1, q2, a2, q3, a3):
     try:
         # 1. Setup API Key and PythonAnywhere Proxy
         api_key = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
-        if 'PYTHONANYWHERE_DOMAIN' in os.environ:
-            os.environ["http_proxy"] = "http://proxy.server:3128"
-            os.environ["https_proxy"] = "http://proxy.server:3128"
+        if not api_key:
+            raise ValueError("Missing Gemini API key")
+        _configure_network_proxy()
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel(DEFAULT_MODEL)
 
         prompt = f"""
         You are a master life coach AI. The user wants to achieve this major life goal: "{wish}".
@@ -310,10 +382,10 @@ def generate_genie_blueprint(wish, q1, a1, q2, a2, q3, a3):
         }}
         """
         response = model.generate_content(prompt)
-
-        # Clean up response and parse JSON
-        clean_text = response.text.replace('```json', '').replace('```', '').strip()
-        blueprint = json.loads(clean_text)
+        payload = _extract_json_payload(getattr(response, "text", ""), expected="object")
+        blueprint = json.loads(payload)
+        if not isinstance(blueprint, dict):
+            raise ValueError("Blueprint response is not an object")
         return blueprint
 
     except Exception as e:
