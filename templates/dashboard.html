@@ -121,6 +121,10 @@
         background: radial-gradient(circle, rgba(168, 85, 247, 0.18), transparent 70%);
         animation-delay: 0s;
     }
+    @keyframes floatOrb {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        50% { transform: translate3d(0, -12px, 0) scale(1.05); }
+    }
     .hero-stat-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

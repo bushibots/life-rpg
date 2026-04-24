@@ -117,7 +117,7 @@ body::after {
     background: linear-gradient(145deg, rgba(10, 17, 29, 0.92), rgba(11, 20, 35, 0.72));
     border: 1px solid var(--border-soft);
     box-shadow: var(--shadow-lg);
-    backdrop-filter: none;
+    backdrop-filter: blur(12px);
 }
 
 .page-hero::before {
@@ -221,7 +221,7 @@ body::after {
     border: 1px solid var(--border-soft) !important;
     border-radius: var(--radius-lg) !important;
     box-shadow: var(--shadow-md);
-    backdrop-filter: none;
+    backdrop-filter: blur(10px);
     color: var(--text-1);
 }
 
@@ -254,11 +254,11 @@ label,
 
 .btn {
     border-color: rgba(255,255,255,0.08);
-    transition: background-color .12s linear, border-color .12s linear;
+    transition: box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
 }
 
 .btn:hover {
-    box-shadow: none;
+    box-shadow: 0 10px 18px rgba(2, 8, 23, 0.16);
 }
 
 @media (prefers-reduced-motion: reduce) {
