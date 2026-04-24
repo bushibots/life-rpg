@@ -244,6 +244,7 @@
 
 <div class="app-shell px-3 px-lg-4">
 <div class="page-frame">
+{% block page_header %}
 <div class="page-hero reveal-up">
     <div class="page-hero-grid">
         <div>
@@ -271,6 +272,7 @@
         </div>
     </div>
 </div>
+{% endblock %}
 <div class="container-fluid px-0 pb-5">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}

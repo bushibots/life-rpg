@@ -2,6 +2,7 @@
 
 {% block page_title %}Mission Control{% endblock %}
 {% block page_subtitle %}Track daily momentum, manage tasks, and move through your upgraded command center with smoother interactions.{% endblock %}
+{% block page_header %}{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intro.js/7.2.0/introjs.min.css">
@@ -27,14 +28,13 @@
 
     /* Premium Task Items */
     .task-item {
-        transition: all 0.2s ease;
+        transition: background-color 0.18s ease, box-shadow 0.18s ease;
         background: rgba(255, 255, 255, 0.015);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
     .task-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        transform: translateY(-1px);
-        box-shadow: 0 8px 20px rgba(13, 202, 240, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        box-shadow: 0 4px 12px rgba(13, 202, 240, 0.06);
     }
     .task-edit-btn {
         border: 1px solid rgba(13, 202, 240, 0.3);
@@ -42,7 +42,7 @@
         font-size: 0.72rem;
         line-height: 1;
         padding: 0.35rem 0.6rem;
-        transition: all 0.2s ease;
+        transition: border-color 0.12s linear, box-shadow 0.12s linear;
     }
     .task-edit-btn:hover {
         border-color: rgba(13, 202, 240, 0.8);
@@ -50,7 +50,7 @@
         box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.15);
     }
     .task-title.task-just-completed {
-        animation: completedPulse 420ms ease-out;
+        animation: none;
     }
     @keyframes completedPulse {
         0% { transform: scale(1); }
@@ -74,23 +74,18 @@
         box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2) !important;
     }
     /* SYSTEM CLASS BADGE ANIMATION */
-    @keyframes classPulse {
-        0% { box-shadow: 0 0 5px rgba(13, 202, 240, 0.2); border-color: rgba(13, 202, 240, 0.4); text-shadow: none; }
-        50% { box-shadow: 0 0 20px rgba(13, 202, 240, 0.8), inset 0 0 5px rgba(13, 202, 240, 0.3); border-color: #0dcaf0; text-shadow: 0 0 8px rgba(13, 202, 240, 0.8); }
-        100% { box-shadow: 0 0 5px rgba(13, 202, 240, 0.2); border-color: rgba(13, 202, 240, 0.4); text-shadow: none; }
-    }
     .system-class-badge {
-        animation: classPulse 2.5s infinite ease-in-out;
+        animation: none;
         border-radius: 0;
         cursor: default;
-        transition: all 0.2s ease;
+        transition: border-color 0.12s linear, box-shadow 0.12s linear;
     }
     .system-class-badge:hover {
         animation: none;
         box-shadow: 0 0 30px rgba(13, 202, 240, 1), inset 0 0 15px rgba(13, 202, 240, 0.6);
         border-color: #fff !important;
         color: #fff !important;
-        transform: scale(1.05);
+        transform: none;
     }
     .dashboard-hero {
         position: relative;
@@ -109,7 +104,7 @@
         filter: blur(10px);
         opacity: 0.7;
         z-index: -1;
-        animation: floatOrb 9s ease-in-out infinite;
+        animation: none;
     }
     .dashboard-hero::before {
         width: 160px;
@@ -124,11 +119,7 @@
         left: -50px;
         bottom: -90px;
         background: radial-gradient(circle, rgba(168, 85, 247, 0.18), transparent 70%);
-        animation-delay: -3s;
-    }
-    @keyframes floatOrb {
-        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-        50% { transform: translate3d(0, -12px, 0) scale(1.05); }
+        animation-delay: 0s;
     }
     .hero-stat-grid {
         display: grid;
@@ -142,13 +133,13 @@
         background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
         border: 1px solid rgba(255,255,255,0.08);
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 14px 30px rgba(0,0,0,0.18);
-        backdrop-filter: blur(12px);
-        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        backdrop-filter: none;
+        transition: border-color 0.12s linear, box-shadow 0.12s linear;
     }
     .hero-stat-card:hover {
-        transform: translateY(-3px);
+        transform: none;
         border-color: rgba(13, 202, 240, 0.35);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 18px 34px rgba(13, 202, 240, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 20px rgba(13, 202, 240, 0.08);
     }
     .hero-stat-label {
         display: block;
@@ -175,11 +166,10 @@
         position: absolute;
         inset: 0;
         background: linear-gradient(90deg, transparent, rgba(13, 202, 240, 0.06), transparent);
-        transform: translateX(-100%);
-        transition: transform 0.45s ease;
+        display: none;
         pointer-events: none;
     }
-    .task-item:hover::after { transform: translateX(100%); }
+    .task-item:hover::after { display: none; }
     .task-status-btn {
         width: 34px;
         height: 34px;
@@ -189,12 +179,12 @@
         justify-content: center;
         border: 1px solid rgba(255,255,255,0.08) !important;
         background: rgba(255,255,255,0.02) !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        transition: box-shadow 0.12s linear, border-color 0.12s linear;
     }
     .task-status-btn:hover {
-        transform: scale(1.08);
+        transform: none;
         border-color: rgba(13, 202, 240, 0.4) !important;
-        box-shadow: 0 10px 18px rgba(13, 202, 240, 0.12);
+        box-shadow: 0 6px 12px rgba(13, 202, 240, 0.09);
     }
     .task-meta-chip {
         border-radius: 999px;
@@ -227,25 +217,24 @@
         border-radius: 999px;
         background: rgba(255,255,255,0.02);
         border: 1px dashed rgba(13, 202, 240, 0.3);
-        transition: all 0.25s ease;
+        transition: background-color 0.12s linear, border-color 0.12s linear;
     }
     .add-task-btn:hover {
         border-style: solid;
-        transform: translateX(4px);
         background: rgba(13, 202, 240, 0.08);
     }
     .modal.fade .modal-dialog {
-        transition: transform 0.25s ease-out, opacity 0.25s ease-out;
-        transform: translateY(18px) scale(0.98);
+        transition: none;
+        transform: none;
     }
     .modal.show .modal-dialog {
-        transform: translateY(0) scale(1);
+        transform: none;
     }
     .modal-backdrop {
         width: 100vw;
         height: 100vh;
         background: rgba(2, 6, 12, 0.82);
-        backdrop-filter: blur(7px);
+        backdrop-filter: none;
         pointer-events: auto;
     }
     .modal {
@@ -263,8 +252,8 @@
         height: 9px;
         border-radius: 50%;
         background: #0dcaf0;
-        box-shadow: 0 0 0 rgba(13, 202, 240, 0.6);
-        animation: pulseDot 2s infinite;
+        box-shadow: 0 0 8px rgba(13, 202, 240, 0.35);
+        animation: none;
     }
     @keyframes pulseDot {
         0% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.55); }
